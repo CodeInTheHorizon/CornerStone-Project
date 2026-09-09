@@ -1,11 +1,14 @@
 /**
- * Dashboard shell (Phase 3).
+ * Dashboard overview.
  *
- * Layout follows PROJECT_CONTEXT.md section 9. Every figure shown here is
- * either genuinely known (the user, the configured platform count) or clearly
- * marked as not yet available. Nothing invents a model accuracy, a prediction
- * count or a data-freshness timestamp — those become real in Phases 4-8.
+ * Layout follows PROJECT_CONTEXT.md section 9. Collection figures come from
+ * GET /data/status and are real. Everything not yet measurable is marked as
+ * unavailable rather than given a placeholder number: model accuracy stays
+ * "Not trained" until a real evaluation run fills it.
  */
+
+import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { ActionCard } from '@/components/dashboard/ActionCard'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
@@ -14,10 +17,43 @@ import { Icon } from '@/components/Icon'
 import { StatusPill } from '@/components/StatusPill'
 import { supportedPlatforms } from '@/config/dashboard'
 import { useAuth } from '@/hooks/useAuth'
+import * as dataService from '@/services/dataService'
+import type { CollectorStatus } from '@/types/data'
+
+function formatTimestamp(value: string | null): string {
+  if (!value) return 'No data yet'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? 'Unknown' : date.toLocaleString()
+}
 
 export function DashboardPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const firstName = user?.full_name?.split(' ')[0] ?? null
+
+  const [status, setStatus] = useState<CollectorStatus | null>(null)
+
+  // Real collection figures, so the summary cards stop being static once data
+  // exists. Failures are non-fatal: the cards fall back to their empty state.
+  const loadStatus = useCallback(async () => {
+    if (!token) return
+    try {
+      setStatus(await dataService.fetchStatus(token))
+    } catch {
+      setStatus(null)
+    }
+  }, [token])
+
+  useEffect(() => {
+    // loadStatus/load only set state after awaiting the request, so nothing
+    // is set synchronously here; the rule cannot see across the async boundary.
+    // oxlint-disable-next-line react/set-state-in-effect
+    void loadStatus()
+  }, [loadStatus])
+
+  const collected = status?.total_snapshots ?? 0
+  const availablePlatforms = status
+    ? Object.values(status.platforms).filter((p) => p.available).length
+    : 0
 
   return (
     <DashboardLayout title="MarketPulse AI — Platform Predictor Dashboard">
@@ -32,13 +68,25 @@ export function DashboardPage() {
               Predict marketplace opportunities for electronics products
             </h2>
             <p className="mt-3 leading-relaxed text-muted">
-              Using fresh cross-platform data and machine learning. The
-              collection and model pipelines are still being built, so the
-              actions below are inactive until there is real data behind them.
+              Using fresh cross-platform data and machine learning. Marketplace
+              collection is live; the model pipeline is still being built.
             </p>
           </div>
 
-          <StatusPill tone="idle">No data collected yet</StatusPill>
+          <div className="flex flex-col items-end gap-3">
+            <StatusPill tone={collected > 0 ? 'ok' : 'idle'}>
+              {collected > 0
+                ? `${collected} snapshot${collected === 1 ? '' : 's'} collected`
+                : 'No data collected yet'}
+            </StatusPill>
+            <Link
+              to="/dashboard/marketplace-data"
+              className="inline-flex items-center gap-2 rounded-card border border-border-strong px-4 py-2 text-sm font-medium transition-colors hover:border-accent hover:text-accent-text"
+            >
+              <Icon name="refresh" className="size-4" />
+              Refresh Marketplace Data
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -60,14 +108,31 @@ export function DashboardPage() {
           <SummaryCard
             label="Data Freshness"
             icon="clock"
-            unavailable="No data yet"
-            hint="Shows the last marketplace collection timestamp."
+            unavailable={
+              status?.last_collection
+                ? undefined
+                : 'No data yet'
+            }
+            value={
+              status?.last_collection
+                ? formatTimestamp(status.last_collection)
+                : undefined
+            }
+            hint={
+              collected > 0
+                ? `${collected} snapshot(s) stored.`
+                : 'Shows the last marketplace collection timestamp.'
+            }
           />
           <SummaryCard
             label="Platforms"
             icon="database"
             value={supportedPlatforms.length}
-            hint={supportedPlatforms.join(', ')}
+            hint={
+              status
+                ? `${availablePlatforms} of ${supportedPlatforms.length} collectable. ${supportedPlatforms.join(', ')}`
+                : supportedPlatforms.join(', ')
+            }
           />
         </div>
       </section>
@@ -80,7 +145,11 @@ export function DashboardPage() {
             title="Train Model"
             description="Train a model on the collected marketplace dataset and record its measured accuracy, dataset size and feature set."
             actionLabel="Train Model"
-            blockedReason="Needs a collected dataset. Marketplace collection is not implemented yet."
+            blockedReason={
+              collected === 0
+                ? 'Needs a collected dataset. Collect marketplace data first.'
+                : 'Model training arrives in a later phase.'
+            }
           />
           <ActionCard
             icon="compass"
@@ -99,9 +168,9 @@ export function DashboardPage() {
           What works right now
         </h3>
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted">
-          Accounts, sign-in and this protected dashboard are live. Marketplace
-          data collection, the dataset builder, model training, predictions and
-          trend charts are the next phases — the sidebar items marked{' '}
+          Accounts, sign-in, this protected dashboard and marketplace data
+          collection are live. The dataset builder, model training, predictions
+          and trend charts are the next phases — the sidebar items marked{' '}
           <span className="rounded-full border border-border-hair px-1.5 py-0.5 text-[10px] text-subtle">
             Soon
           </span>{' '}

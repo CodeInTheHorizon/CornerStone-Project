@@ -7,10 +7,10 @@ MarketPulse AI collects fresh marketplace observations, turns them into a
 structured dataset, trains models on it, and surfaces trend analytics and
 cross-platform opportunity scores through an interactive dashboard.
 
-> **Status: Phase 3 of 10 (Authentication + Dashboard Shell).**
-> The landing page, accounts and the protected dashboard shell work. Marketplace
-> data collection, the ML pipeline and analytics are **not** implemented yet.
-> See [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) for the roadmap.
+> **Status: Phase 4 of 10 (Marketplace Data Collection).**
+> The landing page, accounts, the protected dashboard and the marketplace
+> collection layer work. The dataset builder, ML pipeline and analytics are
+> **not** implemented yet. See [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
 ---
 
@@ -84,6 +84,7 @@ All configuration is environment-driven; see [`.env.example`](.env.example).
 | `API_PREFIX` | Prefix for feature endpoints. Empty matches the API outline in PROJECT_CONTEXT.md §15. `/health` is always unprefixed. | *(empty)* |
 | `JWT_SECRET_KEY` | Signs access tokens. **Must** be overridden outside development — startup refuses the default. | dev placeholder |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token lifetime. | `720` (12h) |
+| `AMAZON_PAAPI_ACCESS_KEY` / `_SECRET_KEY` / `_PARTNER_TAG` | Amazon PA-API credentials. Empty = Amazon collector reports itself unavailable. | *(empty)* |
 | `VITE_API_BASE_URL` | Backend base URL used by the browser. | `http://127.0.0.1:8000` |
 | `VITE_WHATSAPP_NUMBER` | Destination for the contact form, digits only (e.g. `919876543210`). Empty disables the form, which then says so. | *(empty)* |
 
@@ -100,7 +101,7 @@ backend/app/
 ├── models/              User, MarketplaceSnapshot, Prediction, ModelMetadata
 ├── schemas/             pydantic request/response shapes
 ├── auth/                Phase 3
-├── scrapers/            Phase 4 — marketplace collectors
+├── scrapers/            base, parsing, validation, registry + one module per platform
 ├── ml/                  Phases 5–7 — features, training, prediction
 └── services/            business logic between API and database
 
@@ -127,8 +128,12 @@ docs/                       design direction and notes
 | `POST` | `/auth/register` | — | Create an account, returns a token |
 | `POST` | `/auth/login` | — | Exchange credentials for a token |
 | `GET` | `/auth/me` | Bearer | The authenticated user |
+| `POST` | `/data/collect` | Bearer | Collect fresh listings from a marketplace |
+| `GET` | `/data/latest` | Bearer | Recent snapshots (filter by platform/keyword/category) |
+| `GET` | `/data/history` | Bearer | Snapshots over a time window, oldest first |
+| `GET` | `/data/status` | Bearer | Collector availability per platform |
 
-Data-collection, ML and analytics endpoints arrive in Phases 4 and 6–8.
+ML and analytics endpoints arrive in Phases 6–8.
 
 There is no `/auth/logout`: tokens are stateless JWTs, so signing out is a
 client-side discard. A no-op endpoint would imply a revocation that does not
@@ -186,10 +191,54 @@ These are current and deliberate — please read before evaluating the project.
 - **Metrics are measured, never asserted.** Model metric fields stay NULL until a
   real evaluation run fills them, and demo records are tagged `source="demo"` so
   they can never be displayed as live data.
-- **Schema is created with `create_all()`**, not migrations. Alembic should be
-  added before the schema changes in an environment holding real data.
+- **Only Amazon can be collected, and only with PA-API credentials.** Flipkart,
+  Croma and Alibaba are blocked by anti-bot protection or robots rules; each
+  reports the verified reason instead of returning fabricated rows.
+- **PA-API 5.0 returns no ratings or review counts.** Those columns stay NULL for
+  Amazon rows, which limits the review/rating trend features planned later.
 - **SQLite by default.** Render's filesystem is ephemeral, so production needs a
   PostgreSQL `DATABASE_URL`.
+
+## Marketplace collection
+
+Collection is on demand: choose a platform and keyword on **Marketplace Data**
+and press Collect. Records are normalized, validated, deduplicated within the
+run, and stored as snapshots. Repeated runs over time build the time-series
+dataset the ML phases need.
+
+Access was verified on 2026-09-10, not assumed:
+
+| Platform | Status | Verified reason |
+|---|---|---|
+| **Amazon** | Implemented | Official **PA-API 5.0**. `amazon.in/s` returns **503** to programmatic requests and the Conditions of Use prohibit data mining, so the API is the only permitted route. Needs approved Associate credentials. |
+| Flipkart | Unavailable | `robots.txt` itself returns a **reCAPTCHA** interstitial. Collecting would mean evading a CAPTCHA. The Affiliate API is closed to new registrations. |
+| Croma | Unavailable | Returns **HTTP 403** (Akamai "Access Denied"), including for `robots.txt`. No public product API. |
+| Alibaba | Unavailable | `robots.txt` sets `Disallow: /trade/`, where keyword search lives. The allowed paths do not support keyword search. |
+
+No CAPTCHA, authentication, anti-bot protection or robots rule is bypassed
+anywhere. A blocked platform returns HTTP 501 with the reason above.
+
+### Data quality
+
+Records are rejected outright when `product_name` is empty, the platform is
+unknown, or the timestamp is missing. A record with one bad field is kept, the
+bad field is **cleared to NULL** (never clamped, since a clamped rating reads as
+a real measurement) and the reason is stored in the row's `warnings` column.
+
+## Database migrations
+
+The schema is versioned with Alembic from Phase 4 onward. `create_all()` can add
+a missing table but never a missing column, so a database created by an earlier
+phase silently lacked fields added later.
+
+Migrations run automatically on startup. A pre-Alembic database is stamped at the
+baseline revision and upgraded in place, preserving existing rows.
+
+```bash
+cd backend
+.venv/Scripts/python -m alembic current       # where the database is
+.venv/Scripts/python -m alembic upgrade head  # apply outstanding migrations
+```
 
 ## Documentation
 

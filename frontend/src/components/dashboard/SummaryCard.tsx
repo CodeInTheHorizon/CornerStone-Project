@@ -41,7 +41,17 @@ export function SummaryCard({
       {unavailable ? (
         <p className="mt-4 text-lg font-medium text-subtle">{unavailable}</p>
       ) : (
-        <p className="mt-4 text-3xl font-semibold tabular-nums">{value}</p>
+        // Numbers get display size; text (a timestamp, say) would overflow at
+        // that scale, so it renders one step down.
+        <p
+          className={
+            typeof value === 'number'
+              ? 'mt-4 text-3xl font-semibold tabular-nums'
+              : 'mt-4 text-base font-medium'
+          }
+        >
+          {value}
+        </p>
       )}
 
       {hint && <p className="mt-2 text-xs leading-relaxed text-subtle">{hint}</p>}

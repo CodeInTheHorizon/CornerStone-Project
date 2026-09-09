@@ -5,7 +5,7 @@ scope, architecture, the 10-day roadmap and the acceptance criteria.
 
 ## Current state
 
-**Phases 1-3 complete.** Phases 4-10 not started.
+**Phases 1-4 complete.** Phases 5-10 not started.
 
 Phase 1: repository structure, FastAPI backend with config/CORS/`/health`,
 SQLAlchemy models for `User`, `MarketplaceSnapshot`, `Prediction`,
@@ -20,7 +20,12 @@ Phase 3: bcrypt password hashing, JWT auth (`/auth/register`, `/auth/login`,
 Train Model / Make Prediction actions. Sections beyond the overview render an
 honest placeholder.
 
-No scraping, ML or analytics logic exists yet.
+Phase 4: marketplace collection layer - collector interface, Amazon via the
+official PA-API 5.0, honest unavailable stubs for Flipkart/Croma/Alibaba,
+normalization, validation, dedup, /data/collect|latest|history|status, and the
+Marketplace Data dashboard page. Alembic migrations replace create_all().
+
+No ML or analytics logic exists yet.
 
 ## Layout
 
@@ -33,7 +38,7 @@ backend/app/
   models/         ORM models
   schemas/        pydantic request/response shapes
   auth/           security.py (hashing, JWT), dependencies.py (get_current_user)
-  scrapers/       Phase 4
+  scrapers/       base, parsing, validation, registry + one module per platform
   ml/             Phases 5-7
   services/       business logic between API and DB
 frontend/src/
@@ -91,5 +96,6 @@ npm run dev
   bump rather than downgrade Python if a pin fails.
 - The Vite dev server binds `localhost` (IPv6). `127.0.0.1:5173` will not
   connect; both origins are allowed in `CORS_ORIGINS` regardless.
-- `Base.metadata.create_all()` runs on startup. Introduce Alembic before the
-  schema changes in an environment holding real data.
+- The schema is managed by Alembic (`backend/migrations/`) and upgraded on
+  startup. When you change a model, add a migration - `tests/test_migrations.py`
+  fails if the migrated schema and the models disagree.

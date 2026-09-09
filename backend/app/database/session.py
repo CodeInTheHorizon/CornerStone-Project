@@ -32,18 +32,19 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def init_db() -> None:
-    """Create any missing tables.
+    """Prepare storage directories and bring the schema up to date.
 
-    Phase 1 uses create_all for a fast local setup. A migration tool
-    (Alembic) should replace this before the schema starts evolving in
-    an environment that holds real data.
+    Uses Alembic rather than create_all(): create_all can add a missing table
+    but never a missing column, so a database created by an earlier phase
+    would silently lack fields added later.
     """
     # Importing the models package registers every model on Base.metadata.
     from app import models  # noqa: F401
+    from app.database.migrate import upgrade_to_head
 
     settings.DATA_DIR.mkdir(parents=True, exist_ok=True)
     settings.MODEL_ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
-    Base.metadata.create_all(bind=engine)
+    upgrade_to_head(engine)
 
 
 __all__ = ["Base", "SessionLocal", "engine", "get_db", "init_db"]

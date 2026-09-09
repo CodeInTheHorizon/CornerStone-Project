@@ -1,0 +1,71 @@
+{
+  "SearchResult": {
+    "TotalResultCount": 3,
+    "Items": [
+      {
+        "ASIN": "B0TESTAAA1",
+        "DetailPageURL": "https://www.amazon.in/dp/B0TESTAAA1?tag=example-21&linkCode=osi",
+        "ItemInfo": {
+          "Title": {
+            "DisplayValue": "Acme  SoundPods  Pro Wireless Earbuds, 40h Playtime"
+          },
+          "ByLineInfo": {
+            "Brand": { "DisplayValue": "Acme" },
+            "Manufacturer": { "DisplayValue": "Acme Electronics" }
+          },
+          "Features": {
+            "DisplayValues": [
+              "Active noise cancellation",
+              "Bluetooth 5.3",
+              "IPX5 water resistance"
+            ]
+          }
+        },
+        "Offers": {
+          "Listings": [
+            {
+              "Price": { "Amount": 2499.0, "Currency": "INR" },
+              "SavingBasis": { "Amount": 4999.0, "Currency": "INR" },
+              "Availability": { "Message": "In Stock" },
+              "MerchantInfo": { "Name": "Appario Retail Private Ltd" },
+              "DeliveryInfo": { "IsPrimeEligible": true }
+            }
+          ]
+        },
+        "BrowseNodeInfo": {
+          "BrowseNodes": [
+            {
+              "DisplayName": "In-Ear Headphones",
+              "Ancestor": { "DisplayName": "Headphones" }
+            }
+          ]
+        }
+      },
+      {
+        "ASIN": "B0TESTBBB2",
+        "DetailPageURL": "https://www.amazon.in/dp/B0TESTBBB2",
+        "ItemInfo": {
+          "Title": { "DisplayValue": "Nova Buds Lite" }
+        },
+        "Offers": {
+          "Listings": [
+            {
+              "Price": { "Amount": 999.0, "Currency": "INR" },
+              "Availability": { "Message": "Only 3 left in stock" }
+            }
+          ]
+        }
+      },
+      {
+        "ASIN": "B0TESTCCC3",
+        "DetailPageURL": "https://www.amazon.in/dp/B0TESTCCC3",
+        "ItemInfo": {
+          "ByLineInfo": { "Brand": { "DisplayValue": "Ghost" } }
+        },
+        "Offers": {
+          "Listings": [{ "Price": { "Amount": 500.0, "Currency": "INR" } }]
+        }
+      }
+    ]
+  }
+}

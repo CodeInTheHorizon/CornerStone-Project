@@ -5,6 +5,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { DashboardSectionPage } from '@/pages/DashboardSectionPage'
 import { HomePage } from '@/pages/HomePage'
+import { MarketplaceDataPage } from '@/pages/MarketplaceDataPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { StatusPage } from '@/pages/StatusPage'
@@ -34,6 +35,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/marketplace-data"
+              element={
+                <ProtectedRoute>
+                  <MarketplaceDataPage />
                 </ProtectedRoute>
               }
             />

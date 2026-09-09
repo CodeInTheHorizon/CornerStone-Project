@@ -53,6 +53,17 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 12
 
+    # --- Marketplace collection (Phase 4) ---
+    # Amazon Product Advertising API 5.0. Requires an approved Amazon
+    # Associate account; the collector reports itself unavailable when
+    # these are unset rather than falling back to scraping.
+    AMAZON_PAAPI_ACCESS_KEY: str = ""
+    AMAZON_PAAPI_SECRET_KEY: str = ""
+    AMAZON_PAAPI_PARTNER_TAG: str = ""
+    AMAZON_PAAPI_HOST: str = "webservices.amazon.in"
+    AMAZON_PAAPI_REGION: str = "eu-west-1"
+    AMAZON_PAAPI_MARKETPLACE: str = "www.amazon.in"
+
     # --- CORS ---
     # Comma-separated list of allowed frontend origins.
     CORS_ORIGINS: list[str] = Field(

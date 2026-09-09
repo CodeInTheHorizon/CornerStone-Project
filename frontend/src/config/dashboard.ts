@@ -16,7 +16,7 @@ export const dashboardNav: DashboardNavItem[] = [
     label: 'Marketplace Data',
     to: '/dashboard/marketplace-data',
     icon: 'database',
-    available: false,
+    available: true,
   },
   {
     label: 'ML Predictor',

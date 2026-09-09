@@ -12,9 +12,16 @@ python-dotenv==1.2.3
 
 # Database
 SQLAlchemy==2.0.52
+# Schema migrations. create_all() cannot add columns to an existing table,
+# so the schema is versioned from Phase 4 onward.
+alembic==1.19.2
 # PostgreSQL driver -- unused while DATABASE_URL points at SQLite,
 # required once a Postgres URL is configured (Phase 10 / production).
 psycopg[binary]==3.3.5
+
+# Marketplace collection (Phase 4)
+# httpx is a runtime dependency from here on: the Amazon collector uses it.
+httpx==0.28.1
 
 # Authentication (Phase 3)
 bcrypt==5.0.0
@@ -23,7 +30,6 @@ email-validator==2.3.0
 
 # Testing
 pytest==9.1.1
-httpx==0.28.1
 
 # Dependencies for later phases (scraping, ML) are intentionally NOT listed
 # yet. They are added in the phase that introduces them.
