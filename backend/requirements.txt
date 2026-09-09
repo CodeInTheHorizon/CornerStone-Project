@@ -1,0 +1,24 @@
+# --- Phase 1: Project Foundation ---
+# Pins verified installable on Python 3.14 (Windows) on 2026-09-10.
+
+# Web framework
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+
+# Configuration
+pydantic==2.13.5
+pydantic-settings==2.15.0
+python-dotenv==1.2.3
+
+# Database
+SQLAlchemy==2.0.52
+# PostgreSQL driver -- unused while DATABASE_URL points at SQLite,
+# required once a Postgres URL is configured (Phase 10 / production).
+psycopg[binary]==3.3.5
+
+# Testing
+pytest==9.1.1
+httpx==0.28.1
+
+# Dependencies for later phases (auth, scraping, ML) are intentionally
+# NOT listed yet. They are added in the phase that introduces them.

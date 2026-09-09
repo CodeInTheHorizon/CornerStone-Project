@@ -1,0 +1,68 @@
+@import 'tailwindcss';
+
+/*
+ * MarketPulse AI design tokens.
+ *
+ * Direction: dark, minimal and high-contrast -- near-black ground, a single
+ * warm accent used sparingly, tight letter-spacing on display type, small
+ * geometric radii, separation by whitespace and hairline borders rather than
+ * heavy shadows. See docs/design-direction.md.
+ */
+@theme {
+  /* Ground and surfaces */
+  --color-ink-950: #08090a;
+  --color-ink-900: #0e1011;
+  --color-ink-850: #141719;
+  --color-ink-800: #1b1f22;
+  --color-ink-700: #272c30;
+  --color-ink-600: #3a4247;
+
+  /* Text */
+  --color-chalk-50: #f7f8f8;
+  --color-chalk-300: #b6bcc0;
+  --color-chalk-500: #7d858a;
+
+  /* Single accent, used sparingly for primary actions and live signals */
+  --color-accent-400: #f0b429;
+  --color-accent-500: #d99b12;
+
+  /* Semantic status */
+  --color-signal-ok: #3ecf8e;
+  --color-signal-warn: #f0b429;
+  --color-signal-down: #f2555a;
+
+  /* Type */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    sans-serif;
+  --font-mono: ui-monospace, 'JetBrains Mono', 'SFMono-Regular', monospace;
+
+  /* Geometric, not pill-shaped */
+  --radius-card: 10px;
+
+  /* Content width */
+  --spacing-shell: 1200px;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-ink-950 text-chalk-50 font-sans antialiased;
+    margin: 0;
+  }
+
+  /* Display type runs tight; body copy stays at normal tracking. */
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-400);
+    outline-offset: 2px;
+  }
+}
