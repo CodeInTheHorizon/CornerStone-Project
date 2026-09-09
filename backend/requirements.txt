@@ -16,9 +16,14 @@ SQLAlchemy==2.0.52
 # required once a Postgres URL is configured (Phase 10 / production).
 psycopg[binary]==3.3.5
 
+# Authentication (Phase 3)
+bcrypt==5.0.0
+PyJWT==2.13.0
+email-validator==2.3.0
+
 # Testing
 pytest==9.1.1
 httpx==0.28.1
 
-# Dependencies for later phases (auth, scraping, ML) are intentionally
-# NOT listed yet. They are added in the phase that introduces them.
+# Dependencies for later phases (scraping, ML) are intentionally NOT listed
+# yet. They are added in the phase that introduces them.

@@ -7,10 +7,10 @@ MarketPulse AI collects fresh marketplace observations, turns them into a
 structured dataset, trains models on it, and surfaces trend analytics and
 cross-platform opportunity scores through an interactive dashboard.
 
-> **Status: Phase 2 of 10 (Public Landing Page).**
-> The backend skeleton, database models and the public landing page exist.
-> Authentication, marketplace data collection, the ML pipeline and analytics are
-> **not** implemented yet. See [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) for the roadmap.
+> **Status: Phase 3 of 10 (Authentication + Dashboard Shell).**
+> The landing page, accounts and the protected dashboard shell work. Marketplace
+> data collection, the ML pipeline and analytics are **not** implemented yet.
+> See [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) for the roadmap.
 
 ---
 
@@ -81,7 +81,9 @@ All configuration is environment-driven; see [`.env.example`](.env.example).
 | `DATABASE_URL` | SQLAlchemy URL. SQLite locally, PostgreSQL in production. Leave unset locally — a relative `sqlite:///` URL resolves against the working directory. | absolute `<repo-root>/data/marketpulse.db` |
 | `CORS_ORIGINS` | Comma-separated allowed frontend origins. | `http://localhost:5173,http://127.0.0.1:5173` |
 | `ENVIRONMENT` | `development` / `production`. | `development` |
-| `API_PREFIX` | Prefix for feature endpoints. `/health` stays unprefixed. | `/api` |
+| `API_PREFIX` | Prefix for feature endpoints. Empty matches the API outline in PROJECT_CONTEXT.md §15. `/health` is always unprefixed. | *(empty)* |
+| `JWT_SECRET_KEY` | Signs access tokens. **Must** be overridden outside development — startup refuses the default. | dev placeholder |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token lifetime. | `720` (12h) |
 | `VITE_API_BASE_URL` | Backend base URL used by the browser. | `http://127.0.0.1:8000` |
 | `VITE_WHATSAPP_NUMBER` | Destination for the contact form, digits only (e.g. `919876543210`). Empty disables the form, which then says so. | *(empty)* |
 
@@ -117,21 +119,30 @@ docs/                       design direction and notes
 
 ## Endpoints
 
-| Method | Path | Status |
-|---|---|---|
-| `GET` | `/` | Service descriptor |
-| `GET` | `/health` | Liveness + database reachability |
-| `GET` | `/docs` | OpenAPI UI |
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `GET` | `/` | — | Service descriptor |
+| `GET` | `/health` | — | Liveness + database reachability |
+| `GET` | `/docs` | — | OpenAPI UI |
+| `POST` | `/auth/register` | — | Create an account, returns a token |
+| `POST` | `/auth/login` | — | Exchange credentials for a token |
+| `GET` | `/auth/me` | Bearer | The authenticated user |
 
-Auth, data-collection, ML and analytics endpoints arrive in Phases 3, 4, 6–8.
+Data-collection, ML and analytics endpoints arrive in Phases 4 and 6–8.
+
+There is no `/auth/logout`: tokens are stateless JWTs, so signing out is a
+client-side discard. A no-op endpoint would imply a revocation that does not
+happen. Server-side revocation is a real feature worth adding, not a stub.
 
 ## Frontend routes
 
-| Path | Page |
-|---|---|
-| `/` | Public landing page |
-| `/status` | Backend connectivity diagnostic |
-| `/login`, `/register`, `/dashboard` | Placeholders stating that authentication arrives in Phase 3 |
+| Path | Auth | Page |
+|---|---|---|
+| `/` | — | Public landing page |
+| `/login`, `/register` | — | Authentication |
+| `/status` | — | Backend connectivity diagnostic |
+| `/dashboard` | Required | Dashboard overview |
+| `/dashboard/marketplace-data`, `/predictor`, `/train`, `/trends`, `/analytics` | Required | Section placeholders — routes exist, features arrive in Phases 4–8 |
 
 ## Theming
 
@@ -159,6 +170,12 @@ These are current and deliberate — please read before evaluating the project.
   system will do; the data and ML layers behind it are still to be built.
 - **The contact form does not reach a server.** It validates locally and hands the
   message to WhatsApp. There is no contact endpoint, and nothing is stored.
+- **Dashboard figures are not invented.** Model accuracy reads "Not trained" and
+  data freshness reads "No data yet" because no model and no collection exist.
+  They stay that way until a real training run and a real collection fill them.
+- **The access token is kept in `localStorage`**, which any script on the origin
+  can read. It trades some XSS exposure for a session that survives a refresh; a
+  httpOnly refresh-token cookie is the stronger design and is worth revisiting.
 - **Marketplace pages do not expose true unit sales.** MarketPulse AI therefore
   predicts a marketplace *opportunity / demand proxy* built from observable
   signals, and does not claim to forecast real-world sales volume.

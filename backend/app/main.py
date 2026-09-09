@@ -14,6 +14,14 @@ from app.database import init_db
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Prepare local storage directories and the database schema on startup."""
+    # Refuse to run outside development with the shipped placeholder secret:
+    # every token would be forgeable by anyone who has read this repository.
+    if settings.uses_default_jwt_secret and not settings.is_development:
+        raise RuntimeError(
+            "JWT_SECRET_KEY is still the development default. Set a strong, "
+            "random value before running outside development."
+        )
+
     init_db()
     yield
 

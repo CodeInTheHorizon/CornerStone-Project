@@ -13,9 +13,12 @@ import { Icon } from '@/components/Icon'
 import { Logo } from '@/components/Logo'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { navLinks } from '@/config/site'
+import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/cn'
 
 export function Navbar() {
+  const { status } = useAuth()
+  const signedIn = status === 'authenticated'
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -68,18 +71,29 @@ export function Navbar() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
 
-          <Link
-            to="/login"
-            className="hidden rounded-card px-3.5 py-2 text-sm text-muted transition-colors hover:text-foreground sm:inline-flex"
-          >
-            Login
-          </Link>
-          <Link
-            to="/register"
-            className="hidden rounded-card border border-border-strong px-3.5 py-2 text-sm font-medium transition-colors hover:border-accent hover:text-accent-text sm:inline-flex"
-          >
-            Register
-          </Link>
+          {signedIn ? (
+            <Link
+              to="/dashboard"
+              className="hidden rounded-card border border-border-strong px-3.5 py-2 text-sm font-medium transition-colors hover:border-accent hover:text-accent-text sm:inline-flex"
+            >
+              Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="hidden rounded-card px-3.5 py-2 text-sm text-muted transition-colors hover:text-foreground sm:inline-flex"
+              >
+                Login
+              </Link>
+              <Link
+                to="/register"
+                className="hidden rounded-card border border-border-strong px-3.5 py-2 text-sm font-medium transition-colors hover:border-accent hover:text-accent-text sm:inline-flex"
+              >
+                Register
+              </Link>
+            </>
+          )}
           {/* The wrapper carries the responsive display class: putting it on
               Button would collide with the `inline-flex` in its base styles,
               and which one wins depends on stylesheet order, not class order. */}
@@ -122,18 +136,29 @@ export function Navbar() {
           ))}
         </ul>
         <div className="mt-3 flex gap-2 border-t border-border-hair pt-4">
-          <Link
-            to="/login"
-            className="flex-1 rounded-card border border-border-strong px-3 py-2.5 text-center text-sm"
-          >
-            Login
-          </Link>
-          <Link
-            to="/register"
-            className="flex-1 rounded-card bg-accent px-3 py-2.5 text-center text-sm font-medium text-accent-ink"
-          >
-            Register
-          </Link>
+          {signedIn ? (
+            <Link
+              to="/dashboard"
+              className="flex-1 rounded-card bg-accent px-3 py-2.5 text-center text-sm font-medium text-accent-ink"
+            >
+              Go to dashboard
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="flex-1 rounded-card border border-border-strong px-3 py-2.5 text-center text-sm"
+              >
+                Login
+              </Link>
+              <Link
+                to="/register"
+                className="flex-1 rounded-card bg-accent px-3 py-2.5 text-center text-sm font-medium text-accent-ink"
+              >
+                Register
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

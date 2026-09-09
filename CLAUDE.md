@@ -5,7 +5,7 @@ scope, architecture, the 10-day roadmap and the acceptance criteria.
 
 ## Current state
 
-**Phases 1-2 complete.** Phases 3-10 not started.
+**Phases 1-3 complete.** Phases 4-10 not started.
 
 Phase 1: repository structure, FastAPI backend with config/CORS/`/health`,
 SQLAlchemy models for `User`, `MarketplaceSnapshot`, `Prediction`,
@@ -15,7 +15,12 @@ Phase 2: public landing page — navbar, hero, "Why Choose" flip cards, develope
 profile, feature grid, WhatsApp contact form, footer; light/dark theming with a
 pre-paint script; scroll reveals honouring `prefers-reduced-motion`.
 
-No authentication, scraping, ML or analytics logic exists yet.
+Phase 3: bcrypt password hashing, JWT auth (`/auth/register`, `/auth/login`,
+`/auth/me`), a protected dashboard shell with sidebar, summary cards and the
+Train Model / Make Prediction actions. Sections beyond the overview render an
+honest placeholder.
+
+No scraping, ML or analytics logic exists yet.
 
 ## Layout
 
@@ -27,7 +32,7 @@ backend/app/
   database/       engine, session, declarative Base
   models/         ORM models
   schemas/        pydantic request/response shapes
-  auth/           Phase 3
+  auth/           security.py (hashing, JWT), dependencies.py (get_current_user)
   scrapers/       Phase 4
   ml/             Phases 5-7
   services/       business logic between API and DB
@@ -58,6 +63,8 @@ frontend/src/
 4. **Never fabricate marketplace data or ML metrics.** Metric columns stay NULL
    until a real evaluation run fills them. Demo rows must be tagged
    `source="demo"` (`DataSource.DEMO`) so they can never be shown as live data.
+   In the UI this means `SummaryCard` takes `unavailable="Not trained"` rather
+   than a placeholder digit, and blocked actions state what is missing.
 5. Marketplace collection must use officially permitted access paths. Never
    bypass CAPTCHAs, authentication, anti-bot protections or access controls. If
    a source cannot be collected reliably, return an explicit unsupported status.

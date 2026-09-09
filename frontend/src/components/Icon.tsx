@@ -27,6 +27,15 @@ export type IconName =
   | 'arrow-right'
   | 'whatsapp'
   | 'spark'
+  | 'logout'
+  | 'database'
+  | 'lock'
+  | 'user'
+  | 'eye'
+  | 'eye-off'
+  | 'alert'
+  | 'clock'
+  | 'check'
 
 const paths: Record<IconName, React.ReactNode> = {
   brain: (
@@ -138,6 +147,60 @@ const paths: Record<IconName, React.ReactNode> = {
     <>
       <path d="M3.5 20.5 5 16.4A8.2 8.2 0 1 1 8 19.3l-4.5 1.2Z" />
       <path d="M9 9.2c.3 2.3 2.4 4.4 4.7 4.7.6.1 1.3-.4 1.3-1v-.6l-1.8-.7-.8.8a6 6 0 0 1-2-2l.8-.8-.7-1.8h-.6c-.6 0-1.1.7-.9 1.4Z" />
+    </>
+  ),
+  logout: (
+    <>
+      <path d="M15 17v1.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2V7" />
+      <path d="M10 12h11M18 8.5l3.5 3.5-3.5 3.5" />
+    </>
+  ),
+  database: (
+    <>
+      <ellipse cx="12" cy="6" rx="8" ry="3" />
+      <path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6" />
+      <path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" />
+    </>
+  ),
+  lock: (
+    <>
+      <rect x="4" y="10.5" width="16" height="10" rx="2.5" />
+      <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+    </>
+  ),
+  user: (
+    <>
+      <circle cx="12" cy="8" r="3.75" />
+      <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
+    </>
+  ),
+  eye: (
+    <>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  'eye-off': (
+    <>
+      <path d="M9.9 5.8A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-3.3 4.1M6.5 7.6A17 17 0 0 0 2.5 12S6 18.5 12 18.5c1 0 1.9-.2 2.7-.5" />
+      <path d="M10 10a2.8 2.8 0 0 0 4 4M3 3l18 18" />
+    </>
+  ),
+  alert: (
+    <>
+      <path d="M12 8.5v5M12 17h.01" />
+      <path d="M10.3 3.9 2.6 17.2A2 2 0 0 0 4.3 20h15.4a2 2 0 0 0 1.7-2.8L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+    </>
+  ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 1.8" />
+    </>
+  ),
+  check: (
+    <>
+      <path d="m5 12.5 4.5 4.5L19 7.5" />
     </>
   ),
   spark: (

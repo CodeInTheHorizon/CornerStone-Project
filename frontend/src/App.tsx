@@ -1,32 +1,61 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
+import { AuthProvider } from '@/auth/AuthProvider'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { DashboardPage } from '@/pages/DashboardPage'
+import { DashboardSectionPage } from '@/pages/DashboardSectionPage'
 import { HomePage } from '@/pages/HomePage'
-import { NotAvailablePage } from '@/pages/NotAvailablePage'
+import { LoginPage } from '@/pages/LoginPage'
+import { RegisterPage } from '@/pages/RegisterPage'
 import { StatusPage } from '@/pages/StatusPage'
+import { dashboardNav } from '@/config/dashboard'
 import { ThemeProvider } from '@/theme/ThemeProvider'
 
 /**
  * Application routes.
  *
- * Phase 2 adds the public landing page. Real auth routes and the protected
- * dashboard replace the placeholders in Phase 3.
+ * Phase 3 adds authentication and the protected dashboard shell. The dashboard
+ * sections beyond the overview render an honest placeholder until their
+ * feature phase lands.
  */
 export default function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/status" element={<StatusPage />} />
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/status" element={<StatusPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
 
-          {/* Linked from the navbar; implemented in Phase 3. */}
-          <Route path="/login" element={<NotAvailablePage />} />
-          <Route path="/register" element={<NotAvailablePage />} />
-          <Route path="/dashboard" element={<NotAvailablePage />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+            {dashboardNav
+              .filter((item) => !item.available)
+              .map((item) => (
+                <Route
+                  key={item.to}
+                  path={item.to}
+                  element={
+                    <ProtectedRoute>
+                      <DashboardSectionPage />
+                    </ProtectedRoute>
+                  }
+                />
+              ))}
+
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </ThemeProvider>
   )
 }

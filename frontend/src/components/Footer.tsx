@@ -5,8 +5,11 @@ import { Link } from 'react-router-dom'
 import { Icon } from '@/components/Icon'
 import { Logo } from '@/components/Logo'
 import { developer, navLinks } from '@/config/site'
+import { useAuth } from '@/hooks/useAuth'
 
 export function Footer() {
+  const { status } = useAuth()
+  const signedIn = status === 'authenticated'
   const socials = developer.socials.filter((social) => social.href)
   const year = new Date().getFullYear()
 
@@ -46,22 +49,35 @@ export function Footer() {
                 Account
               </h2>
               <ul className="mt-4 space-y-2.5">
-                <li>
-                  <Link
-                    to="/login"
-                    className="text-sm text-muted transition-colors hover:text-foreground"
-                  >
-                    Login
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/register"
-                    className="text-sm text-muted transition-colors hover:text-foreground"
-                  >
-                    Register
-                  </Link>
-                </li>
+                {signedIn ? (
+                  <li>
+                    <Link
+                      to="/dashboard"
+                      className="text-sm text-muted transition-colors hover:text-foreground"
+                    >
+                      Dashboard
+                    </Link>
+                  </li>
+                ) : (
+                  <>
+                    <li>
+                      <Link
+                        to="/login"
+                        className="text-sm text-muted transition-colors hover:text-foreground"
+                      >
+                        Login
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/register"
+                        className="text-sm text-muted transition-colors hover:text-foreground"
+                      >
+                        Register
+                      </Link>
+                    </li>
+                  </>
+                )}
               </ul>
             </div>
           </div>

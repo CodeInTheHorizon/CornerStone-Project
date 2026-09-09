@@ -1,11 +1,13 @@
-"""Aggregate router for prefixed feature endpoints.
+"""Aggregate router for feature endpoints.
 
-Feature routers (auth, data, ml, analytics) are registered here as their
-phases land, keeping main.py free of per-feature wiring. It is empty in
-Phase 1 -- /health is mounted at the application root instead, so that
-platform health probes can use a stable, unprefixed path.
+Feature routers are registered here as their phases land, keeping main.py free
+of per-feature wiring. /health is mounted separately at the application root so
+platform health probes always have a stable, unprefixed path.
 """
 
 from fastapi import APIRouter
 
+from app.api.routes import auth
+
 api_router = APIRouter()
+api_router.include_router(auth.router)

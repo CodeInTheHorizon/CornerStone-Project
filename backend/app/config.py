@@ -30,7 +30,9 @@ class Settings(BaseSettings):
     APP_VERSION: str = "0.1.0"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
-    API_PREFIX: str = "/api"
+    # Empty by default so routes match the API outline in PROJECT_CONTEXT.md
+    # section 15. Set to e.g. "/api" to namespace every feature endpoint.
+    API_PREFIX: str = ""
 
     # --- Server ---
     HOST: str = "127.0.0.1"
@@ -42,6 +44,14 @@ class Settings(BaseSettings):
     # without any code change.
     DATABASE_URL: str = f"sqlite:///{(PROJECT_ROOT / 'data' / 'marketpulse.db').as_posix()}"
     SQL_ECHO: bool = False
+
+    # --- Authentication ---
+    # MUST be overridden in any deployed environment. The default exists so
+    # local development works out of the box; startup refuses to use it when
+    # ENVIRONMENT is not 'development'.
+    JWT_SECRET_KEY: str = "dev-only-insecure-secret-change-me"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 12
 
     # --- CORS ---
     # Comma-separated list of allowed frontend origins.
@@ -64,6 +74,14 @@ class Settings(BaseSettings):
     @property
     def is_sqlite(self) -> bool:
         return self.DATABASE_URL.startswith("sqlite")
+
+    @property
+    def is_development(self) -> bool:
+        return self.ENVIRONMENT.lower() == "development"
+
+    @property
+    def uses_default_jwt_secret(self) -> bool:
+        return self.JWT_SECRET_KEY == "dev-only-insecure-secret-change-me"
 
 
 @lru_cache
