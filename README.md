@@ -78,7 +78,7 @@ All configuration is environment-driven; see [`.env.example`](.env.example).
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `DATABASE_URL` | SQLAlchemy URL. SQLite locally, PostgreSQL in production. | `sqlite:///./data/marketpulse.db` |
+| `DATABASE_URL` | SQLAlchemy URL. SQLite locally, PostgreSQL in production. Leave unset locally — a relative `sqlite:///` URL resolves against the working directory. | absolute `<repo-root>/data/marketpulse.db` |
 | `CORS_ORIGINS` | Comma-separated allowed frontend origins. | `http://localhost:5173,http://127.0.0.1:5173` |
 | `ENVIRONMENT` | `development` / `production`. | `development` |
 | `API_PREFIX` | Prefix for feature endpoints. `/health` stays unprefixed. | `/api` |
