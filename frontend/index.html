@@ -4,7 +4,27 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MarketPulse AI</title>
+    <title>MarketPulse AI — Marketplace Intelligence for Electronics Sellers</title>
+    <meta
+      name="description"
+      content="MarketPulse AI turns fresh e-commerce marketplace data into trend insights and machine-learning predictions across Amazon, Flipkart, Croma and Alibaba."
+    />
+    <meta name="theme-color" content="#08090a" />
+    <script>
+      // Runs before first paint so the theme class is already on <html>.
+      // Without this a dark-mode visitor sees one light frame.
+      (function () {
+        try {
+          var stored = localStorage.getItem('marketpulse-theme');
+          var dark =
+            stored === 'dark' ||
+            ((!stored || stored === 'system') &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) document.documentElement.classList.add('dark');
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

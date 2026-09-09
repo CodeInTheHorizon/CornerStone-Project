@@ -1,20 +1,32 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
+import { HomePage } from '@/pages/HomePage'
+import { NotAvailablePage } from '@/pages/NotAvailablePage'
 import { StatusPage } from '@/pages/StatusPage'
+import { ThemeProvider } from '@/theme/ThemeProvider'
 
 /**
  * Application routes.
  *
- * Phase 1 exposes a single placeholder route. The landing page (Phase 2),
- * auth routes (Phase 3) and the protected dashboard are added later.
+ * Phase 2 adds the public landing page. Real auth routes and the protected
+ * dashboard replace the placeholders in Phase 3.
  */
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<StatusPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/status" element={<StatusPage />} />
+
+          {/* Linked from the navbar; implemented in Phase 3. */}
+          <Route path="/login" element={<NotAvailablePage />} />
+          <Route path="/register" element={<NotAvailablePage />} />
+          <Route path="/dashboard" element={<NotAvailablePage />} />
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
   )
 }

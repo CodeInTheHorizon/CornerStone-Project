@@ -7,10 +7,10 @@ MarketPulse AI collects fresh marketplace observations, turns them into a
 structured dataset, trains models on it, and surfaces trend analytics and
 cross-platform opportunity scores through an interactive dashboard.
 
-> **Status: Phase 1 of 10 (Project Foundation).**
-> The backend skeleton, database models and frontend shell exist. Authentication,
-> marketplace data collection, the ML pipeline and analytics are **not**
-> implemented yet. See [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) for the roadmap.
+> **Status: Phase 2 of 10 (Public Landing Page).**
+> The backend skeleton, database models and the public landing page exist.
+> Authentication, marketplace data collection, the ML pipeline and analytics are
+> **not** implemented yet. See [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) for the roadmap.
 
 ---
 
@@ -83,6 +83,7 @@ All configuration is environment-driven; see [`.env.example`](.env.example).
 | `ENVIRONMENT` | `development` / `production`. | `development` |
 | `API_PREFIX` | Prefix for feature endpoints. `/health` stays unprefixed. | `/api` |
 | `VITE_API_BASE_URL` | Backend base URL used by the browser. | `http://127.0.0.1:8000` |
+| `VITE_WHATSAPP_NUMBER` | Destination for the contact form, digits only (e.g. `919876543210`). Empty disables the form, which then says so. | *(empty)* |
 
 Only `VITE_`-prefixed variables reach the browser bundle. Never put a secret in one.
 
@@ -102,7 +103,13 @@ backend/app/
 └── services/            business logic between API and database
 
 frontend/src/
-├── components/  pages/  services/  hooks/  types/  config/
+├── components/  reusable UI primitives (Button, Section, FlipCard, Navbar, Icon...)
+├── sections/    landing page sections (Hero, WhyChoose, Developer, Features, Contact)
+├── pages/       routed pages
+├── theme/       light/dark theme context and provider
+├── services/    typed API client
+├── lib/         pure helpers (validation, WhatsApp link building)
+└── hooks/  types/  config/
 
 data/{raw,processed,demo}   dataset storage
 docs/                       design direction and notes
@@ -118,6 +125,23 @@ docs/                       design direction and notes
 
 Auth, data-collection, ML and analytics endpoints arrive in Phases 3, 4, 6–8.
 
+## Frontend routes
+
+| Path | Page |
+|---|---|
+| `/` | Public landing page |
+| `/status` | Backend connectivity diagnostic |
+| `/login`, `/register`, `/dashboard` | Placeholders stating that authentication arrives in Phase 3 |
+
+## Theming
+
+Light and dark are both first-class. The toggle in the navbar switches themes;
+the default follows the operating system and keeps following it while the page
+is open. The choice persists in `localStorage`, and an inline script applies it
+before first paint so there is no flash of the wrong theme. Every text/ground
+pairing in both themes was measured against WCAG AA (4.5:1). See
+[docs/design-direction.md](docs/design-direction.md).
+
 ## Data model
 
 | Table | Holds |
@@ -131,7 +155,10 @@ Auth, data-collection, ML and analytics endpoints arrive in Phases 3, 4, 6–8.
 
 These are current and deliberate — please read before evaluating the project.
 
-- **Nothing is collected or predicted yet.** Phase 1 is scaffolding only.
+- **Nothing is collected or predicted yet.** The landing page describes what the
+  system will do; the data and ML layers behind it are still to be built.
+- **The contact form does not reach a server.** It validates locally and hands the
+  message to WhatsApp. There is no contact endpoint, and nothing is stored.
 - **Marketplace pages do not expose true unit sales.** MarketPulse AI therefore
   predicts a marketplace *opportunity / demand proxy* built from observable
   signals, and does not claim to forecast real-world sales volume.

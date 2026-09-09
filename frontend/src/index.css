@@ -1,68 +1,200 @@
 @import 'tailwindcss';
 
 /*
- * MarketPulse AI design tokens.
+ * MarketPulse AI design system.
  *
- * Direction: dark, minimal and high-contrast -- near-black ground, a single
- * warm accent used sparingly, tight letter-spacing on display type, small
- * geometric radii, separation by whitespace and hairline borders rather than
- * heavy shadows. See docs/design-direction.md.
+ * Direction (adapted from a minimal, airy, high-contrast reference — see
+ * docs/design-direction.md): one accent used sparingly, structure carried by
+ * hairline borders and whitespace rather than heavy shadows, tight display
+ * tracking, geometric radii, generous section rhythm.
+ *
+ * Theming: semantic variables are redefined per theme below and exposed to
+ * Tailwind through `@theme inline`, so utilities such as `bg-surface` follow
+ * the active theme at runtime.
  */
-@theme {
-  /* Ground and surfaces */
-  --color-ink-950: #08090a;
-  --color-ink-900: #0e1011;
-  --color-ink-850: #141719;
-  --color-ink-800: #1b1f22;
-  --color-ink-700: #272c30;
-  --color-ink-600: #3a4247;
 
-  /* Text */
-  --color-chalk-50: #f7f8f8;
-  --color-chalk-300: #b6bcc0;
-  --color-chalk-500: #7d858a;
+@custom-variant dark (&:where(.dark, .dark *));
 
-  /* Single accent, used sparingly for primary actions and live signals */
-  --color-accent-400: #f0b429;
-  --color-accent-500: #d99b12;
+/* ---------------------------------------------------------------- *
+ * Light theme (default)                                            *
+ * ---------------------------------------------------------------- */
+:root {
+  --background: #fbfbfa;
+  --background-alt: #f4f4f2;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
 
-  /* Semantic status */
-  --color-signal-ok: #3ecf8e;
-  --color-signal-warn: #f0b429;
-  --color-signal-down: #f2555a;
+  --border: #e4e4e0;
+  --border-strong: #d2d2cd;
 
-  /* Type */
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
-    sans-serif;
+  --foreground: #111213;
+  --muted: #56595d;
+  --subtle: #6b6f75;
+
+  /* Accent fill is the same warm tone in both themes so the brand holds.
+     `accent-ink` is the text colour that sits ON the fill; `accent-text` is
+     the accessible accent colour for text ON the page ground. */
+  --accent: #f0b429;
+  --accent-hover: #dda317;
+  --accent-ink: #16130a;
+  --accent-text: #8a6206;
+  --accent-soft: rgb(240 180 41 / 0.14);
+
+  --signal-ok: #17794b;
+  --signal-warn: #8a6206;
+  --signal-down: #b3261e;
+
+  --ring: #f0b429;
+  --shadow-card: 0 1px 2px rgb(17 18 19 / 0.04), 0 8px 24px rgb(17 18 19 / 0.05);
+
+  /* Decorative only — never used behind text. */
+  --grid-line: rgb(17 18 19 / 0.05);
+}
+
+/* ---------------------------------------------------------------- *
+ * Dark theme                                                       *
+ * ---------------------------------------------------------------- */
+.dark {
+  --background: #08090a;
+  --background-alt: #0c0e0f;
+  --surface: #0f1113;
+  --surface-raised: #16191b;
+
+  --border: #23282c;
+  --border-strong: #333a3f;
+
+  --foreground: #f6f7f8;
+  --muted: #b2b8bd;
+  --subtle: #7c848a;
+
+  --accent: #f0b429;
+  --accent-hover: #f7c34a;
+  --accent-ink: #16130a;
+  --accent-text: #f0b429;
+  --accent-soft: rgb(240 180 41 / 0.12);
+
+  --signal-ok: #3ecf8e;
+  --signal-warn: #f0b429;
+  --signal-down: #f2555a;
+
+  --ring: #f0b429;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.28);
+
+  --grid-line: rgb(246 247 248 / 0.055);
+}
+
+/* ---------------------------------------------------------------- *
+ * Expose semantic tokens to Tailwind utilities                     *
+ * ---------------------------------------------------------------- */
+@theme inline {
+  --color-background: var(--background);
+  --color-background-alt: var(--background-alt);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+
+  --color-border-hair: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-signal-ok: var(--signal-ok);
+  --color-signal-warn: var(--signal-warn);
+  --color-signal-down: var(--signal-down);
+
+  --font-sans:
+    'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'JetBrains Mono', 'SFMono-Regular', monospace;
 
-  /* Geometric, not pill-shaped */
-  --radius-card: 10px;
+  --radius-card: 12px;
+  --radius-panel: 16px;
 
-  /* Content width */
-  --spacing-shell: 1200px;
+  /* Constrained content width, matching the reference's airy shell. */
+  --spacing-shell: 1180px;
+
+  --shadow-card: var(--shadow-card);
 }
 
 @layer base {
   html {
-    color-scheme: dark;
+    scroll-behavior: smooth;
+    /* Sticky header height + breathing room, so anchor jumps clear the nav. */
+    scroll-padding-top: 5.5rem;
   }
 
   body {
-    @apply bg-ink-950 text-chalk-50 font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased;
     margin: 0;
   }
 
-  /* Display type runs tight; body copy stays at normal tracking. */
+  /* Display type runs tight; body copy keeps normal tracking. */
   h1,
   h2,
   h3 {
-    letter-spacing: -0.02em;
+    letter-spacing: -0.022em;
     text-wrap: balance;
   }
 
+  p {
+    text-wrap: pretty;
+  }
+
   :focus-visible {
-    outline: 2px solid var(--color-accent-400);
+    outline: 2px solid var(--ring);
     outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Honour the OS setting: motion becomes instant, nothing is lost. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Faint blueprint grid used behind the hero only. Decorative. */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+    background-size: 64px 64px;
+  }
+
+  /* Scroll-reveal: sections rise a few pixels as they enter the viewport. */
+  .reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 600ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .reveal[data-visible='true'] {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+    }
   }
 }

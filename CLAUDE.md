@@ -5,12 +5,17 @@ scope, architecture, the 10-day roadmap and the acceptance criteria.
 
 ## Current state
 
-**Phase 1 (Project Foundation) complete.** Phases 2–10 not started.
+**Phases 1-2 complete.** Phases 3-10 not started.
 
-Implemented: repository structure, FastAPI backend with config/CORS/`/health`,
+Phase 1: repository structure, FastAPI backend with config/CORS/`/health`,
 SQLAlchemy models for `User`, `MarketplaceSnapshot`, `Prediction`,
-`ModelMetadata`, and a React + Vite + TypeScript + Tailwind frontend with a
-typed API client. No authentication, scraping, ML or analytics logic exists yet.
+`ModelMetadata`, React + Vite + TypeScript + Tailwind frontend, typed API client.
+
+Phase 2: public landing page — navbar, hero, "Why Choose" flip cards, developer
+profile, feature grid, WhatsApp contact form, footer; light/dark theming with a
+pre-paint script; scroll reveals honouring `prefers-reduced-motion`.
+
+No authentication, scraping, ML or analytics logic exists yet.
 
 ## Layout
 
@@ -27,8 +32,23 @@ backend/app/
   ml/             Phases 5-7
   services/       business logic between API and DB
 frontend/src/
-  components/ pages/ services/ hooks/ types/ config/
+  components/     reusable UI primitives
+  sections/       landing page sections
+  pages/          routed pages
+  theme/          themeContext.ts + ThemeProvider.tsx
+  lib/            pure helpers (cn, contactForm)
+  services/ hooks/ types/ config/
 ```
+
+## Frontend conventions
+
+- Landing copy lives in `src/config/site.ts`, not inside components.
+- Colours come from semantic tokens (`bg-surface`, `text-muted`, `border-border-hair`)
+  defined per theme in `src/index.css`. Never hardcode a hex in a component.
+- Any colour change must be re-checked against WCAG AA in **both** themes.
+- Do not pass responsive display classes (`hidden md:inline-flex`) to `Button`;
+  its base sets `inline-flex` and the winner depends on stylesheet order. Put
+  them on a wrapper element.
 
 ## Rules
 

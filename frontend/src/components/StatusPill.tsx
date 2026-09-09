@@ -6,7 +6,7 @@ const toneClasses: Record<Tone, string> = {
   ok: 'text-signal-ok border-signal-ok/30 bg-signal-ok/10',
   warn: 'text-signal-warn border-signal-warn/30 bg-signal-warn/10',
   down: 'text-signal-down border-signal-down/30 bg-signal-down/10',
-  idle: 'text-chalk-500 border-ink-700 bg-ink-850',
+  idle: 'text-subtle border-border-hair bg-background-alt',
 }
 
 interface StatusPillProps {

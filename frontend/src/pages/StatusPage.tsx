@@ -15,14 +15,14 @@ export function StatusPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-shell flex-col justify-center px-6 py-16">
-      <p className="text-xs font-medium tracking-[0.2em] text-chalk-500 uppercase">
+      <p className="text-xs font-medium tracking-[0.2em] text-subtle uppercase">
         Phase 1 — Project Foundation
       </p>
 
       <h1 className="mt-4 text-4xl font-semibold sm:text-5xl">
         {env.appName}
       </h1>
-      <p className="mt-3 max-w-xl text-chalk-300">
+      <p className="mt-3 max-w-xl text-muted">
         Backend and frontend skeleton. The public landing page, authentication,
         marketplace collection and the ML pipeline are not implemented yet.
       </p>
@@ -45,8 +45,8 @@ export function StatusPage() {
               ['Database', data.database],
             ].map(([label, value]) => (
               <div key={label}>
-                <dt className="text-chalk-500">{label}</dt>
-                <dd className="mt-0.5 font-mono text-chalk-50">{value}</dd>
+                <dt className="text-subtle">{label}</dt>
+                <dd className="mt-0.5 font-mono text-foreground">{value}</dd>
               </div>
             ))}
           </dl>
@@ -54,11 +54,11 @@ export function StatusPage() {
 
         {status === 'error' && (
           <div className="mt-5 text-sm">
-            <p className="text-chalk-300">{error}</p>
+            <p className="text-muted">{error}</p>
             <button
               type="button"
               onClick={reload}
-              className="mt-4 rounded-card bg-accent-400 px-4 py-2 text-sm font-medium text-ink-950 transition-colors hover:bg-accent-500"
+              className="mt-4 rounded-card bg-accent px-4 py-2 text-sm font-medium text-accent-ink transition-colors hover:bg-accent-hover"
             >
               Retry
             </button>
