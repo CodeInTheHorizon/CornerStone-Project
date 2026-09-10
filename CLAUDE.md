@@ -5,7 +5,7 @@ scope, architecture, the 10-day roadmap and the acceptance criteria.
 
 ## Current state
 
-**Phases 1-4.5 complete.** Phases 5-10 not started.
+**Phases 1-5 complete.** Phases 6-10 not started.
 
 Phase 1: repository structure, FastAPI backend with config/CORS/`/health`,
 SQLAlchemy models for `User`, `MarketplaceSnapshot`, `Prediction`,
@@ -30,7 +30,12 @@ pipeline every path goes through, CSV/JSON import at /data/import, a synthetic
 demo fixture at data/demo/, enriched /data/status (ingestion mode, required
 configuration, stored provenance) and LIVE/IMPORTED/DEMO/UNAVAILABLE badges.
 
-No ML or analytics logic exists yet.
+Phase 5: dataset builder and feature engineering - app/ml/{normalization,
+features,dataset_builder}.py, dataset_service, /ml/dataset/{build,status,
+preview}, CSV + metadata output to data/processed/, and the Dataset
+Preparation panel on Train Model.
+
+No model training, prediction or analytics logic exists yet.
 
 ## Layout
 
@@ -44,8 +49,8 @@ backend/app/
   schemas/        pydantic request/response shapes
   auth/           security.py (hashing, JWT), dependencies.py (get_current_user)
   scrapers/       base, parsing, validation, registry + one module per platform
-  ml/             Phases 5-7
-  services/       ingest (shared path), collection, import, demo, user
+  ml/             normalization, features, dataset_builder (Phase 5)
+  services/       ingest (shared path), collection, import, demo, dataset, user
 frontend/src/
   components/     reusable UI primitives
   sections/       landing page sections
@@ -77,6 +82,9 @@ frontend/src/
    than a placeholder digit, and blocked actions state what is missing.
    Every stored row carries `source_type`; the demo fixture is synthetic and
    must always be badged DEMO, never rendered as a live observation.
+   In feature engineering this means a value that cannot be computed is NaN,
+   never 0 -- zero is a claim that nothing changed. Trend features must not
+   look ahead: use expanding windows over each listing's own past only.
 5. Marketplace collection must use officially permitted access paths. Never
    bypass CAPTCHAs, authentication, anti-bot protections or access controls. If
    a source cannot be collected reliably, return an explicit unsupported status.

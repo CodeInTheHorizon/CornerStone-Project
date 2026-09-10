@@ -2,6 +2,7 @@
 
 from app.services import (
     collection_service,
+    dataset_service,
     demo_service,
     import_service,
     ingest,
@@ -10,6 +11,7 @@ from app.services import (
 
 __all__ = [
     "collection_service",
+    "dataset_service",
     "demo_service",
     "import_service",
     "ingest",

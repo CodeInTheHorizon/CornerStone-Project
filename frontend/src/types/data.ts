@@ -112,3 +112,63 @@ export interface IngestSummary {
   warnings: string[]
   rejected_rows: string[]
 }
+
+// --- Dataset builder (Phase 5) ---
+
+export interface DatasetMetadata {
+  dataset_id: string
+  generated_at: string
+  total_input_rows: number
+  total_output_rows: number
+  removed_rows: number
+  removal_reasons: Record<string, number>
+  platforms: string[]
+  categories: string[]
+  source_types: SourceType[]
+  date_range: { start: string | null; end: string | null }
+  feature_count: number
+  feature_names: string[]
+  products: number
+  dataset_version: string
+  contains_demo_data: boolean
+  demo_only: boolean
+  csv_path: string | null
+  metadata_path: string | null
+}
+
+export interface DatasetBuildRequest {
+  platforms?: string[]
+  categories?: string[]
+  keyword?: string
+  source_types?: SourceType[]
+  persist?: boolean
+}
+
+export interface DatasetBuildResponse {
+  status: string
+  dataset_id: string
+  rows: number
+  features: number
+  source_types: SourceType[]
+  removed_rows: number
+  generated_at: string
+  metadata: DatasetMetadata
+  /** Present whenever the dataset contains synthetic rows. Never suppress it. */
+  notice: string | null
+}
+
+export interface DatasetStatus {
+  has_dataset: boolean
+  latest: DatasetMetadata | null
+  stored_datasets: number
+  available_features: string[]
+  notice: string | null
+}
+
+export interface DatasetPreview {
+  dataset_id: string
+  rows: Record<string, unknown>[]
+  columns: string[]
+  total_rows: number
+  notice: string | null
+}

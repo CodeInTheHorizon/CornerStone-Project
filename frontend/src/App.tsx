@@ -9,6 +9,7 @@ import { MarketplaceDataPage } from '@/pages/MarketplaceDataPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { StatusPage } from '@/pages/StatusPage'
+import { TrainModelPage } from '@/pages/TrainModelPage'
 import { dashboardNav } from '@/config/dashboard'
 import { ThemeProvider } from '@/theme/ThemeProvider'
 
@@ -43,6 +44,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <MarketplaceDataPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/train"
+              element={
+                <ProtectedRoute>
+                  <TrainModelPage />
                 </ProtectedRoute>
               }
             />

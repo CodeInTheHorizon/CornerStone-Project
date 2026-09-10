@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { ActionCard } from '@/components/dashboard/ActionCard'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
@@ -28,6 +28,7 @@ function formatTimestamp(value: string | null): string {
 
 export function DashboardPage() {
   const { user, token } = useAuth()
+  const navigate = useNavigate()
   const firstName = user?.full_name?.split(' ')[0] ?? null
 
   const [status, setStatus] = useState<CollectorStatus | null>(null)
@@ -147,13 +148,14 @@ export function DashboardPage() {
           <ActionCard
             icon="layers"
             title="Train Model"
-            description="Train a model on the collected marketplace dataset and record its measured accuracy, dataset size and feature set."
-            actionLabel="Train Model"
+            description="Build the ML-ready dataset from stored snapshots, then train a model on it and record its measured accuracy. Dataset preparation is available now; training arrives next."
+            actionLabel={collected === 0 ? 'Train Model' : 'Prepare dataset'}
             blockedReason={
               collected === 0
                 ? 'Needs a dataset. Collect, import or load demo data first.'
-                : 'Model training arrives in a later phase.'
+                : undefined
             }
+            onAction={() => navigate('/dashboard/train')}
           />
           <ActionCard
             icon="compass"

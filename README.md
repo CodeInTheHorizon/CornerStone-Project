@@ -7,11 +7,10 @@ MarketPulse AI collects fresh marketplace observations, turns them into a
 structured dataset, trains models on it, and surfaces trend analytics and
 cross-platform opportunity scores through an interactive dashboard.
 
-> **Status: Phase 4.5 of 10 (Data Source Strategy + Fallback Ingestion).**
-> The landing page, accounts, the protected dashboard and the data layer work.
-> Data reaches the system three ways -- live collection, CSV/JSON import, and a
-> synthetic demo fixture -- each labelled with its provenance. The dataset
-> builder, ML pipeline and analytics are **not** implemented yet.
+> **Status: Phase 5 of 10 (Dataset Builder + Feature Engineering).**
+> The landing page, accounts, the dashboard, the data layer and the dataset
+> builder work. Model training, prediction, the opportunity score and trend
+> charts are **not** implemented yet.
 > See [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
 ---
@@ -136,8 +135,11 @@ docs/                       design direction and notes
 | `GET` | `/data/latest` | Bearer | Recent snapshots (filter by platform/keyword/category) |
 | `GET` | `/data/history` | Bearer | Snapshots over a time window, oldest first |
 | `GET` | `/data/status` | Bearer | Ingestion mode, availability and stored provenance per platform |
+| `POST` | `/ml/dataset/build` | Bearer | Build an ML-ready dataset from stored snapshots |
+| `GET` | `/ml/dataset/status` | Bearer | Metadata for the most recent dataset |
+| `GET` | `/ml/dataset/preview` | Bearer | First N rows of a stored dataset |
 
-ML and analytics endpoints arrive in Phases 6–8.
+Training, prediction and analytics endpoints arrive in Phases 6–8.
 
 There is no `/auth/logout`: tokens are stateless JWTs, so signing out is a
 client-side discard. A no-op endpoint would imply a revocation that does not
@@ -204,6 +206,9 @@ These are current and deliberate — please read before evaluating the project.
 - **The demo dataset is synthetic.** It exists to make the pipeline testable, not
   to describe any real market. No model trained only on demo data says anything
   about reality, and metrics from such a run must be read that way.
+- **Trend features are thin on the current data.** Five observations per listing
+  supports a short-term slope and nothing seasonal. Longer histories need
+  repeated collection over real calendar time.
 - **SQLite by default.** Render's filesystem is ephemeral, so production needs a
   PostgreSQL `DATABASE_URL`.
 
@@ -285,6 +290,55 @@ cd backend
 .venv/Scripts/python -m alembic current       # where the database is
 .venv/Scripts/python -m alembic upgrade head  # apply outstanding migrations
 ```
+
+## Dataset builder
+
+**Train Model** turns stored snapshots into an ML-ready table. The pipeline is
+filter -> clean -> normalize -> deduplicate -> sort -> engineer features, and it
+is fully deterministic: the same rows in produce the same table out.
+
+Datasets are written to `data/processed/` as a CSV plus a JSON metadata sidecar.
+Filenames carry a timestamp and dataset id, so a build never overwrites an
+earlier one -- that earlier dataset may be what a model was trained on.
+
+### Cleaning rules
+
+Rows are **dropped** only when an essential field is unusable: missing product
+name, unknown platform, unparseable timestamp, or no price at all. Everything
+else is repaired in place -- a bad rating is cleared to NULL and the row is
+kept, because one bad field is not an unusable observation. Every drop and
+every repair is counted by reason in the metadata.
+
+### Features
+
+31 features across four groups:
+
+| Group | Features |
+|---|---|
+| Basic | `effective_price`, `discount_amount`, `discount_percentage`, `has_discount`, `rating`, `review_count`, `price_to_original_ratio` |
+| Time-based | `previous_price`, `price_change_absolute`, `price_change_percentage`, `rating_change`, `review_growth`, `review_growth_percentage`, `discount_change`, `availability_change`, `observation_index`, `days_since_previous` |
+| Marketplace | `listing_count_for_keyword`, `average_market_price`, `median_market_price`, `price_vs_market_average`, `price_vs_market_median`, `average_rating`, `average_review_count`, `platform_listing_density`, `competition_score` |
+| Trend | `short_term_price_trend`, `review_momentum`, `rating_momentum`, `discount_momentum`, `availability_trend` |
+
+Two rules govern every one of them:
+
+- **A missing input produces a missing feature.** The first observation of a
+  listing has no prior price, so `price_change_absolute` is NULL, not `0`. Zero
+  means "no change" -- a claim about the world that the data does not support.
+- **No look-ahead.** Trend features use an expanding window over each listing's
+  own past only, and stay NULL until three observations exist. A two-point
+  "trend" is a line through noise.
+
+`competition_score` is a documented weighted average, **not** a model: listing
+density (50%), price pressure below the market median (30%), and log-scaled
+review depth (20%), re-weighted by whichever components are actually present.
+
+### Product matching
+
+Listings are grouped by `normalized_product_name + brand + category`.
+Deliberately strict -- punctuation and casing are ignored, but nothing else.
+A false merge fabricates a price history that never happened, so ambiguous
+records stay separate.
 
 ## Documentation
 

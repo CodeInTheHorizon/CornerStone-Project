@@ -30,6 +30,10 @@ bcrypt==5.0.0
 PyJWT==2.13.0
 email-validator==2.3.0
 
+# Dataset building and feature engineering (Phase 5)
+pandas==3.0.5
+numpy==2.5.3
+
 # Testing
 pytest==9.1.1
 

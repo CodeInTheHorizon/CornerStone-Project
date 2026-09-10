@@ -28,7 +28,7 @@ export const dashboardNav: DashboardNavItem[] = [
     label: 'Train Model',
     to: '/dashboard/train',
     icon: 'layers',
-    available: false,
+    available: true,
   },
   {
     label: 'Trend Analysis',

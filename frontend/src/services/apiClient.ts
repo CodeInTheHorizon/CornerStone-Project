@@ -33,6 +33,18 @@ function extractMessage(body: unknown, fallback: string): string {
 
   if (typeof detail === 'string') return detail
 
+  // Some endpoints return a structured detail, e.g. the dataset builder's
+  // { status: 'insufficient_data', reason: '...' }. Surface the reason rather
+  // than discarding it for a generic status-code message.
+  if (detail && typeof detail === 'object' && !Array.isArray(detail)) {
+    const { reason, message } = detail as {
+      reason?: unknown
+      message?: unknown
+    }
+    if (typeof reason === 'string') return reason
+    if (typeof message === 'string') return message
+  }
+
   if (Array.isArray(detail)) {
     const messages = detail
       .map((item) => {

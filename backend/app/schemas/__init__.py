@@ -10,6 +10,12 @@ from app.schemas.data import (
     SnapshotRead,
     StatusResponse,
 )
+from app.schemas.dataset import (
+    DatasetBuildRequest,
+    DatasetBuildResponse,
+    DatasetPreviewResponse,
+    DatasetStatusResponse,
+)
 from app.schemas.health import HealthResponse
 
 __all__ = [
@@ -17,6 +23,10 @@ __all__ = [
     "CollectResponse",
     "DemoDatasetInfo",
     "IngestSummary",
+    "DatasetBuildRequest",
+    "DatasetBuildResponse",
+    "DatasetPreviewResponse",
+    "DatasetStatusResponse",
     "HealthResponse",
     "SnapshotListResponse",
     "SnapshotRead",
