@@ -51,6 +51,8 @@ export function DashboardPage() {
   }, [loadStatus])
 
   const collected = status?.total_snapshots ?? 0
+  const bySource = status?.records_by_source_type ?? {}
+  const liveRecords = bySource.live ?? 0
   const availablePlatforms = status
     ? Object.values(status.platforms).filter((p) => p.available).length
     : 0
@@ -74,9 +76,11 @@ export function DashboardPage() {
           </div>
 
           <div className="flex flex-col items-end gap-3">
-            <StatusPill tone={collected > 0 ? 'ok' : 'idle'}>
+            {/* Tone follows live data specifically: a database full of demo
+                rows is not a healthy data pipeline, and should not look like one. */}
+            <StatusPill tone={liveRecords > 0 ? 'ok' : 'idle'}>
               {collected > 0
-                ? `${collected} snapshot${collected === 1 ? '' : 's'} collected`
+                ? `${collected} record${collected === 1 ? '' : 's'} stored`
                 : 'No data collected yet'}
             </StatusPill>
             <Link
@@ -120,7 +124,7 @@ export function DashboardPage() {
             }
             hint={
               collected > 0
-                ? `${collected} snapshot(s) stored.`
+                ? `${liveRecords} live, ${bySource.imported ?? 0} imported, ${bySource.demo ?? 0} demo.`
                 : 'Shows the last marketplace collection timestamp.'
             }
           />
@@ -147,7 +151,7 @@ export function DashboardPage() {
             actionLabel="Train Model"
             blockedReason={
               collected === 0
-                ? 'Needs a collected dataset. Collect marketplace data first.'
+                ? 'Needs a dataset. Collect, import or load demo data first.'
                 : 'Model training arrives in a later phase.'
             }
           />

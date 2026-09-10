@@ -7,10 +7,12 @@ MarketPulse AI collects fresh marketplace observations, turns them into a
 structured dataset, trains models on it, and surfaces trend analytics and
 cross-platform opportunity scores through an interactive dashboard.
 
-> **Status: Phase 4 of 10 (Marketplace Data Collection).**
-> The landing page, accounts, the protected dashboard and the marketplace
-> collection layer work. The dataset builder, ML pipeline and analytics are
-> **not** implemented yet. See [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
+> **Status: Phase 4.5 of 10 (Data Source Strategy + Fallback Ingestion).**
+> The landing page, accounts, the protected dashboard and the data layer work.
+> Data reaches the system three ways -- live collection, CSV/JSON import, and a
+> synthetic demo fixture -- each labelled with its provenance. The dataset
+> builder, ML pipeline and analytics are **not** implemented yet.
+> See [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
 ---
 
@@ -129,9 +131,11 @@ docs/                       design direction and notes
 | `POST` | `/auth/login` | — | Exchange credentials for a token |
 | `GET` | `/auth/me` | Bearer | The authenticated user |
 | `POST` | `/data/collect` | Bearer | Collect fresh listings from a marketplace |
+| `POST` | `/data/import` | Bearer | Import a CSV/JSON dataset (stored as IMPORTED) |
+| `POST` | `/data/demo/load` | Bearer | Load the synthetic demo fixture (stored as DEMO) |
 | `GET` | `/data/latest` | Bearer | Recent snapshots (filter by platform/keyword/category) |
 | `GET` | `/data/history` | Bearer | Snapshots over a time window, oldest first |
-| `GET` | `/data/status` | Bearer | Collector availability per platform |
+| `GET` | `/data/status` | Bearer | Ingestion mode, availability and stored provenance per platform |
 
 ML and analytics endpoints arrive in Phases 6–8.
 
@@ -195,7 +199,11 @@ These are current and deliberate — please read before evaluating the project.
   Croma and Alibaba are blocked by anti-bot protection or robots rules; each
   reports the verified reason instead of returning fabricated rows.
 - **PA-API 5.0 returns no ratings or review counts.** Those columns stay NULL for
-  Amazon rows, which limits the review/rating trend features planned later.
+  live Amazon rows, which limits the review/rating trend features planned later.
+  Imported and demo rows can carry them.
+- **The demo dataset is synthetic.** It exists to make the pipeline testable, not
+  to describe any real market. No model trained only on demo data says anything
+  about reality, and metrics from such a run must be read that way.
 - **SQLite by default.** Render's filesystem is ephemeral, so production needs a
   PostgreSQL `DATABASE_URL`.
 
@@ -217,6 +225,44 @@ Access was verified on 2026-09-10, not assumed:
 
 No CAPTCHA, authentication, anti-bot protection or robots rule is bypassed
 anywhere. A blocked platform returns HTTP 501 with the reason above.
+
+### Source types
+
+The project does not depend on all four marketplaces being collectable. Data
+reaches the same normalized store three ways, and every stored row records
+which:
+
+| `source_type` | Meaning |
+|---|---|
+| `live` | Observed from the marketplace through a permitted route. |
+| `imported` | A CSV/JSON dataset you uploaded. Real data you vouch for, but this system did not observe it and cannot attest to how it was gathered. |
+| `demo` | The bundled **synthetic** fixture. Invented brands, generated prices. Not real market data. |
+
+All three pass through identical validation, normalization and deduplication.
+The UI badges every row and every platform card, so an IMPORTED or DEMO record
+can never be mistaken for a live observation.
+
+### Importing a dataset
+
+Upload CSV or JSON on **Marketplace Data**. The minimum is `platform` and
+`product_name`; common aliases (`mrp`, `reviews`, `url`, `asin`, `timestamp`)
+are recognised. Missing fields stay empty -- nothing is inferred. Rejected rows
+are reported by row number with the reason.
+
+### Demo dataset
+
+`data/demo/electronics_snapshots.json` holds 480 synthetic records across the
+four platforms and eight electronics categories, over five dates, so the
+dataset builder and ML phases are testable while most marketplaces cannot be
+collected from. It is deterministic (fixed seed) so tests stay stable.
+
+```bash
+cd backend
+.venv/Scripts/python scripts/generate_demo_dataset.py   # regenerate
+```
+
+Load it from the dashboard, or `POST /data/demo/load`. Loading again replaces
+the demo rows; live and imported data is never touched.
 
 ### Data quality
 

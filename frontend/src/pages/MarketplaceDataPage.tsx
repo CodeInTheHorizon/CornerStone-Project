@@ -1,19 +1,22 @@
 /**
- * Marketplace Data (Phase 4).
+ * Marketplace Data (Phases 4 + 4.5).
  *
- * Collection form, per-platform collector status, and a table of the most
- * recent stored snapshots. Uses the existing visual system throughout — same
- * tokens, panels, Field and Button primitives. No charts: those are Phase 8.
+ * Three ways data reaches the system, all converging on the same normalized
+ * store: live collection, CSV/JSON import, and the bundled demo fixture. Every
+ * row and every platform card is labelled with its provenance, so an IMPORTED
+ * or DEMO record can never be mistaken for a live observation.
+ *
+ * Uses the existing visual system throughout. No charts: those are Phase 8.
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/Button'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { Field } from '@/components/Field'
 import { FormAlert } from '@/components/FormAlert'
 import { Icon } from '@/components/Icon'
-import { StatusPill } from '@/components/StatusPill'
+import { SourceBadge, type BadgeKind } from '@/components/SourceBadge'
 import { supportedPlatforms } from '@/config/dashboard'
 import { useAuth } from '@/hooks/useAuth'
 import { ApiRequestError } from '@/services/apiClient'
@@ -21,7 +24,9 @@ import * as dataService from '@/services/dataService'
 import type {
   CollectResponse,
   CollectorStatus,
+  IngestSummary,
   Snapshot,
+  SourceType,
 } from '@/types/data'
 
 function formatTimestamp(value: string | null): string {
@@ -49,39 +54,54 @@ export function MarketplaceDataPage() {
   const [status, setStatus] = useState<CollectorStatus | null>(null)
   const [snapshots, setSnapshots] = useState<Snapshot[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [sourceFilter, setSourceFilter] = useState<SourceType | ''>('')
 
+  // Collection
   const [platform, setPlatform] = useState('amazon')
   const [keyword, setKeyword] = useState('')
   const [category, setCategory] = useState('')
   const [maxItems, setMaxItems] = useState('20')
-
   const [collecting, setCollecting] = useState(false)
   const [result, setResult] = useState<CollectResponse | null>(null)
   const [collectError, setCollectError] = useState<string | null>(null)
   const [fieldError, setFieldError] = useState<string | null>(null)
 
-  const load = useCallback(async () => {
-    if (!token) return
-    setLoadError(null)
-    try {
-      const [nextStatus, latest] = await Promise.all([
-        dataService.fetchStatus(token),
-        dataService.fetchLatest(token, { limit: 50 }),
-      ])
-      setStatus(nextStatus)
-      setSnapshots(latest.items)
-    } catch (error) {
-      setLoadError(
-        error instanceof ApiRequestError
-          ? error.message
-          : 'Could not load marketplace data.',
-      )
-    }
-  }, [token])
+  // Import / demo
+  const fileInput = useRef<HTMLInputElement>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState<IngestSummary | null>(null)
+  const [importError, setImportError] = useState<string | null>(null)
+  const [loadingDemo, setLoadingDemo] = useState(false)
+
+  const load = useCallback(
+    async (filter: SourceType | '' = sourceFilter) => {
+      if (!token) return
+      setLoadError(null)
+      try {
+        const [nextStatus, latest] = await Promise.all([
+          dataService.fetchStatus(token),
+          dataService.fetchLatest(token, {
+            limit: 50,
+            sourceType: filter || undefined,
+          }),
+        ])
+        setStatus(nextStatus)
+        setSnapshots(latest.items)
+      } catch (error) {
+        setLoadError(
+          error instanceof ApiRequestError
+            ? error.message
+            : 'Could not load marketplace data.',
+        )
+      }
+    },
+    [token, sourceFilter],
+  )
 
   useEffect(() => {
-    // loadStatus/load only set state after awaiting the request, so nothing
-    // is set synchronously here; the rule cannot see across the async boundary.
+    // load only sets state after awaiting the request, so nothing is set
+    // synchronously here; the rule cannot see across the async boundary.
     // oxlint-disable-next-line react/set-state-in-effect
     void load()
   }, [load])
@@ -100,13 +120,14 @@ export function MarketplaceDataPage() {
 
     setCollecting(true)
     try {
-      const response = await dataService.collect(token!, {
-        platform,
-        keyword: trimmed,
-        category: category.trim() || undefined,
-        max_items: Number(maxItems) || 20,
-      })
-      setResult(response)
+      setResult(
+        await dataService.collect(token!, {
+          platform,
+          keyword: trimmed,
+          category: category.trim() || undefined,
+          max_items: Number(maxItems) || 20,
+        }),
+      )
       await load()
     } catch (error) {
       setCollectError(
@@ -119,14 +140,59 @@ export function MarketplaceDataPage() {
     }
   }
 
-  // Platform options come from the static supported list, not from the
-  // status response: if that request fails the form must still be usable.
-  // Status only enriches each option once it has loaded.
+  const handleImport = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setImportError(null)
+    setImportResult(null)
+
+    if (!file) {
+      setImportError('Choose a CSV or JSON file first.')
+      return
+    }
+
+    setImporting(true)
+    try {
+      setImportResult(await dataService.importDataset(token!, file))
+      setFile(null)
+      if (fileInput.current) fileInput.current.value = ''
+      await load()
+    } catch (error) {
+      setImportError(
+        error instanceof ApiRequestError
+          ? error.message
+          : 'Import failed. Please try again.',
+      )
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  const handleDemoLoad = async () => {
+    setImportError(null)
+    setImportResult(null)
+    setLoadingDemo(true)
+    try {
+      setImportResult(await dataService.loadDemoDataset(token!))
+      await load()
+    } catch (error) {
+      setImportError(
+        error instanceof ApiRequestError
+          ? error.message
+          : 'Could not load the demo dataset.',
+      )
+    } finally {
+      setLoadingDemo(false)
+    }
+  }
+
+  // Platform options come from the static supported list, not the status
+  // response: if that request fails the form must still be usable.
   const platforms = supportedPlatforms.map((name) => {
     const key = name.toLowerCase()
     return [key, status?.platforms[key] ?? null] as const
   })
   const selected = status?.platforms[platform] ?? null
+  const demo = status?.demo_dataset
 
   return (
     <DashboardLayout title="MarketPulse AI — Marketplace Data">
@@ -136,66 +202,89 @@ export function MarketplaceDataPage() {
         </div>
       )}
 
-      {/* Collector status */}
-      <section aria-label="Collector status">
+      {/* Per-platform status */}
+      <section aria-label="Platform status">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {platforms.map(([name, state]) => (
-            <div
-              key={name}
-              className="rounded-panel border border-border-hair bg-surface p-5"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold capitalize">{name}</p>
-                <StatusPill tone={state?.available ? 'ok' : 'idle'}>
-                  {state === null
-                    ? 'Loading…'
-                    : state.available
-                      ? 'Available'
-                      : 'Unavailable'}
-                </StatusPill>
-              </div>
+          {platforms.map(([name, state]) => {
+            // The header badge is the platform's collection STATUS. What data
+            // happens to be stored is a separate line below, so an unavailable
+            // platform holding demo rows cannot read as available.
+            const badge: BadgeKind = state?.available ? 'live' : 'unavailable'
 
-              <p className="mt-3 text-xs text-subtle">
-                {state?.access_method ?? '—'}
-              </p>
+            return (
+              <div
+                key={name}
+                className="flex flex-col rounded-panel border border-border-hair bg-surface p-5"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold capitalize">{name}</p>
+                  <SourceBadge kind={badge} />
+                </div>
 
-              {state?.reason && (
-                <p className="mt-2 text-xs leading-relaxed text-muted">
-                  {state.reason}
+                <p className="mt-3 text-xs text-subtle">
+                  {state
+                    ? `Mode: ${state.ingestion_mode.replace(/_/g, ' ')}`
+                    : 'Loading…'}
                 </p>
-              )}
 
-              <dl className="mt-4 flex gap-5 text-xs">
-                <div>
-                  <dt className="text-subtle">Stored</dt>
-                  <dd className="mt-0.5 font-mono tabular-nums">
-                    {state?.stored_snapshots ?? '—'}
-                  </dd>
-                </div>
-                <div className="min-w-0">
-                  <dt className="text-subtle">Last collection</dt>
-                  <dd className="mt-0.5 truncate font-mono">
-                    {formatTimestamp(state?.last_collection ?? null)}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          ))}
+                {state?.reason && (
+                  <p className="mt-2 text-xs leading-relaxed text-muted">
+                    {state.reason}
+                  </p>
+                )}
+
+                {state && state.required_configuration.length > 0 && (
+                  <p className="mt-2 font-mono text-[10px] leading-relaxed text-subtle">
+                    {state.required_configuration.join(', ')}
+                  </p>
+                )}
+
+                <div className="flex-1" />
+
+                <dl className="mt-4 border-t border-border-hair pt-3 text-xs">
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-subtle">Stored records</dt>
+                    <dd className="font-mono tabular-nums">
+                      {state?.stored_records ?? '—'}
+                    </dd>
+                  </div>
+                  <div className="mt-1.5 flex justify-between gap-3">
+                    <dt className="text-subtle">Last update</dt>
+                    <dd className="truncate font-mono">
+                      {formatTimestamp(state?.last_collection ?? null)}
+                    </dd>
+                  </div>
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <dt className="text-subtle">Available data</dt>
+                    <dd className="flex flex-wrap gap-1">
+                      {state && state.source_types_available.length > 0 ? (
+                        state.source_types_available.map((type) => (
+                          <SourceBadge key={type} kind={type} />
+                        ))
+                      ) : (
+                        <span className="text-xs text-subtle">No data yet</span>
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            )
+          })}
         </div>
       </section>
 
-      {/* Collection form */}
+      {/* Live collection */}
       <section aria-label="Collect data" className="mt-6">
         <form
           noValidate
           onSubmit={handleCollect}
           className="rounded-panel border border-border-hair bg-surface p-7"
         >
-          <h2 className="text-lg font-semibold">Refresh marketplace data</h2>
+          <h2 className="text-lg font-semibold">Collect live data</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted">
-            Collection runs on demand against officially permitted sources only.
-            A platform that cannot be collected reports why, rather than
-            returning invented rows.
+            Runs on demand against officially permitted sources only. A platform
+            that cannot be collected reports why, rather than returning invented
+            rows.
           </p>
 
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -232,7 +321,6 @@ export function MarketplaceDataPage() {
               }}
               error={fieldError ?? undefined}
             />
-
             <Field
               label="Category (optional)"
               name="category"
@@ -240,7 +328,6 @@ export function MarketplaceDataPage() {
               value={category}
               onChange={setCategory}
             />
-
             <Field
               label="Max items"
               name="max_items"
@@ -270,22 +357,14 @@ export function MarketplaceDataPage() {
               <p className="font-medium">
                 {result.items_collected} item
                 {result.items_collected === 1 ? '' : 's'} collected from{' '}
-                {result.platform} at {formatTimestamp(result.collection_timestamp)}.
+                {result.platform} at{' '}
+                {formatTimestamp(result.collection_timestamp)}.
               </p>
               {(result.items_rejected > 0 || result.duplicates_skipped > 0) && (
                 <p className="mt-1 text-xs">
                   {result.items_rejected} rejected, {result.duplicates_skipped}{' '}
                   duplicate(s) skipped.
                 </p>
-              )}
-              {result.warnings.length > 0 && (
-                <ul className="mt-2 list-disc space-y-1 pl-4 text-xs">
-                  {/* Warnings repeat by design ("Skipped an item with no
-                      title." once per item), so the index is the key. */}
-                  {result.warnings.slice(0, 5).map((warning, index) => (
-                    <li key={`${index}-${warning}`}>{warning}</li>
-                  ))}
-                </ul>
               )}
             </div>
           )}
@@ -304,44 +383,231 @@ export function MarketplaceDataPage() {
         </form>
       </section>
 
-      {/* Latest records */}
-      <section aria-label="Latest records" className="mt-6">
+      {/* Import + demo */}
+      <section aria-label="Import data" className="mt-6">
+        <div className="grid gap-5 lg:grid-cols-2">
+          <form
+            noValidate
+            onSubmit={handleImport}
+            className="rounded-panel border border-border-hair bg-surface p-7"
+          >
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold">Import a dataset</h2>
+              <SourceBadge kind="imported" />
+            </div>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              Upload a CSV or JSON file of marketplace records. It goes through
+              the same validation and deduplication as live collection, and is
+              stored as IMPORTED — never as live data.
+            </p>
+
+            <div className="mt-6">
+              <label
+                htmlFor="dataset"
+                className="block text-sm font-medium text-muted"
+              >
+                CSV or JSON file
+              </label>
+              <input
+                id="dataset"
+                ref={fileInput}
+                type="file"
+                accept=".csv,.json,text/csv,application/json"
+                onChange={(e) => {
+                  setFile(e.target.files?.[0] ?? null)
+                  setImportError(null)
+                }}
+                className="mt-2 w-full rounded-card border border-border-hair bg-background px-3.5 py-2.5 text-sm text-foreground
+                           file:mr-3 file:rounded-card file:border-0 file:bg-accent-soft file:px-3 file:py-1.5
+                           file:text-xs file:font-medium file:text-accent-text focus:border-accent focus:outline-none"
+              />
+              <p className="mt-2 text-xs leading-relaxed text-subtle">
+                Needs at least <code className="font-mono">platform</code> and{' '}
+                <code className="font-mono">product_name</code>. Common aliases
+                (mrp, reviews, url, asin, timestamp) are recognised. Missing
+                fields stay empty.
+              </p>
+            </div>
+
+            <div className="mt-6">
+              <Button type="submit" disabled={importing || !file}>
+                <Icon name="database" className="size-4" />
+                {importing ? 'Importing…' : 'Import file'}
+              </Button>
+            </div>
+          </form>
+
+          <div className="rounded-panel border border-border-hair bg-surface p-7">
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold">Demo dataset</h2>
+              <SourceBadge kind="demo" />
+            </div>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              A synthetic fixture for development and testing:{' '}
+              {demo?.record_count ?? '—'} records across{' '}
+              {demo?.platforms.length ?? 4} platforms and{' '}
+              {demo?.categories.length ?? 8} categories, over several dates.
+            </p>
+
+            <p className="mt-4 rounded-card border border-border-strong bg-background-alt px-4 py-3 text-xs leading-relaxed text-muted">
+              <strong className="font-semibold">Not real market data.</strong>{' '}
+              Brands, prices, ratings and review counts are generated. Every row
+              is stored as DEMO and is never shown as a live observation.
+            </p>
+
+            {demo && demo.loaded_records > 0 && (
+              <p className="mt-4 text-xs text-subtle">
+                Currently loaded: {demo.loaded_records} records. Loading again
+                replaces them; live and imported data is untouched.
+              </p>
+            )}
+
+            <div className="mt-6">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => void handleDemoLoad()}
+                disabled={loadingDemo || !demo?.available}
+              >
+                <Icon name="layers" className="size-4" />
+                {loadingDemo ? 'Loading…' : 'Load demo dataset'}
+              </Button>
+            </div>
+
+            {demo && !demo.available && (
+              <p className="mt-4 text-xs text-signal-warn">{demo.reason}</p>
+            )}
+          </div>
+        </div>
+
+        {importError && (
+          <div className="mt-5">
+            <FormAlert>{importError}</FormAlert>
+          </div>
+        )}
+
+        {importResult && (
+          <div
+            role="status"
+            className="mt-5 rounded-panel border border-border-hair bg-surface p-6"
+          >
+            <div className="flex flex-wrap items-center gap-3">
+              <SourceBadge kind={importResult.source_type} />
+              <p className="text-sm font-medium">
+                {importResult.stored} record
+                {importResult.stored === 1 ? '' : 's'} stored
+              </p>
+              <p className="text-xs text-subtle">
+                {formatTimestamp(importResult.timestamp)}
+              </p>
+            </div>
+
+            <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2 text-xs">
+              <div>
+                <dt className="text-subtle">Rejected</dt>
+                <dd className="mt-0.5 font-mono tabular-nums">
+                  {importResult.rejected}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-subtle">Duplicates</dt>
+                <dd className="mt-0.5 font-mono tabular-nums">
+                  {importResult.duplicates}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-subtle">Platforms detected</dt>
+                <dd className="mt-0.5 font-mono">
+                  {importResult.platforms.join(', ') || '—'}
+                </dd>
+              </div>
+            </dl>
+
+            {importResult.rejected_rows.length > 0 && (
+              <div className="mt-4">
+                <p className="text-xs font-medium text-signal-down">
+                  Rejected rows
+                </p>
+                <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-muted">
+                  {importResult.rejected_rows.slice(0, 10).map((row, index) => (
+                    <li key={`${index}-${row}`}>{row}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {importResult.warnings.length > 0 && (
+              <ul className="mt-3 list-disc space-y-1 pl-4 text-xs text-subtle">
+                {importResult.warnings.slice(0, 5).map((warning, index) => (
+                  <li key={`${index}-${warning}`}>{warning}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* Stored records */}
+      <section aria-label="Stored records" className="mt-6">
         <div className="rounded-panel border border-border-hair bg-surface">
-          <div className="flex items-center justify-between gap-4 border-b border-border-hair px-6 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border-hair px-6 py-4">
             <h2 className="text-sm font-semibold">
-              Latest collected records
+              Latest stored records
               <span className="ml-2 font-normal text-subtle">
                 ({snapshots.length})
               </span>
             </h2>
-            <button
-              type="button"
-              onClick={() => void load()}
-              className="inline-flex items-center gap-2 rounded-card px-3 py-1.5 text-xs text-muted transition-colors hover:bg-accent-soft hover:text-accent-text"
-            >
-              <Icon name="refresh" className="size-3.5" />
-              Reload
-            </button>
+
+            <div className="flex items-center gap-2">
+              <label htmlFor="source-filter" className="sr-only">
+                Filter by source
+              </label>
+              <select
+                id="source-filter"
+                value={sourceFilter}
+                onChange={(e) => {
+                  const next = e.target.value as SourceType | ''
+                  setSourceFilter(next)
+                  void load(next)
+                }}
+                className="rounded-card border border-border-hair bg-background px-3 py-1.5 text-xs text-foreground focus:border-accent focus:outline-none"
+              >
+                <option value="">All sources</option>
+                <option value="live">Live only</option>
+                <option value="imported">Imported only</option>
+                <option value="demo">Demo only</option>
+              </select>
+
+              <button
+                type="button"
+                onClick={() => void load()}
+                className="inline-flex items-center gap-2 rounded-card px-3 py-1.5 text-xs text-muted transition-colors hover:bg-accent-soft hover:text-accent-text"
+              >
+                <Icon name="refresh" className="size-3.5" />
+                Reload
+              </button>
+            </div>
           </div>
 
           {snapshots.length === 0 ? (
             <p className="px-6 py-12 text-center text-sm text-muted">
-              No marketplace data has been collected yet. Run a collection above
-              to populate this table.
+              No marketplace data has been collected yet. Collect, import a file,
+              or load the demo dataset above to populate this table.
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[860px] text-left text-sm">
+              <table className="w-full min-w-[940px] text-left text-sm">
                 <thead className="border-b border-border-hair text-xs tracking-wider text-subtle uppercase">
                   <tr>
                     <th scope="col" className="px-6 py-3 font-medium">Product</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Source</th>
                     <th scope="col" className="px-4 py-3 font-medium">Platform</th>
                     <th scope="col" className="px-4 py-3 font-medium">Brand</th>
                     <th scope="col" className="px-4 py-3 text-right font-medium">Price</th>
                     <th scope="col" className="px-4 py-3 text-right font-medium">Was</th>
                     <th scope="col" className="px-4 py-3 text-right font-medium">Off</th>
                     <th scope="col" className="px-4 py-3 text-right font-medium">Rating</th>
-                    <th scope="col" className="px-4 py-3 font-medium">Collected</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Observed</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -351,7 +617,7 @@ export function MarketplaceDataPage() {
                       className="border-b border-border-hair/60 last:border-0 hover:bg-background-alt"
                     >
                       <td className="max-w-sm px-6 py-3">
-                        {row.listing_url ? (
+                        {row.listing_url && row.source_type === 'live' ? (
                           <a
                             href={row.listing_url}
                             target="_blank"
@@ -361,10 +627,17 @@ export function MarketplaceDataPage() {
                             {row.product_name}
                           </a>
                         ) : (
+                          // Imported and demo URLs are not necessarily
+                          // reachable, so they are not offered as links.
                           <span className="line-clamp-2">{row.product_name}</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 capitalize text-muted">{row.platform}</td>
+                      <td className="px-4 py-3">
+                        <SourceBadge kind={row.source_type} />
+                      </td>
+                      <td className="px-4 py-3 capitalize text-muted">
+                        {row.platform}
+                      </td>
                       <td className="px-4 py-3 text-muted">{row.brand ?? '—'}</td>
                       <td className="px-4 py-3 text-right font-mono tabular-nums">
                         {formatMoney(row.price, row.currency)}
@@ -391,10 +664,12 @@ export function MarketplaceDataPage() {
           )}
 
           <p className="border-t border-border-hair px-6 py-3 text-xs leading-relaxed text-subtle">
-            A dash means the source did not expose that field. Missing values are
-            never filled in with estimates. Amazon&rsquo;s Product Advertising API
-            does not return ratings or review counts, so those columns stay empty
-            for Amazon rows.
+            A dash means the source did not expose that field; missing values are
+            never filled in with estimates. Amazon&rsquo;s Product Advertising
+            API returns no ratings or review counts, so those stay empty for live
+            Amazon rows. <strong className="font-semibold">DEMO</strong> rows are
+            synthetic and <strong className="font-semibold">IMPORTED</strong>{' '}
+            rows were supplied by you — neither was observed by this system.
           </p>
         </div>
       </section>

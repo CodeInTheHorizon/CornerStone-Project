@@ -21,7 +21,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base, TimestampMixin, utcnow
-from app.models.enums import DataSource
+from app.models.enums import SourceType
 
 
 class MarketplaceSnapshot(Base, TimestampMixin):
@@ -31,8 +31,10 @@ class MarketplaceSnapshot(Base, TimestampMixin):
 
     # --- Provenance ---
     platform: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
-    source: Mapped[str] = mapped_column(
-        String(16), default=DataSource.LIVE.value, index=True, nullable=False
+    # live | imported | demo. Never NULL: a row whose provenance is unknown
+    # could be mistaken for a live observation.
+    source_type: Mapped[str] = mapped_column(
+        String(16), default=SourceType.LIVE.value, index=True, nullable=False
     )
     # Search keyword / query that produced this record, for traceability.
     search_query: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -89,13 +91,16 @@ class MarketplaceSnapshot(Base, TimestampMixin):
         Index("ix_snapshot_platform_collected", "platform", "collection_timestamp"),
         # Supports building a per-listing time series for trend features.
         Index("ix_snapshot_platform_external_id", "platform", "external_id"),
-        # One row per listing per run. Repeated runs are the point of this
-        # table -- this only stops a single run writing the same listing twice.
+        # One row per listing per observation time per batch. The timestamp
+        # is part of the key because an imported or demo dataset carries the
+        # same listing across many dates in a single batch -- that time
+        # series is the point, and keying on identity alone would reject it.
         UniqueConstraint(
             "collection_run_id",
             "platform",
             "external_id",
-            name="uq_snapshot_run_platform_item",
+            "collection_timestamp",
+            name="uq_snapshot_run_platform_item_time",
         ),
     )
 

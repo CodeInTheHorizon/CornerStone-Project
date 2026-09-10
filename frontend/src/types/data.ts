@@ -1,9 +1,18 @@
 /** Marketplace data shapes returned by the backend. */
 
+export type SourceType = 'live' | 'imported' | 'demo'
+
+export type IngestionMode =
+  | 'LIVE_API'
+  | 'LIVE_PUBLIC_SOURCE'
+  | 'IMPORTED'
+  | 'DEMO'
+  | 'UNAVAILABLE'
+
 export interface Snapshot {
   id: number
   platform: string
-  source: string
+  source_type: SourceType
   search_query: string | null
   collection_run_id: string | null
 
@@ -62,15 +71,44 @@ export interface CollectResponse {
 
 export interface PlatformStatus {
   available: boolean
+  ingestion_mode: IngestionMode
   access_method: string
   reason: string | null
   requires_credentials: boolean
+  required_configuration: string[]
   last_collection: string | null
-  stored_snapshots: number
+  stored_records: number
+  /** Provenance types actually stored for this platform. */
+  source_types_available: SourceType[]
+}
+
+export interface DemoDatasetInfo {
+  available: boolean
+  record_count: number
+  platforms: string[]
+  categories: string[]
+  loaded_records: number
+  reason: string | null
 }
 
 export interface CollectorStatus {
   platforms: Record<string, PlatformStatus>
   total_snapshots: number
   last_collection: string | null
+  records_by_source_type: Partial<Record<SourceType, number>>
+  demo_dataset: DemoDatasetInfo
+}
+
+/** Outcome of an import or a demo load. */
+export interface IngestSummary {
+  status: string
+  source_type: SourceType
+  batch_id: string
+  timestamp: string
+  stored: number
+  rejected: number
+  duplicates: number
+  platforms: string[]
+  warnings: string[]
+  rejected_rows: string[]
 }

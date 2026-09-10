@@ -6,7 +6,7 @@ import pytest
 
 from app.database import Base, SessionLocal
 from app.models import (
-    DataSource,
+    SourceType,
     MarketplaceSnapshot,
     ModelMetadata,
     Platform,
@@ -69,7 +69,7 @@ def test_snapshot_defaults_mark_provenance(db):
     db.flush()
 
     # Provenance and observation time must always be populated.
-    assert snapshot.source == DataSource.LIVE.value
+    assert snapshot.source_type == SourceType.LIVE.value
     assert snapshot.currency == "INR"
     assert isinstance(snapshot.collection_timestamp, datetime)
 

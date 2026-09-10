@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.models.enums import Platform
+from app.models.enums import IngestionMode, Platform, SourceType
 
 MAX_ITEMS = 100
 
@@ -54,7 +54,7 @@ class SnapshotRead(BaseModel):
 
     id: int
     platform: str
-    source: str
+    source_type: str
     search_query: str | None
     collection_run_id: str | None
 
@@ -94,14 +94,47 @@ class SnapshotListResponse(BaseModel):
 
 class PlatformStatus(BaseModel):
     available: bool
+    ingestion_mode: IngestionMode
     access_method: str
     reason: str | None = None
     requires_credentials: bool = False
+    required_configuration: list[str] = Field(default_factory=list)
     last_collection: datetime | None = None
-    stored_snapshots: int = 0
+    stored_records: int = 0
+    #: Provenance types actually present in the database for this platform.
+    source_types_available: list[str] = Field(default_factory=list)
+
+
+class DemoDatasetInfo(BaseModel):
+    """The bundled synthetic fixture. Never live market data."""
+
+    available: bool
+    record_count: int = 0
+    platforms: list[str] = Field(default_factory=list)
+    categories: list[str] = Field(default_factory=list)
+    loaded_records: int = 0
+    reason: str | None = None
 
 
 class StatusResponse(BaseModel):
     platforms: dict[str, PlatformStatus]
     total_snapshots: int
     last_collection: datetime | None = None
+    #: Counts per provenance type across every platform.
+    records_by_source_type: dict[str, int] = Field(default_factory=dict)
+    demo_dataset: DemoDatasetInfo
+
+
+class IngestSummary(BaseModel):
+    """Outcome of an import or demo load."""
+
+    status: str
+    source_type: SourceType
+    batch_id: str
+    timestamp: datetime
+    stored: int
+    rejected: int
+    duplicates: int
+    platforms: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    rejected_rows: list[str] = Field(default_factory=list)

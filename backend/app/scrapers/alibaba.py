@@ -29,4 +29,7 @@ class AlibabaCollector(UnavailableCollector):
                 "Platform API requires an approved developer app key."
             ),
             requires_credentials=True,
+            # Listed for completeness: supplying a key would still not
+            # unblock keyword search, which robots disallows.
+            required_configuration=("ALIBABA_APP_KEY", "ALIBABA_APP_SECRET"),
         )

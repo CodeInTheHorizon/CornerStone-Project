@@ -22,6 +22,8 @@ psycopg[binary]==3.3.5
 # Marketplace collection (Phase 4)
 # httpx is a runtime dependency from here on: the Amazon collector uses it.
 httpx==0.28.1
+# Multipart parsing for the CSV/JSON dataset upload endpoint.
+python-multipart==0.0.32
 
 # Authentication (Phase 3)
 bcrypt==5.0.0

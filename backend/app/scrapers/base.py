@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-from app.models.enums import Platform
+from app.models.enums import IngestionMode, Platform
 
 
 class CollectorError(Exception):
@@ -79,14 +79,27 @@ class NormalizedRecord:
         default_factory=lambda: datetime.now(timezone.utc)
     )
 
-    def dedupe_key(self) -> str:
-        """Identity used to drop duplicates inside one collection run.
+    def dedupe_key(self, *, include_timestamp: bool = False) -> str:
+        """Identity used to drop duplicates inside one batch.
 
         Falls back to the listing URL, then the product name, when the
         platform exposes no stable identifier.
+
+        `include_timestamp` distinguishes the two kinds of batch:
+
+        * A **live collection run** observes each listing once, so identity
+          alone is the right key -- the same listing appearing twice in the
+          results is a genuine duplicate.
+        * An **imported or demo dataset** may legitimately contain the same
+          listing on many dates. That is the whole point of a time series, so
+          the timestamp has to be part of the key or the history collapses to
+          a single row.
         """
         identity = self.external_id or self.listing_url or self.product_name
-        return f"{self.platform}:{identity.strip().lower()}"
+        key = f"{self.platform}:{identity.strip().lower()}"
+        if include_timestamp:
+            key = f"{key}@{self.collection_timestamp.isoformat()}"
+        return key
 
 
 @dataclass(frozen=True)
@@ -96,8 +109,13 @@ class CollectorStatus:
     platform: str
     available: bool
     access_method: str
+    #: How this platform's data would reach the system if it were working.
+    ingestion_mode: IngestionMode = IngestionMode.UNAVAILABLE
     reason: str | None = None
     requires_credentials: bool = False
+    #: Environment variables an operator must set to make this collector work.
+    #: Empty when no configuration would help (a hard block, not a missing key).
+    required_configuration: tuple[str, ...] = ()
 
 
 @dataclass
@@ -150,19 +168,23 @@ class UnavailableCollector(MarketplaceCollector):
         reason: str,
         access_method: str = "Not available",
         requires_credentials: bool = False,
+        required_configuration: tuple[str, ...] = (),
     ) -> None:
         self.platform = platform
         self.access_method = access_method
         self._reason = reason
         self._requires_credentials = requires_credentials
+        self._required_configuration = required_configuration
 
     def status(self) -> CollectorStatus:
         return CollectorStatus(
             platform=self.platform.value,
             available=False,
             access_method=self.access_method,
+            ingestion_mode=IngestionMode.UNAVAILABLE,
             reason=self._reason,
             requires_credentials=self._requires_credentials,
+            required_configuration=self._required_configuration,
         )
 
     def collect(

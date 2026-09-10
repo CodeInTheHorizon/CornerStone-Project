@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from app.models import MarketplaceSnapshot
-from app.models.enums import DataSource, Platform
+from app.models.enums import Platform, SourceType
 from app.scrapers.base import (
     CollectionOutcome,
     CollectorRequestError,
@@ -199,7 +199,7 @@ def test_collect_persists_snapshots(client, auth_headers, patch_collector, db_se
     stored = rows[0]
     assert stored.search_query == "wireless earbuds"
     # Every collected row is tagged live, never demo.
-    assert stored.source == DataSource.LIVE.value
+    assert stored.source_type == SourceType.LIVE.value
     assert stored.price == 1999.0
 
 
@@ -240,7 +240,8 @@ def test_collect_rejects_bad_records_and_reports_them(
 
     assert body["items_collected"] == 1
     assert body["items_rejected"] == 1
-    assert any("Rejected" in w for w in body["warnings"])
+    # The warning names the offending record and why it was dropped.
+    assert any("product_name is empty" in w for w in body["warnings"])
 
 
 def test_collect_stores_warnings_on_a_salvaged_record(

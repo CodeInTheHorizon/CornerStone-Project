@@ -15,15 +15,14 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import MarketplaceSnapshot
-from app.models.enums import DataSource, Platform
+from app.models.enums import Platform, SourceType
 from app.scrapers import (
     CollectorRequestError,
     CollectorUnavailableError,
     UnknownPlatformError,
     get_collector,
 )
-from app.scrapers.base import NormalizedRecord
-from app.scrapers.validation import validate_record
+from app.services.ingest import ingest
 
 logger = logging.getLogger(__name__)
 
@@ -40,62 +39,6 @@ class CollectionResult:
     items_rejected: int = 0
     duplicates_skipped: int = 0
     warnings: list[str] = field(default_factory=list)
-
-
-def _dedupe(
-    records: list[NormalizedRecord],
-) -> tuple[list[NormalizedRecord], int]:
-    """Drop repeats within one run, keeping the first occurrence."""
-    seen: set[str] = set()
-    unique: list[NormalizedRecord] = []
-    skipped = 0
-
-    for record in records:
-        key = record.dedupe_key()
-        if key in seen:
-            skipped += 1
-            continue
-        seen.add(key)
-        unique.append(record)
-
-    return unique, skipped
-
-
-def _to_snapshot(
-    record: NormalizedRecord,
-    *,
-    keyword: str,
-    run_id: str,
-    warnings: list[str],
-) -> MarketplaceSnapshot:
-    return MarketplaceSnapshot(
-        platform=record.platform,
-        source=DataSource.LIVE.value,
-        search_query=keyword,
-        collection_run_id=run_id,
-        product_name=record.product_name,
-        brand=record.brand,
-        category=record.category,
-        subcategory=record.subcategory,
-        external_id=record.external_id,
-        price=record.price,
-        original_price=record.original_price,
-        discount_percentage=record.discount_percentage,
-        currency=record.currency,
-        rating=record.rating,
-        review_count=record.review_count,
-        availability=record.availability,
-        seller_name=record.seller_name,
-        listing_url=record.listing_url,
-        shipping_info=record.shipping_info,
-        delivery_time=record.delivery_time,
-        badge=record.badge,
-        sponsored=record.sponsored,
-        specifications=record.specifications,
-        stock_status=record.stock_status,
-        warnings=warnings or None,
-        collection_timestamp=record.collection_timestamp,
-    )
 
 
 def run_collection(
@@ -119,49 +62,25 @@ def run_collection(
         keyword=keyword, category=category, max_items=max_items
     )
 
-    unique, duplicates = _dedupe(outcome.records)
-
-    run_id = str(uuid.uuid4())
-    result = CollectionResult(
-        platform=collector.platform.value,
-        keyword=keyword,
-        collection_run_id=run_id,
-        collection_timestamp=datetime.now(timezone.utc),
-        duplicates_skipped=duplicates,
-        warnings=list(outcome.warnings),
+    # Same ingest path as import and demo loading, so live rows cannot skip
+    # validation or deduplication.
+    ingested = ingest(
+        db,
+        outcome.records,
+        source_type=SourceType.LIVE,
+        search_query=keyword,
     )
 
-    snapshots: list[MarketplaceSnapshot] = []
-    for record in unique:
-        validation = validate_record(record)
-        if not validation.is_valid:
-            result.items_rejected += 1
-            result.warnings.append(
-                f"Rejected a record: {validation.rejected_reason}."
-            )
-            continue
-
-        snapshots.append(
-            _to_snapshot(
-                validation.record,
-                keyword=keyword,
-                run_id=run_id,
-                warnings=validation.warnings,
-            )
-        )
-
-    if snapshots:
-        db.add_all(snapshots)
-        db.commit()
-
-    result.items_collected = len(snapshots)
-
-    if duplicates:
-        result.warnings.append(
-            f"Skipped {duplicates} duplicate listing(s) within this run."
-        )
-
-    return result
+    return CollectionResult(
+        platform=collector.platform.value,
+        keyword=keyword,
+        collection_run_id=ingested.batch_id,
+        collection_timestamp=ingested.timestamp,
+        items_collected=ingested.stored,
+        items_rejected=ingested.rejected,
+        duplicates_skipped=ingested.duplicates,
+        warnings=[*outcome.warnings, *ingested.warnings, *ingested.rejected_rows],
+    )
 
 
 def latest_snapshots(
@@ -170,6 +89,7 @@ def latest_snapshots(
     platform: str | None = None,
     keyword: str | None = None,
     category: str | None = None,
+    source_type: str | None = None,
     limit: int = 50,
 ) -> list[MarketplaceSnapshot]:
     """Most recently collected snapshots, newest first."""
@@ -184,6 +104,8 @@ def latest_snapshots(
         stmt = stmt.where(MarketplaceSnapshot.search_query.ilike(f"%{keyword}%"))
     if category:
         stmt = stmt.where(MarketplaceSnapshot.category.ilike(f"%{category}%"))
+    if source_type:
+        stmt = stmt.where(MarketplaceSnapshot.source_type == source_type)
 
     return list(db.execute(stmt.limit(limit)).scalars())
 
@@ -194,6 +116,7 @@ def snapshot_history(
     platform: str | None = None,
     product: str | None = None,
     category: str | None = None,
+    source_type: str | None = None,
     start: datetime | None = None,
     end: datetime | None = None,
     limit: int = 200,
@@ -210,6 +133,8 @@ def snapshot_history(
         stmt = stmt.where(MarketplaceSnapshot.product_name.ilike(f"%{product}%"))
     if category:
         stmt = stmt.where(MarketplaceSnapshot.category.ilike(f"%{category}%"))
+    if source_type:
+        stmt = stmt.where(MarketplaceSnapshot.source_type == source_type)
     if start:
         stmt = stmt.where(MarketplaceSnapshot.collection_timestamp >= start)
     if end:
@@ -238,6 +163,29 @@ def snapshot_counts(db: Session) -> dict[str, int]:
     return counts
 
 
+def source_types_by_platform(db: Session) -> dict[str, list[str]]:
+    """Which provenance types are actually stored for each platform.
+
+    Drives the "Available data: IMPORTED / DEMO" line in the UI, so it reflects
+    what is really in the database rather than what might be possible.
+    """
+    rows = db.execute(
+        select(MarketplaceSnapshot.platform, MarketplaceSnapshot.source_type)
+        .distinct()
+    ).all()
+
+    found: dict[str, set[str]] = {platform.value: set() for platform in Platform}
+    for platform_name, source_type in rows:
+        found.setdefault(platform_name, set()).add(source_type)
+
+    # Ordered live -> imported -> demo, most authoritative first.
+    order = [s.value for s in (SourceType.LIVE, SourceType.IMPORTED, SourceType.DEMO)]
+    return {
+        name: [value for value in order if value in types]
+        for name, types in found.items()
+    }
+
+
 __all__ = [
     "CollectionResult",
     "CollectorRequestError",
@@ -248,4 +196,5 @@ __all__ = [
     "run_collection",
     "snapshot_counts",
     "snapshot_history",
+    "source_types_by_platform",
 ]

@@ -24,7 +24,7 @@ from typing import Any
 import httpx
 
 from app.config import settings
-from app.models.enums import Platform
+from app.models.enums import IngestionMode, Platform
 from app.scrapers.base import (
     CollectionOutcome,
     CollectorRequestError,
@@ -39,6 +39,12 @@ from app.scrapers.parsing import (
     extract_brand,
     normalize_url,
     parse_price,
+)
+
+REQUIRED_CONFIGURATION = (
+    "AMAZON_PAAPI_ACCESS_KEY",
+    "AMAZON_PAAPI_SECRET_KEY",
+    "AMAZON_PAAPI_PARTNER_TAG",
 )
 
 SERVICE = "ProductAdvertisingAPI"
@@ -115,20 +121,22 @@ class AmazonCollector(MarketplaceCollector):
                 platform=self.platform.value,
                 available=False,
                 access_method=self.access_method,
+                ingestion_mode=IngestionMode.LIVE_API,
                 reason=(
-                    "PA-API credentials are not configured. Set "
-                    "AMAZON_PAAPI_ACCESS_KEY, AMAZON_PAAPI_SECRET_KEY and "
-                    "AMAZON_PAAPI_PARTNER_TAG. An approved Amazon Associate "
-                    "account is required."
+                    "PA-API credentials are not configured. An approved Amazon "
+                    "Associate account is required."
                 ),
                 requires_credentials=True,
+                required_configuration=REQUIRED_CONFIGURATION,
             )
 
         return CollectorStatus(
             platform=self.platform.value,
             available=True,
             access_method=self.access_method,
+            ingestion_mode=IngestionMode.LIVE_API,
             requires_credentials=True,
+            required_configuration=REQUIRED_CONFIGURATION,
         )
 
     # -- request signing ---------------------------------------------------

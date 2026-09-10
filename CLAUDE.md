@@ -5,7 +5,7 @@ scope, architecture, the 10-day roadmap and the acceptance criteria.
 
 ## Current state
 
-**Phases 1-4 complete.** Phases 5-10 not started.
+**Phases 1-4.5 complete.** Phases 5-10 not started.
 
 Phase 1: repository structure, FastAPI backend with config/CORS/`/health`,
 SQLAlchemy models for `User`, `MarketplaceSnapshot`, `Prediction`,
@@ -25,6 +25,11 @@ official PA-API 5.0, honest unavailable stubs for Flipkart/Croma/Alibaba,
 normalization, validation, dedup, /data/collect|latest|history|status, and the
 Marketplace Data dashboard page. Alembic migrations replace create_all().
 
+Phase 4.5: source-type provenance (live/imported/demo), a shared ingest
+pipeline every path goes through, CSV/JSON import at /data/import, a synthetic
+demo fixture at data/demo/, enriched /data/status (ingestion mode, required
+configuration, stored provenance) and LIVE/IMPORTED/DEMO/UNAVAILABLE badges.
+
 No ML or analytics logic exists yet.
 
 ## Layout
@@ -40,7 +45,7 @@ backend/app/
   auth/           security.py (hashing, JWT), dependencies.py (get_current_user)
   scrapers/       base, parsing, validation, registry + one module per platform
   ml/             Phases 5-7
-  services/       business logic between API and DB
+  services/       ingest (shared path), collection, import, demo, user
 frontend/src/
   components/     reusable UI primitives
   sections/       landing page sections
@@ -70,6 +75,8 @@ frontend/src/
    `source="demo"` (`DataSource.DEMO`) so they can never be shown as live data.
    In the UI this means `SummaryCard` takes `unavailable="Not trained"` rather
    than a placeholder digit, and blocked actions state what is missing.
+   Every stored row carries `source_type`; the demo fixture is synthetic and
+   must always be badged DEMO, never rendered as a live observation.
 5. Marketplace collection must use officially permitted access paths. Never
    bypass CAPTCHAs, authentication, anti-bot protections or access controls. If
    a source cannot be collected reliably, return an explicit unsupported status.
