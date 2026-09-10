@@ -7,10 +7,10 @@ MarketPulse AI collects fresh marketplace observations, turns them into a
 structured dataset, trains models on it, and surfaces trend analytics and
 cross-platform opportunity scores through an interactive dashboard.
 
-> **Status: Phase 5 of 10 (Dataset Builder + Feature Engineering).**
-> The landing page, accounts, the dashboard, the data layer and the dataset
-> builder work. Model training, prediction, the opportunity score and trend
-> charts are **not** implemented yet.
+> **Status: Phase 6 of 10 (ML Model Training).**
+> The landing page, accounts, the dashboard, the data layer, the dataset
+> builder and model training work. Prediction, the Cross-Platform
+> Opportunity Score and trend charts are **not** implemented yet.
 > See [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
 ---
@@ -138,8 +138,11 @@ docs/                       design direction and notes
 | `POST` | `/ml/dataset/build` | Bearer | Build an ML-ready dataset from stored snapshots |
 | `GET` | `/ml/dataset/status` | Bearer | Metadata for the most recent dataset |
 | `GET` | `/ml/dataset/preview` | Bearer | First N rows of a stored dataset |
+| `POST` | `/ml/train` | Bearer | Train, evaluate, compare and persist a model |
+| `GET` | `/ml/status` | Bearer | Active model, version and training history |
+| `GET` | `/ml/metrics` | Bearer | Measured evaluation results for the active model |
 
-Training, prediction and analytics endpoints arrive in Phases 6–8.
+Prediction and analytics endpoints arrive in Phases 7–8.
 
 There is no `/auth/logout`: tokens are stateless JWTs, so signing out is a
 client-side discard. A no-op endpoint would imply a revocation that does not
@@ -209,6 +212,13 @@ These are current and deliberate — please read before evaluating the project.
 - **Trend features are thin on the current data.** Five observations per listing
   supports a short-term slope and nothing seasonal. Longer histories need
   repeated collection over real calendar time.
+- **The trained model has no predictive power on the current data, and that is
+  the expected result.** The demo fixture drifts prices by an independent random
+  draw each step, so next-period direction is close to unpredictable by
+  construction. The latest run scores 33.3% accuracy against a 40.6% majority
+  baseline -- worse than guessing. This demonstrates that the training pipeline
+  works end to end and that its honesty guards fire correctly. It demonstrates
+  nothing whatsoever about real marketplace behaviour.
 - **SQLite by default.** Render's filesystem is ephemeral, so production needs a
   PostgreSQL `DATABASE_URL`.
 
@@ -339,6 +349,61 @@ Listings are grouped by `normalized_product_name + brand + category`.
 Deliberately strict -- punctuation and casing are ignored, but nothing else.
 A false merge fabricates a price history that never happened, so ambiguous
 records stay separate.
+
+## Model training
+
+**Train Model** fits and evaluates models on the Phase 5 dataset, then saves
+the winner. Artifacts are versioned (`model_v1.pkl`, `model_v2.pkl`, ...) under
+`backend/app/ml/artifacts/` and never overwritten -- an older artifact may be
+what a stored prediction was made with.
+
+### The target
+
+`marketplace_opportunity_class`, three classes derived from the **next**
+observation of the same listing:
+
+| Class | Meaning |
+|---|---|
+| `improving` | price rises more than 1% by the next observation |
+| `stable` | price moves within +/-1% |
+| `declining` | price falls more than 1% |
+
+**Why forward-looking.** Scoring each row from its own features and using that
+as the label would be a tautology: the model would be handed the numbers the
+label was computed from and would simply re-derive the formula, scoring
+near-perfectly having learned nothing. Predicting the next observation makes
+this a real forecasting problem.
+
+**Why price direction.** MarketPulse AI is for sellers, so a price that holds
+or rises signals room for margin and a falling price signals pressure. This is
+the opposite of how a buyer would read it.
+
+**What it is not.** A proxy for near-term margin direction, **not** a measure of
+sales demand. Marketplace pages do not expose unit sales.
+
+### Guards against inflated scores
+
+Predicting price direction is genuinely hard. Everything that could make a
+result look better than it is has been treated as a defect:
+
+- **Time-aware split.** Each listing appears on consecutive dates, so a random
+  split would put day 3 and day 4 of the same listing on opposite sides --
+  near-duplicates. Earlier dates train, the latest date validates.
+- **Preprocessing inside the pipeline**, fitted on the training fold only, so
+  imputer and encoder statistics never leak backwards.
+- **Nine columns excluded** as identifiers or target-derived, each with a
+  recorded reason, surfaced in `/ml/metrics`.
+- **Majority baseline reported beside every score.** A model that merely
+  matches "always guess the most common class" is visible as such, in the API
+  and in the UI.
+- **Near-perfect accuracy is flagged as suspicious**, not celebrated: at or
+  above 95% the run carries a warning to inspect for leakage.
+
+### Selection rule
+
+Highest weighted F1 on the validation split. F1 rather than accuracy because
+the classes are imbalanced; weighted rather than macro so each class counts in
+proportion to how often it occurs. Ties break toward the simpler model.
 
 ## Documentation
 

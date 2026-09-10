@@ -1,9 +1,10 @@
 /**
- * Train Model — Dataset Preparation (Phase 5).
+ * Train Model — dataset preparation (Phase 5) and training (Phase 6).
  *
- * Builds the ML-ready dataset and shows what came out. Training itself is
- * Phase 6: the action below is present but explicitly inactive, so the
- * workflow is visible without implying it works.
+ * Build the ML-ready dataset, then train and evaluate models on it. Every
+ * metric shown is measured on a held-out validation split and reported
+ * beside the majority-class baseline, so a model that has learned nothing
+ * cannot look successful.
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -17,11 +18,15 @@ import { SourceBadge } from '@/components/SourceBadge'
 import { supportedPlatforms } from '@/config/dashboard'
 import { useAuth } from '@/hooks/useAuth'
 import { ApiRequestError } from '@/services/apiClient'
+import { TrainingResults } from '@/components/dashboard/TrainingResults'
 import * as datasetService from '@/services/datasetService'
+import * as trainingService from '@/services/trainingService'
 import type {
   DatasetBuildResponse,
   DatasetPreview,
   DatasetStatus,
+  ModelMetrics,
+  ModelStatus,
   SourceType,
 } from '@/types/data'
 
@@ -70,6 +75,16 @@ export function TrainModelPage() {
   const [result, setResult] = useState<DatasetBuildResponse | null>(null)
   const [buildError, setBuildError] = useState<string | null>(null)
 
+  // Training
+  const [modelStatus, setModelStatus] = useState<ModelStatus | null>(null)
+  const [metrics, setMetrics] = useState<ModelMetrics | null>(null)
+  const [selectedModels, setSelectedModels] = useState<string[]>([
+    'random_forest',
+    'xgboost',
+  ])
+  const [training, setTraining] = useState(false)
+  const [trainError, setTrainError] = useState<string | null>(null)
+
   const load = useCallback(async () => {
     if (!token) return
     setLoadError(null)
@@ -79,6 +94,15 @@ export function TrainModelPage() {
       if (nextStatus.has_dataset) {
         setPreview(await datasetService.fetchDatasetPreview(token, 10))
       }
+
+      const nextModel = await trainingService.fetchModelStatus(token)
+      setModelStatus(nextModel)
+      // Metrics only exist once something has been trained.
+      setMetrics(
+        nextModel.trained
+          ? await trainingService.fetchModelMetrics(token)
+          : null,
+      )
     } catch (error) {
       setLoadError(
         error instanceof ApiRequestError
@@ -126,6 +150,26 @@ export function TrainModelPage() {
       )
     } finally {
       setBuilding(false)
+    }
+  }
+
+  const handleTrain = async () => {
+    setTrainError(null)
+    setTraining(true)
+    try {
+      await trainingService.trainModel(token!, {
+        dataset_id: 'latest',
+        models: selectedModels.length ? selectedModels : undefined,
+      })
+      await load()
+    } catch (error) {
+      setTrainError(
+        error instanceof ApiRequestError
+          ? error.message
+          : 'Training failed. Please try again.',
+      )
+    } finally {
+      setTraining(false)
     }
   }
 
@@ -408,22 +452,143 @@ export function TrainModelPage() {
         </section>
       )}
 
-      {/* Training is Phase 6 */}
-      <section className="mt-6">
-        <div className="rounded-panel border border-border-hair bg-background-alt p-7">
-          <h2 className="text-sm font-semibold">Model training</h2>
+      {/* Training */}
+      <section aria-label="Model training" className="mt-6">
+        <div className="rounded-panel border border-border-hair bg-surface p-7">
+          <h2 className="text-lg font-semibold">Model training</h2>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">
-            Training runs on the dataset above and records its measured
-            accuracy. It is not built yet — this phase produces the dataset
-            only.
+            Trains on the dataset above and reports measured validation
+            metrics. The split is time-aware — earlier dates train, the latest
+            date validates — because the same listing appears on consecutive
+            days and a random split would leak.
           </p>
-          <div className="mt-5">
-            <Button variant="secondary" disabled>
-              Train Model
+
+          <fieldset className="mt-6">
+            <legend className="text-sm font-medium text-muted">Models</legend>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(modelStatus?.available_models ?? ['random_forest']).map((name) => {
+                const unavailable =
+                  name === 'xgboost' && modelStatus?.xgboost_available === false
+                const active = selectedModels.includes(name)
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    disabled={unavailable}
+                    aria-pressed={active}
+                    onClick={() => toggle(selectedModels, name, setSelectedModels)}
+                    className={`rounded-card border px-3.5 py-2 text-sm transition-colors disabled:opacity-50 ${
+                      active && !unavailable
+                        ? 'border-accent bg-accent-soft text-accent-text'
+                        : 'border-border-hair text-muted hover:border-border-strong'
+                    }`}
+                  >
+                    {name.replace(/_/g, ' ')}
+                    {unavailable && ' (unavailable)'}
+                  </button>
+                )
+              })}
+            </div>
+          </fieldset>
+
+          {trainError && (
+            <div className="mt-6">
+              <FormAlert>{trainError}</FormAlert>
+            </div>
+          )}
+
+          <div className="mt-7 flex flex-wrap items-center gap-4">
+            <Button
+              type="button"
+              size="lg"
+              onClick={() => void handleTrain()}
+              disabled={training || !status?.has_dataset || !selectedModels.length}
+            >
+              <Icon name="target" className="size-4" />
+              {training ? 'Training…' : 'Train Model'}
             </Button>
+            {training && (
+              <p role="status" className="text-sm text-muted">
+                Fitting and evaluating models…
+              </p>
+            )}
+            {!status?.has_dataset && (
+              <p className="text-sm text-subtle">Build a dataset first.</p>
+            )}
           </div>
+
+          {modelStatus?.notice && (
+            <p
+              role="status"
+              className="mt-6 flex items-start gap-2.5 rounded-card border border-signal-warn/30 bg-signal-warn/10 px-4 py-3 text-sm text-signal-warn"
+            >
+              <Icon name="alert" className="mt-0.5 size-4 shrink-0" />
+              <span>{modelStatus.notice}</span>
+            </p>
+          )}
         </div>
       </section>
+
+      {metrics && (
+        <section aria-label="Evaluation" className="mt-6">
+          <TrainingResults metrics={metrics} />
+        </section>
+      )}
+
+      {modelStatus && modelStatus.history.length > 0 && (
+        <section aria-label="Training history" className="mt-6">
+          <div className="rounded-panel border border-border-hair bg-surface">
+            <div className="border-b border-border-hair px-6 py-4">
+              <h2 className="text-sm font-semibold">Training history</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[680px] text-left text-sm">
+                <thead className="border-b border-border-hair text-xs tracking-wider text-subtle uppercase">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 font-medium">Version</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Model</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Trained</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Dataset</th>
+                    <th scope="col" className="px-4 py-3 text-right font-medium">F1</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Active</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {modelStatus.history.map((run) => (
+                    <tr
+                      key={run.model_version}
+                      className="border-b border-border-hair/60 last:border-0"
+                    >
+                      <td className="px-6 py-3 font-mono text-xs">
+                        {run.model_version}
+                      </td>
+                      <td className="px-4 py-3 text-muted">{run.model_type ?? '—'}</td>
+                      <td className="px-4 py-3 text-xs text-subtle">
+                        {formatTimestamp(run.trained_at)}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-subtle">
+                        {run.dataset_id?.slice(0, 8) ?? '—'}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono tabular-nums">
+                        {run.f1_weighted === null
+                          ? '—'
+                          : `${(run.f1_weighted * 100).toFixed(1)}%`}
+                      </td>
+                      <td className="px-4 py-3 text-xs">
+                        {run.is_active ? (
+                          <span className="text-accent-text">active</span>
+                        ) : (
+                          <span className="text-subtle">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      )}
     </DashboardLayout>
   )
 }

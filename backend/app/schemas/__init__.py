@@ -17,6 +17,12 @@ from app.schemas.dataset import (
     DatasetStatusResponse,
 )
 from app.schemas.health import HealthResponse
+from app.schemas.training import (
+    ModelMetricsResponse,
+    ModelStatusResponse,
+    TrainRequest,
+    TrainResponse,
+)
 
 __all__ = [
     "CollectRequest",
@@ -28,10 +34,14 @@ __all__ = [
     "DatasetPreviewResponse",
     "DatasetStatusResponse",
     "HealthResponse",
+    "ModelMetricsResponse",
+    "ModelStatusResponse",
     "SnapshotListResponse",
     "SnapshotRead",
     "StatusResponse",
     "Token",
+    "TrainRequest",
+    "TrainResponse",
     "UserLogin",
     "UserRead",
     "UserRegister",

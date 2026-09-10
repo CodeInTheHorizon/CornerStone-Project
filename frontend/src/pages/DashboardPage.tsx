@@ -18,7 +18,8 @@ import { StatusPill } from '@/components/StatusPill'
 import { supportedPlatforms } from '@/config/dashboard'
 import { useAuth } from '@/hooks/useAuth'
 import * as dataService from '@/services/dataService'
-import type { CollectorStatus } from '@/types/data'
+import * as trainingService from '@/services/trainingService'
+import type { CollectorStatus, ModelStatus } from '@/types/data'
 
 function formatTimestamp(value: string | null): string {
   if (!value) return 'No data yet'
@@ -32,6 +33,7 @@ export function DashboardPage() {
   const firstName = user?.full_name?.split(' ')[0] ?? null
 
   const [status, setStatus] = useState<CollectorStatus | null>(null)
+  const [model, setModel] = useState<ModelStatus | null>(null)
 
   // Real collection figures, so the summary cards stop being static once data
   // exists. Failures are non-fatal: the cards fall back to their empty state.
@@ -41,6 +43,14 @@ export function DashboardPage() {
       setStatus(await dataService.fetchStatus(token))
     } catch {
       setStatus(null)
+    }
+
+    // Model status is independent: a collection failure should not blank
+    // out a perfectly good trained model, or the reverse.
+    try {
+      setModel(await trainingService.fetchModelStatus(token))
+    } catch {
+      setModel(null)
     }
   }, [token])
 
@@ -52,6 +62,7 @@ export function DashboardPage() {
   }, [loadStatus])
 
   const collected = status?.total_snapshots ?? 0
+  const trained = model?.trained === true
   const bySource = status?.records_by_source_type ?? {}
   const liveRecords = bySource.live ?? 0
   const availablePlatforms = status
@@ -107,8 +118,23 @@ export function DashboardPage() {
           <SummaryCard
             label="Model Accuracy"
             icon="target"
-            unavailable="Not trained"
-            hint="Populated from a real evaluation run once a model is trained."
+            unavailable={trained ? undefined : 'Not trained'}
+            value={
+              trained && model?.primary_metric_value !== null &&
+              model?.primary_metric_value !== undefined
+                ? `${(model.primary_metric_value * 100).toFixed(1)}% F1`
+                : undefined
+            }
+            hint={
+              trained
+                ? `${model?.active_model} ${model?.version}. Baseline (always guess the most common class): ${
+                    model?.majority_baseline !== null &&
+                    model?.majority_baseline !== undefined
+                      ? `${(model.majority_baseline * 100).toFixed(1)}%`
+                      : 'unknown'
+                  }.`
+                : 'Populated from a real evaluation run once a model is trained.'
+            }
           />
           <SummaryCard
             label="Data Freshness"
@@ -167,6 +193,19 @@ export function DashboardPage() {
         </div>
       </section>
 
+      {/* Demo-trained model warning */}
+      {model?.notice && (
+        <section className="mt-6">
+          <p
+            role="status"
+            className="flex items-start gap-2.5 rounded-panel border border-signal-warn/30 bg-signal-warn/10 px-5 py-4 text-sm text-signal-warn"
+          >
+            <Icon name="alert" className="mt-0.5 size-4 shrink-0" />
+            <span>{model.notice}</span>
+          </p>
+        </section>
+      )}
+
       {/* Build status */}
       <section className="mt-6 rounded-panel border border-border-hair bg-background-alt p-6">
         <h3 className="flex items-center gap-2 text-sm font-semibold">
@@ -174,9 +213,9 @@ export function DashboardPage() {
           What works right now
         </h3>
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted">
-          Accounts, sign-in, this protected dashboard and marketplace data
-          collection are live. The dataset builder, model training, predictions
-          and trend charts are the next phases — the sidebar items marked{' '}
+          Accounts, sign-in, this dashboard, marketplace data collection, the
+          dataset builder and model training are live. Predictions and trend
+          charts are the next phases — the sidebar items marked{' '}
           <span className="rounded-full border border-border-hair px-1.5 py-0.5 text-[10px] text-subtle">
             Soon
           </span>{' '}

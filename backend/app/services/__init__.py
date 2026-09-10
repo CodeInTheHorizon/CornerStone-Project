@@ -6,6 +6,7 @@ from app.services import (
     demo_service,
     import_service,
     ingest,
+    training_service,
     user_service,
 )
 
@@ -15,5 +16,6 @@ __all__ = [
     "demo_service",
     "import_service",
     "ingest",
+    "training_service",
     "user_service",
 ]

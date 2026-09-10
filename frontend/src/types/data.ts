@@ -172,3 +172,90 @@ export interface DatasetPreview {
   total_rows: number
   notice: string | null
 }
+
+// --- Model training (Phase 6) ---
+
+export interface ModelRunResult {
+  model: string
+  metrics: Record<string, number>
+  error: string | null
+}
+
+export interface TrainRequest {
+  dataset_id?: string
+  models?: string[]
+}
+
+export interface TrainResponse {
+  status: string
+  model_version: string
+  selected_model: string
+  target: string
+  training_rows: number
+  validation_rows: number
+  metrics: Record<string, number>
+  /** Accuracy of always guessing the most common class. */
+  majority_baseline: number | null
+  dataset_id: string
+  dataset_source_types: SourceType[]
+  all_models: ModelRunResult[]
+  selection_rule: string
+  split_strategy: string
+  warnings: string[]
+  notice: string | null
+}
+
+export interface TrainingRunSummary {
+  model_version: string
+  model_type: string | null
+  trained_at: string | null
+  dataset_id: string | null
+  accuracy: number | null
+  f1_weighted: number | null
+  source_types: SourceType[]
+  is_active: boolean
+}
+
+export interface ModelStatus {
+  trained: boolean
+  active_model: string | null
+  version: string | null
+  model_name: string | null
+  target: string | null
+  trained_at: string | null
+  dataset_id: string | null
+  dataset_source_types: SourceType[]
+  primary_metric: string | null
+  primary_metric_value: number | null
+  majority_baseline: number | null
+  status: string | null
+  feature_count: number
+  xgboost_available: boolean
+  available_models: string[]
+  history: TrainingRunSummary[]
+  notice: string | null
+}
+
+export interface ModelMetrics {
+  model_version: string
+  selected_model: string | null
+  target: string
+  trained_at: string | null
+  metrics: Record<string, number>
+  majority_baseline: number | null
+  confusion_matrix: number[][]
+  confusion_labels: string[]
+  class_distribution: Record<string, number>
+  feature_count: number
+  feature_names: string[]
+  excluded_columns: Record<string, string>
+  training_rows: number
+  validation_rows: number
+  split_strategy: string | null
+  selection_rule: string | null
+  dataset_id: string | null
+  dataset_source_types: SourceType[]
+  all_models: ModelRunResult[]
+  warnings: string[]
+  notice: string | null
+}

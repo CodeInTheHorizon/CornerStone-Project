@@ -7,9 +7,10 @@ platform health probes always have a stable, unprefixed path.
 
 from fastapi import APIRouter
 
-from app.api.routes import auth, data, dataset
+from app.api.routes import auth, data, dataset, ml
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
 api_router.include_router(data.router)
 api_router.include_router(dataset.router)
+api_router.include_router(ml.router)

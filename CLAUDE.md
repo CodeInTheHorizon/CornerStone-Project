@@ -5,7 +5,7 @@ scope, architecture, the 10-day roadmap and the acceptance criteria.
 
 ## Current state
 
-**Phases 1-5 complete.** Phases 6-10 not started.
+**Phases 1-6 complete.** Phases 7-10 not started.
 
 Phase 1: repository structure, FastAPI backend with config/CORS/`/health`,
 SQLAlchemy models for `User`, `MarketplaceSnapshot`, `Prediction`,
@@ -35,7 +35,12 @@ features,dataset_builder}.py, dataset_service, /ml/dataset/{build,status,
 preview}, CSV + metadata output to data/processed/, and the Dataset
 Preparation panel on Train Model.
 
-No model training, prediction or analytics logic exists yet.
+Phase 6: model training - app/ml/{target,training}.py, training_service,
+/ml/{train,status,metrics}, versioned artifacts in app/ml/artifacts/,
+ModelMetadata persistence, and training UI on Train Model plus the dashboard
+model status card.
+
+No prediction, opportunity score or analytics logic exists yet.
 
 ## Layout
 
@@ -49,8 +54,8 @@ backend/app/
   schemas/        pydantic request/response shapes
   auth/           security.py (hashing, JWT), dependencies.py (get_current_user)
   scrapers/       base, parsing, validation, registry + one module per platform
-  ml/             normalization, features, dataset_builder (Phase 5)
-  services/       ingest (shared path), collection, import, demo, dataset, user
+  ml/             normalization, features, dataset_builder, target, training
+  services/       ingest, collection, import, demo, dataset, training, user
 frontend/src/
   components/     reusable UI primitives
   sections/       landing page sections
@@ -85,6 +90,10 @@ frontend/src/
    In feature engineering this means a value that cannot be computed is NaN,
    never 0 -- zero is a claim that nothing changed. Trend features must not
    look ahead: use expanding windows over each listing's own past only.
+   In training it means metrics are always reported beside the majority-class
+   baseline, near-perfect accuracy is flagged as suspected leakage rather than
+   success, and the split stays time-aware because repeated observations of one
+   listing make a random split leak.
 5. Marketplace collection must use officially permitted access paths. Never
    bypass CAPTCHAs, authentication, anti-bot protections or access controls. If
    a source cannot be collected reliably, return an explicit unsupported status.
