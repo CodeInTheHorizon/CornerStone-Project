@@ -19,7 +19,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   return (
     <div className="flex h-full flex-col border-r border-border-hair bg-surface">
       <div className="flex h-16 shrink-0 items-center border-b border-border-hair px-5">
-        <Link to="/" aria-label="MarketPulse AI, home">
+        <Link to="/" onClick={onNavigate} aria-label="MarketPulse AI, home">
           <Logo />
         </Link>
       </div>

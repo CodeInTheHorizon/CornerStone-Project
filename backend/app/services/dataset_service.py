@@ -85,8 +85,11 @@ def list_datasets() -> list[dict[str, Any]]:
     found: list[dict[str, Any]] = []
     for path in PROCESSED_DIR.glob(f"{FILENAME_PREFIX}_*.metadata.json"):
         try:
-            found.append(json.loads(path.read_text(encoding="utf-8")))
-        except (OSError, json.JSONDecodeError):
+            from app.schemas.dataset import DatasetMetadataRead
+            metadata = json.loads(path.read_text(encoding="utf-8"))
+            DatasetMetadataRead.model_validate(metadata)
+            found.append(metadata)
+        except (OSError, ValueError, TypeError):
             # A corrupt sidecar should not hide every other dataset.
             logger.warning("Could not read dataset metadata at %s", path)
 
@@ -98,7 +101,7 @@ def latest_dataset() -> dict[str, Any] | None:
     return datasets[0] if datasets else None
 
 
-def load_dataset_frame(dataset_id: str | None = None) -> pd.DataFrame | None:
+def load_dataset_frame(dataset_id: str | None = None, *, nrows: int | None = None) -> pd.DataFrame | None:
     """Read a stored dataset back. Defaults to the most recent one."""
     metadata = (
         next(
@@ -115,7 +118,11 @@ def load_dataset_frame(dataset_id: str | None = None) -> pd.DataFrame | None:
     if not csv_path or not Path(csv_path).exists():
         return None
 
-    return pd.read_csv(csv_path)
+    try:
+        return pd.read_csv(csv_path, nrows=nrows)
+    except (OSError, ValueError, pd.errors.ParserError):
+        logger.warning("Processed dataset could not be read")
+        return None
 
 
 def preview_rows(
@@ -130,7 +137,7 @@ def preview_rows(
     if metadata is None:
         return None
 
-    frame = load_dataset_frame(dataset_id)
+    frame = load_dataset_frame(metadata["dataset_id"], nrows=max(1, min(limit, MAX_PREVIEW_ROWS)))
     if frame is None:
         return None
 

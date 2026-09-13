@@ -3,14 +3,17 @@
 AI/ML-driven demand forecasting and marketplace intelligence for electronics
 sellers.
 
-MarketPulse AI collects fresh marketplace observations, turns them into a
-structured dataset, trains models on it, and surfaces trend analytics and
-cross-platform opportunity scores through an interactive dashboard.
+MarketPulse AI imports or loads stored marketplace observations, turns them into
+a structured dataset, trains models on it, and surfaces trend analytics and
+experimental opportunity scores. Live collection is currently unavailable.
 
-> **Status: Phase 6 of 10 (ML Model Training).**
+> **Status: Phase 9 of 10 (Testing, Security and UI Polish).**
 > The landing page, accounts, the dashboard, the data layer, the dataset
-> builder and model training work. Prediction, the Cross-Platform
-> Opportunity Score and trend charts are **not** implemented yet.
+> builder, model training, experimental predictions, opportunity scores, and
+> user-scoped prediction history work. Stored trend charts, platform comparisons,
+> and source-aware dashboard summaries are available. Live refresh is unavailable.
+> The active model is DEMO-trained and below the majority baseline. Results
+> demonstrate the pipeline; they are not reliable marketplace recommendations.
 > See [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
 ---
@@ -48,14 +51,14 @@ npm install
 
 Two processes, in two terminals. They run independently.
 
-**Backend** — http://127.0.0.1:8000 (docs at `/docs`):
+**Backend** â€” http://127.0.0.1:8000 (docs at `/docs`):
 
 ```bash
 cd backend
 .venv/Scripts/python -m uvicorn app.main:app --reload
 ```
 
-**Frontend** — http://localhost:5173:
+**Frontend** â€” http://localhost:5173:
 
 ```bash
 cd frontend
@@ -68,9 +71,10 @@ npm run dev
 ## Checks
 
 ```bash
-cd backend  && .venv/Scripts/python -m pytest   # 7 tests
+cd backend  && .venv/Scripts/python -m pytest   # Full backend regression suite
 cd frontend && npm run build                    # tsc -b && vite build
 cd frontend && npm run lint                     # oxlint
+cd frontend && npm test                         # Request/error regression tests
 ```
 
 ## Environment variables
@@ -79,13 +83,14 @@ All configuration is environment-driven; see [`.env.example`](.env.example).
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `DATABASE_URL` | SQLAlchemy URL. SQLite locally, PostgreSQL in production. Leave unset locally — a relative `sqlite:///` URL resolves against the working directory. | absolute `<repo-root>/data/marketpulse.db` |
-| `CORS_ORIGINS` | Comma-separated allowed frontend origins. | `http://localhost:5173,http://127.0.0.1:5173` |
+| `DATABASE_URL` | SQLAlchemy URL. SQLite locally, PostgreSQL in production. Leave unset locally â€” a relative `sqlite:///` URL resolves against the working directory. | absolute `<repo-root>/data/marketpulse.db` |
+| `CORS_ORIGINS` | Exact HTTP(S) origins, comma-separated or JSON array; no wildcard. | `http://localhost:5173,http://127.0.0.1:5173` |
+| `DEBUG` | Boolean; legacy `release` maps to false, `debug` to true. Must be false outside development. | `false` |
 | `ENVIRONMENT` | `development` / `production`. | `development` |
-| `API_PREFIX` | Prefix for feature endpoints. Empty matches the API outline in PROJECT_CONTEXT.md §15. `/health` is always unprefixed. | *(empty)* |
-| `JWT_SECRET_KEY` | Signs access tokens. **Must** be overridden outside development — startup refuses the default. | dev placeholder |
+| `API_PREFIX` | Prefix for feature endpoints. Empty matches the API outline in PROJECT_CONTEXT.md Â§15. `/health` is always unprefixed. | *(empty)* |
+| `JWT_SECRET_KEY` | Signs access tokens. **Must** be overridden outside development â€” startup refuses the default. | dev placeholder |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token lifetime. | `720` (12h) |
-| `AMAZON_PAAPI_ACCESS_KEY` / `_SECRET_KEY` / `_PARTNER_TAG` | Amazon PA-API credentials. Empty = Amazon collector reports itself unavailable. | *(empty)* |
+| `AMAZON_PAAPI_ACCESS_KEY` / `_SECRET_KEY` / `_PARTNER_TAG` | Legacy PA-API configuration. Its deprecated adapter remains unavailable even with credentials. | *(empty)* |
 | `VITE_API_BASE_URL` | Backend base URL used by the browser. | `http://127.0.0.1:8000` |
 | `VITE_WHATSAPP_NUMBER` | Destination for the contact form, digits only (e.g. `919876543210`). Empty disables the form, which then says so. | *(empty)* |
 
@@ -95,25 +100,25 @@ Only `VITE_`-prefixed variables reach the browser bundle. Never put a secret in 
 
 ```
 backend/app/
-├── config.py            environment-driven settings
-├── main.py              application entrypoint, CORS, routers
-├── api/                 HTTP layer (routes/ + aggregate router)
-├── database/            engine, session factory, declarative Base
-├── models/              User, MarketplaceSnapshot, Prediction, ModelMetadata
-├── schemas/             pydantic request/response shapes
-├── auth/                Phase 3
-├── scrapers/            base, parsing, validation, registry + one module per platform
-├── ml/                  Phases 5–7 — features, training, prediction
-└── services/            business logic between API and database
+â”œâ”€â”€ config.py            environment-driven settings
+â”œâ”€â”€ main.py              application entrypoint, CORS, routers
+â”œâ”€â”€ api/                 HTTP layer (routes/ + aggregate router)
+â”œâ”€â”€ database/            engine, session factory, declarative Base
+â”œâ”€â”€ models/              User, MarketplaceSnapshot, Prediction, ModelMetadata
+â”œâ”€â”€ schemas/             pydantic request/response shapes
+â”œâ”€â”€ auth/                Phase 3
+â”œâ”€â”€ scrapers/            base, parsing, validation, registry + one module per platform
+â”œâ”€â”€ ml/                  Phases 5â€“7 â€” features, training, prediction
+â””â”€â”€ services/            business logic between API and database
 
 frontend/src/
-├── components/  reusable UI primitives (Button, Section, FlipCard, Navbar, Icon...)
-├── sections/    landing page sections (Hero, WhyChoose, Developer, Features, Contact)
-├── pages/       routed pages
-├── theme/       light/dark theme context and provider
-├── services/    typed API client
-├── lib/         pure helpers (validation, WhatsApp link building)
-└── hooks/  types/  config/
+â”œâ”€â”€ components/  reusable UI primitives (Button, Section, FlipCard, Navbar, Icon...)
+â”œâ”€â”€ sections/    landing page sections (Hero, WhyChoose, Developer, Features, Contact)
+â”œâ”€â”€ pages/       routed pages
+â”œâ”€â”€ theme/       light/dark theme context and provider
+â”œâ”€â”€ services/    typed API client
+â”œâ”€â”€ lib/         pure helpers (validation, WhatsApp link building)
+â””â”€â”€ hooks/  types/  config/
 
 data/{raw,processed,demo}   dataset storage
 docs/                       design direction and notes
@@ -123,11 +128,11 @@ docs/                       design direction and notes
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| `GET` | `/` | — | Service descriptor |
-| `GET` | `/health` | — | Liveness + database reachability |
-| `GET` | `/docs` | — | OpenAPI UI |
-| `POST` | `/auth/register` | — | Create an account, returns a token |
-| `POST` | `/auth/login` | — | Exchange credentials for a token |
+| `GET` | `/` | â€” | Service descriptor |
+| `GET` | `/health` | â€” | Liveness + database reachability |
+| `GET` | `/docs` | â€” | OpenAPI UI |
+| `POST` | `/auth/register` | â€” | Create an account, returns a token |
+| `POST` | `/auth/login` | â€” | Exchange credentials for a token |
 | `GET` | `/auth/me` | Bearer | The authenticated user |
 | `POST` | `/data/collect` | Bearer | Collect fresh listings from a marketplace |
 | `POST` | `/data/import` | Bearer | Import a CSV/JSON dataset (stored as IMPORTED) |
@@ -142,7 +147,7 @@ docs/                       design direction and notes
 | `GET` | `/ml/status` | Bearer | Active model, version and training history |
 | `GET` | `/ml/metrics` | Bearer | Measured evaluation results for the active model |
 
-Prediction and analytics endpoints arrive in Phases 7–8.
+Prediction and analytics endpoints arrive in Phases 7â€“8.
 
 There is no `/auth/logout`: tokens are stateless JWTs, so signing out is a
 client-side discard. A no-op endpoint would imply a revocation that does not
@@ -152,11 +157,11 @@ happen. Server-side revocation is a real feature worth adding, not a stub.
 
 | Path | Auth | Page |
 |---|---|---|
-| `/` | — | Public landing page |
-| `/login`, `/register` | — | Authentication |
-| `/status` | — | Backend connectivity diagnostic |
+| `/` | â€” | Public landing page |
+| `/login`, `/register` | â€” | Authentication |
+| `/status` | â€” | Backend connectivity diagnostic |
 | `/dashboard` | Required | Dashboard overview |
-| `/dashboard/marketplace-data`, `/predictor`, `/train`, `/trends`, `/analytics` | Required | Section placeholders — routes exist, features arrive in Phases 4–8 |
+| `/dashboard/marketplace-data`, `/predictor`, `/train`, `/trends`, `/analytics` | Required | Section placeholders â€” routes exist, features arrive in Phases 4â€“8 |
 
 ## Theming
 
@@ -178,7 +183,7 @@ pairing in both themes was measured against WCAG AA (4.5:1). See
 
 ## Limitations
 
-These are current and deliberate — please read before evaluating the project.
+These are current and deliberate â€” please read before evaluating the project.
 
 - **Nothing is collected or predicted yet.** The landing page describes what the
   system will do; the data and ML layers behind it are still to be built.
@@ -407,6 +412,131 @@ proportion to how often it occurs. Ties break toward the simpler model.
 
 ## Documentation
 
-- [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) — full specification and 10-day roadmap
-- [CLAUDE.md](CLAUDE.md) — working rules and current state
-- [docs/design-direction.md](docs/design-direction.md) — visual language
+- [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) â€” full specification and 10-day roadmap
+- [CLAUDE.md](CLAUDE.md) â€” working rules and current state
+- [docs/design-direction.md](docs/design-direction.md) â€” visual language
+- [docs/PHASE_7_REPORT.md](docs/PHASE_7_REPORT.md) â€” prediction contract, formula, verification and limitations
+
+## Experimental prediction workflow
+
+1. Collect, import, or load DEMO snapshots on **Marketplace Data**.
+2. Build a processed dataset and explicitly train a model on **Train Model**.
+3. Open **ML Predictor**, search/select a stored electronics product, and inspect
+   its latest observations. Click **Make Prediction** to compare available platforms.
+4. Inspect validation accuracy versus majority baseline accuracy, weighted F1,
+   provenance, observation dates, class probabilities, and score contributions.
+5. Reopen a saved result from **Your recent predictions**. Historical results keep
+   their original quality metrics, even after another model is trained.
+
+Prediction uses the exact saved Pipeline and never trains or rebuilds its
+preprocessing. Optional missing values remain missing for the saved imputer;
+missing required columns cause a compatibility error. Product matching preserves
+Phase 5's strict normalized name + brand + category identity.
+
+Authenticated Phase 7 endpoints (subject to `API_PREFIX`):
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/ml/prediction-options?q=&limit=50&offset=0` | Search the latest dataset and preview observations |
+| POST | `/ml/predict` | Predict and persist a successful comparison |
+| GET | `/ml/predictions?limit=20&offset=0` | Current user's history and total count |
+| GET | `/ml/predictions/{id}` | Current user's original saved result |
+
+Example request, using a product key returned by the options endpoint:
+
+```json
+{
+  "product_key": "acme 20000mah|acme|power banks",
+  "platforms": ["amazon", "flipkart", "croma", "alibaba"]
+}
+```
+
+`dataset_id` optionally pins the previewed dataset; otherwise the newest prepared
+dataset is used. The frontend pins its preview. No arbitrary manual feature
+vectors are accepted. Phase 7 supports INR observations in the eight canonical
+electronics categories already defined by Phase 5.
+
+The fixed 100-point score uses model probability (10), price competitiveness
+(20), rating (15), review signals (15), discount (10), competition (15), and price
+trend (15). Missing components receive no points, are explicitly identified, and
+never increase ML's weight. At least three observed deterministic components,
+covering 40 points, plus a positive observed price are required. The score is a
+heuristic, not a probability of success or an estimate of profit or sales demand.
+The full formula is in `backend/app/ml/opportunity.py` and is returned by the API.
+
+Observations older than seven days remain usable for demonstration but are
+labelled **STALE**, with instructions to refresh and rebuild. All observation
+timestamps remain visible; a recent dataset build does not imply recent observations.
+Unavailable platforms return `insufficient_data`, never invented scores.
+
+Migration `0004` adds a nullable JSON result snapshot to the existing Prediction
+table and runs automatically on backend startup. Existing rows are preserved.
+No model or dataset persistence infrastructure was changed.
+
+Tests now use isolated database, artifact and processed-dataset storage, preserving
+the bundled demo fixture. On PowerShell, use `npm.cmd run build` / `npm.cmd run lint`
+if execution policy blocks `npm.ps1`. If the surrounding shell exports
+`DEBUG=release`, it is explicitly interpreted as false. Prefer `DEBUG=false`;
+unknown non-boolean values are rejected. Tests isolate their settings.
+
+
+## Stored analytics (Phase 8)
+
+Open **Trend Analysis** for per-listing price, discount, rating, review and
+availability history. Open **Analytics** for exact-product or explicitly grouped
+category comparisons. Both use authenticated snapshot-only APIs:
+
+| GET endpoint | Purpose |
+| --- | --- |
+| `/analytics/trends` | Separate listing histories and deterministic metrics |
+| `/analytics/platform-comparison` | Comparable platform statistics; matching saved Phase 7 scores where available |
+| `/analytics/summary` | Stored counts, latest observation, model/dataset context and usable collector status |
+| `/analytics/options` | Searchable, paginated product choices from snapshots |
+
+Filters: `product`, `product_key`, `platform`, `category`, `source_type`,
+`start_date`, `end_date`. Dates include both complete UTC calendar days.
+Trends accept `limit` (1?100, default 20) and `offset`; options additionally
+accept `q`, with default limit 50. `API_PREFIX` applies to all routes.
+
+Histories never combine sources, currencies or distinct listing IDs. Fewer than
+two valid readings cannot establish change or direction. Missing latest signals
+stay null; historical means remain available. Price direction uses a ?1% band
+across the selected window. Review momentum is net reviews per day, not sales.
+
+**Refresh Market Data** remains disabled with collector-specific reasons until a
+supported collector is available. **Reload stored analytics** only rereads stored
+data. No scheduled jobs or model retraining were added. See
+[Phase 8 report](docs/PHASE_8_REPORT.md) for calculations, validation and a DEMO example.
+
+
+## Stabilization (Phase 9)
+
+The backend integration test exercises a fresh database through register/login,
+demo loading and JSON import, dataset build, Random Forest training, prediction,
+score display APIs, trends/comparison, history, user isolation and a second startup.
+It uses temporary database, dataset and model directories. No development data is
+removed and no development model is retrained by the checks.
+
+Security fixes require JWT expiry/issued-at/subject claims, avoid echoing password
+inputs in validation errors, handle registration races, bound uploaded-file reads,
+validate model/date/platform selections, and return generic unexpected failures.
+Startup migrations preserve application logging. Model training is guarded against
+overlapping calls in one process and refuses to overwrite an existing artifact.
+Run one backend worker until cross-process coordination is implemented.
+
+The frontend uses shared error handling for JSON and multipart calls: 30-second
+request timeouts, 120 seconds for imports, and 300 seconds for training. A timeout
+**does not cancel server work**; check status before retrying a mutation. Rejected
+sessions return to sign-in with a message; logout clears client storage, including
+other open tabs. JWTs remain stateless: a copied token stays valid until expiry
+or account deactivation. localStorage token storage and the shared operator data/
+model workspace are existing MVP limitations, not production multi-tenant isolation.
+
+The mobile drawer contains focus, supports Escape, locks background scrolling and
+restores focus on close. Charts can scroll at narrow widths. Live/source warnings
+remain visible. No browser was available for interactive desktop/tablet/mobile QA;
+these layout changes are code-reviewed, not visually certified. Backend tests,
+frontend request tests, build and lint provide the automated evidence.
+
+See [Phase 9 report](docs/PHASE_9_REPORT.md) for the file inventory, checks and
+remaining Phase 10 blockers. No deployment was attempted.

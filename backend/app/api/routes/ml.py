@@ -27,7 +27,7 @@ from app.services import training_service
 router = APIRouter(prefix="/ml", tags=["ml"])
 
 #: Statuses that mean "the request was fine, the data was not".
-DATA_STATUSES = {"no_dataset", "insufficient_data", "missing_target", "missing_features"}
+DATA_STATUSES = {"no_dataset", "insufficient_data", "missing_target", "missing_features", "no_models"}
 
 
 def _hyper(record: ModelMetadata) -> dict[str, Any]:
@@ -73,6 +73,8 @@ def train(
             if exc.status in DATA_STATUSES
             else status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+        if exc.status == "training_busy":
+            code = status.HTTP_409_CONFLICT
         raise HTTPException(
             status_code=code, detail={"status": exc.status, "reason": exc.reason}
         ) from None

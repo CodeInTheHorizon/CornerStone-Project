@@ -52,6 +52,25 @@ def test_upgrade_is_idempotent(migrated_engine):
     upgrade_to_head(migrated_engine)
 
 
+def test_phase7_preserves_existing_prediction_on_upgrade(tmp_path):
+    from alembic import command
+    from sqlalchemy import text
+    from app.database.migrate import _alembic_config
+
+    engine = create_engine(f"sqlite:///{(tmp_path / 'phase6.db').as_posix()}")
+    try:
+        with engine.begin() as connection:
+            command.upgrade(_alembic_config(connection), "0003")
+            connection.execute(text("INSERT INTO users (id, email, hashed_password, is_active, created_at, updated_at) VALUES (1, 'migration@example.com', 'x', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"))
+            connection.execute(text("INSERT INTO predictions (user_id, product_name, model_version, created_at, updated_at) VALUES (1, 'Existing accessory', 'v2', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"))
+        upgrade_to_head(engine)
+        with engine.connect() as connection:
+            row = connection.execute(text("SELECT product_name, model_version, result_payload FROM predictions")).one()
+            assert tuple(row) == ("Existing accessory", "v2", None)
+    finally:
+        engine.dispose()
+
+
 def test_pre_alembic_database_is_adopted_without_data_loss():
     """A database created before migrations existed must be adopted, not rebuilt.
 

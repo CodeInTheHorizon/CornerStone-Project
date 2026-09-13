@@ -41,6 +41,10 @@ class Prediction(Base, TimestampMixin):
     # Number of snapshots the prediction was grounded in, for data-freshness display.
     snapshots_used: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    # Immutable response snapshot: probabilities, provenance, score components,
+    # and measured model quality must survive subsequent training runs.
+    result_payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
     user: Mapped["User"] = relationship(back_populates="predictions")
 
     def __repr__(self) -> str:  # pragma: no cover - debugging aid

@@ -114,7 +114,7 @@ def _parse_timestamp(value: Any) -> datetime | None:
     # Naive timestamps are assumed UTC rather than rejected.
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed
+    return parsed.astimezone(timezone.utc)
 
 
 def _normalize_keys(row: dict[str, Any]) -> dict[str, Any]:
@@ -214,6 +214,8 @@ def parse_rows(content: bytes, filename: str) -> list[dict[str, Any]]:
 def _parse_json(text: str) -> list[dict[str, Any]]:
     try:
         payload = json.loads(text)
+    except RecursionError:
+        raise ImportError_("JSON nesting is too deep.") from None
     except json.JSONDecodeError as exc:
         raise ImportError_(f"Invalid JSON: {exc.msg} (line {exc.lineno}).") from None
 
@@ -254,7 +256,14 @@ def _parse_csv(text: str) -> list[dict[str, Any]]:
             "'platform' and 'product_name'."
         )
 
-    rows = [dict(row) for row in reader]
+    try:
+        rows = []
+        for row in reader:
+            rows.append(dict(row))
+            if len(rows) > MAX_IMPORT_ROWS:
+                raise ImportError_(f"File exceeds the limit of {MAX_IMPORT_ROWS} rows.")
+    except csv.Error:
+        raise ImportError_("CSV could not be parsed; check field sizes and quoting.") from None
     if not rows:
         raise ImportError_("CSV has a header but no data rows.")
     return rows

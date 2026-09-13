@@ -14,6 +14,7 @@ export function trainModel(
 ): Promise<TrainResponse> {
   return apiRequest<TrainResponse>('/ml/train', {
     method: 'POST',
+    timeoutMs: 300_000,
     token,
     body: JSON.stringify(payload),
   })

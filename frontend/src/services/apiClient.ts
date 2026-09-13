@@ -7,11 +7,13 @@ import type { ApiError } from '@/types/api'
 
 export class ApiRequestError extends Error implements ApiError {
   readonly status?: number
+  readonly detail?: unknown
 
-  constructor(message: string, status?: number) {
+  constructor(message: string, status?: number, detail?: unknown) {
     super(message)
     this.name = 'ApiRequestError'
     this.status = status
+    this.detail = detail
   }
 
   /** True when the token is missing, expired or rejected. */
@@ -68,45 +70,60 @@ function extractMessage(body: unknown, fallback: string): string {
 interface RequestOptions extends RequestInit {
   /** Bearer token to attach, when the endpoint requires authentication. */
   token?: string | null
+  /** A timeout does not cancel server-side work; mutations are never auto-retried. */
+  timeoutMs?: number
 }
 
 export async function apiRequest<T>(
   path: string,
-  { token, ...init }: RequestOptions = {},
+  { token, timeoutMs = 30_000, ...init }: RequestOptions = {},
 ): Promise<T> {
   const url = `${env.apiBaseUrl}${path}`
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(init.headers as Record<string, string> | undefined),
-  }
-  if (token) headers.Authorization = `Bearer ${token}`
+  const headers = new Headers(init.headers)
+  if (!(init.body instanceof FormData) && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
+  if (token) headers.set('Authorization', `Bearer ${token}`)
 
-  let response: Response
+  const controller = new AbortController()
+  const cancel = () => controller.abort()
+  if (init.signal?.aborted) cancel()
+  else init.signal?.addEventListener('abort', cancel, { once: true })
+  const timer = setTimeout(cancel, timeoutMs)
   try {
-    response = await fetch(url, { ...init, headers })
-  } catch {
-    // Network-level failure: backend not running, DNS, CORS rejection.
-    throw new ApiRequestError(
-      `Could not reach the API at ${env.apiBaseUrl}. Is the backend running?`,
-    )
+    const response = await fetch(url, { ...init, headers, signal: controller.signal })
+    if (response.status === 401 && token && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('marketpulse:unauthorized', { detail: { token } }))
+    }
+    if (response.status === 204) return undefined as T
+    let body: unknown = null
+    try { body = await response.json() }
+    catch {
+      if (controller.signal.aborted) throw new Error('aborted')
+    }
+    if (!response.ok) {
+      const fallbacks: Record<number, string> = {
+        401: 'Your session was rejected. Please sign in again.',
+        403: 'You do not have permission to perform this action.',
+        404: 'The requested resource was not found.',
+        422: 'Check the submitted values and try again.',
+        500: 'The server could not complete the request. Please retry.',
+      }
+      throw new ApiRequestError(
+        extractMessage(body, fallbacks[response.status] ?? `Request failed with status ${response.status}.`),
+        response.status,
+        body && typeof body === 'object' ? (body as { detail?: unknown }).detail : undefined,
+      )
+    }
+    if (body === null) throw new ApiRequestError('The API returned an unreadable response. Please retry.', response.status)
+    return body as T
+  } catch (error) {
+    if (error instanceof ApiRequestError) throw error
+    if (controller.signal.aborted) {
+      throw new ApiRequestError(init.signal?.aborted ? 'Request cancelled.' : 'The request timed out. Server work may still finish; reload status before submitting again.')
+    }
+    throw new ApiRequestError(`Could not reach the API at ${env.apiBaseUrl}. Is the backend running?`)
+  } finally {
+    clearTimeout(timer)
+    init.signal?.removeEventListener('abort', cancel)
   }
-
-  if (response.status === 204) return undefined as T
-
-  let body: unknown = null
-  try {
-    body = await response.json()
-  } catch {
-    body = null
-  }
-
-  if (!response.ok) {
-    throw new ApiRequestError(
-      extractMessage(body, `Request failed with status ${response.status}.`),
-      response.status,
-    )
-  }
-
-  return body as T
 }

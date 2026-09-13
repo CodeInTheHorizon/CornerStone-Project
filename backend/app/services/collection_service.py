@@ -23,6 +23,7 @@ from app.scrapers import (
     get_collector,
 )
 from app.services.ingest import ingest
+from app.scrapers.registry import effective_status
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,9 @@ def run_collection(
     code. Never returns fabricated rows on failure.
     """
     collector = get_collector(platform)  # raises UnknownPlatformError
+    state = effective_status(collector.status())
+    if not state.available:
+        raise CollectorUnavailableError(state.reason or "Collector unavailable.")
     max_items = max(1, min(MAX_ITEMS_LIMIT, max_items))
 
     outcome = collector.collect(

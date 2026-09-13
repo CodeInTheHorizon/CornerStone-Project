@@ -33,13 +33,16 @@ def get_current_user(
         raise _UNAUTHORIZED
 
     subject = payload.get("sub")
-    if subject is None:
+    if not isinstance(subject, str) or not subject.isascii() or not subject.isdigit() or len(subject) > 18:
         raise _UNAUTHORIZED
 
     try:
         user_id = int(subject)
     except (TypeError, ValueError):
         raise _UNAUTHORIZED from None
+
+    if user_id <= 0:
+        raise _UNAUTHORIZED
 
     # Look the user up every request: a token must stop working as soon as the
     # account is deleted or deactivated.

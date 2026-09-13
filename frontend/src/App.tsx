@@ -10,6 +10,8 @@ import { LoginPage } from '@/pages/LoginPage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { StatusPage } from '@/pages/StatusPage'
 import { TrainModelPage } from '@/pages/TrainModelPage'
+import { PredictorPage } from '@/pages/PredictorPage'
+import { AnalyticsPage } from '@/pages/AnalyticsPage'
 import { dashboardNav } from '@/config/dashboard'
 import { ThemeProvider } from '@/theme/ThemeProvider'
 
@@ -55,6 +57,10 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
+            <Route path="/dashboard/predictor" element={<ProtectedRoute><PredictorPage /></ProtectedRoute>} />
+            <Route path="/dashboard/trends" element={<ProtectedRoute><AnalyticsPage key="trends" mode="trends" /></ProtectedRoute>} />
+            <Route path="/dashboard/analytics" element={<ProtectedRoute><AnalyticsPage key="comparison" mode="comparison" /></ProtectedRoute>} />
 
             {dashboardNav
               .filter((item) => !item.available)

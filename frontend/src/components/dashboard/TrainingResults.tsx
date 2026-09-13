@@ -45,6 +45,8 @@ export function TrainingResults({ metrics }: { metrics: ModelMetrics }) {
         </div>
       </div>
 
+      <p className="mt-4 text-sm text-signal-warn">Experimental opportunity proxy, not actual sales demand. Validation performance does not establish reliability for marketplace decisions.</p>
+
       {/* Headline metrics */}
       <dl className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {Object.entries(METRIC_LABELS).map(([key, label]) =>

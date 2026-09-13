@@ -20,13 +20,17 @@ from typing import Any
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
-from app.config import settings
+from app.config import settings, PROJECT_ROOT
 from app.models import MarketplaceSnapshot
 from app.models.enums import SourceType
 from app.scrapers.base import NormalizedRecord
 from app.services.ingest import IngestResult, ingest
 
+# The fixture is shipped with the project, independent of writable output storage.
+# An explicitly placed fixture in DATA_DIR still takes precedence.
 DEMO_FILE = settings.DATA_DIR / "demo" / "electronics_snapshots.json"
+if not DEMO_FILE.is_file():
+    DEMO_FILE = PROJECT_ROOT / "data" / "demo" / "electronics_snapshots.json"
 
 
 class DemoDatasetMissingError(FileNotFoundError):

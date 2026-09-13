@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
+from threading import Lock
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -31,6 +32,7 @@ from app.services import dataset_service
 logger = logging.getLogger(__name__)
 
 ARTIFACT_DIR = settings.MODEL_ARTIFACT_DIR
+_TRAINING_LOCK = Lock()
 MODEL_NAME = "marketpulse-opportunity-classifier"
 
 DEMO_TRAINING_NOTICE = (
@@ -46,6 +48,10 @@ def _next_version(db: Session) -> str:
         for version in existing
         if isinstance(version, str) and version.startswith("v") and version[1:].isdigit()
     ]
+    for path in ARTIFACT_DIR.glob("model_v*.*"):
+        suffix = path.name.split(".")[0].removeprefix("model_v")
+        if suffix.isdigit():
+            numbers.append(int(suffix))
     return f"v{max(numbers, default=0) + 1}"
 
 
@@ -53,7 +59,23 @@ def _notice(source_types: list[str]) -> str | None:
     return DEMO_TRAINING_NOTICE if SourceType.DEMO.value in source_types else None
 
 
-def train(
+def train(db: Session, *, dataset_id: str | None = None, models: list[str] | None = None) -> ModelMetadata:
+    if not _TRAINING_LOCK.acquire(blocking=False):
+        raise TrainingError("A training run is already in progress. Wait for it to finish.", status="training_busy")
+    try:
+        return _train(db, dataset_id=dataset_id, models=models)
+    except TrainingError:
+        db.rollback()
+        raise
+    except Exception as exc:
+        db.rollback()
+        logger.error("Training failed: %s", type(exc).__name__)
+        raise TrainingError("Training could not be completed. Check dataset and artifact storage, then retry.", status="training_failed") from None
+    finally:
+        _TRAINING_LOCK.release()
+
+
+def _train(
     db: Session,
     *,
     dataset_id: str | None = None,
@@ -111,7 +133,9 @@ def _persist_artifact(
 
     # The whole pipeline, so preprocessing travels with the model and
     # prediction cannot accidentally use different encoding.
-    joblib.dump(outcome.selected.pipeline, artifact_path)
+    # Exclusive creation protects historical artifacts, including orphaned files.
+    with artifact_path.open("xb") as stream:
+        joblib.dump(outcome.selected.pipeline, stream)
 
     sidecar = {
         "model_version": version,
@@ -148,7 +172,8 @@ def _persist_artifact(
         "warnings": outcome.warnings,
         "notice": _notice(dataset_meta.get("source_types", [])),
     }
-    sidecar_path.write_text(json.dumps(sidecar, indent=2) + "\n", encoding="utf-8")
+    with sidecar_path.open("x", encoding="utf-8") as stream:
+        stream.write(json.dumps(sidecar, indent=2) + "\n")
 
     logger.info("Saved model %s (%s) to %s", version, outcome.selected.name, artifact_path)
     return artifact_path

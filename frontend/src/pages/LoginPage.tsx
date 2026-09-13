@@ -14,7 +14,7 @@ interface Errors {
 }
 
 export function LoginPage() {
-  const { login, status } = useAuth()
+  const { login, status, sessionError } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -76,7 +76,7 @@ export function LoginPage() {
       }
     >
       <form noValidate onSubmit={handleSubmit} className="space-y-5">
-        {formError && <FormAlert>{formError}</FormAlert>}
+        {(formError || sessionError) && <FormAlert>{formError || sessionError}</FormAlert>}
 
         <Field
           label="Email"

@@ -6,7 +6,9 @@ replacing a marketplace touches nothing else.
 
 from __future__ import annotations
 
-from app.models.enums import Platform
+from dataclasses import replace
+
+from app.models.enums import Platform, IngestionMode
 from app.scrapers.alibaba import AlibabaCollector
 from app.scrapers.amazon import AmazonCollector
 from app.scrapers.base import CollectorStatus, MarketplaceCollector
@@ -45,8 +47,16 @@ def get_collector(platform: str | Platform) -> MarketplaceCollector:
     return _BUILDERS[resolved]()
 
 
+def effective_status(state: CollectorStatus) -> CollectorStatus:
+    """One availability policy for the API and analytics refresh controls."""
+    if "Product Advertising API 5.0" in state.access_method:
+        return replace(state, available=False, ingestion_mode=IngestionMode.UNAVAILABLE,
+                       reason="The existing Amazon collector uses deprecated PA-API 5. A supported replacement and approved API access with credentials are required.")
+    return state
+
+
 def all_statuses() -> dict[str, CollectorStatus]:
     """Status for every platform, for GET /data/status."""
     return {
-        platform.value: _BUILDERS[platform]().status() for platform in Platform
+        platform.value: effective_status(_BUILDERS[platform]().status()) for platform in Platform
     }

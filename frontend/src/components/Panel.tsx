@@ -11,7 +11,7 @@ export function Panel({ className, children }: PanelProps) {
   return (
     <div
       className={cn(
-        'rounded-panel border border-border-hair bg-surface p-6',
+        'min-w-0 break-words rounded-panel border border-border-hair bg-surface p-6',
         className,
       )}
     >

@@ -5,11 +5,14 @@ All runtime configuration is read from environment variables (or a local
 See .env.example for the full list of supported variables.
 """
 
+import json
+from typing import Annotated, Literal
+from urllib.parse import urlsplit
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, field_validator, model_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 # Repository root: backend/app/config.py -> backend/app -> backend -> repo root
 BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -29,7 +32,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "MarketPulse AI API"
     APP_VERSION: str = "0.1.0"
     ENVIRONMENT: str = "development"
-    DEBUG: bool = True
+    DEBUG: bool = False
     # Empty by default so routes match the API outline in PROJECT_CONTEXT.md
     # section 15. Set to e.g. "/api" to namespace every feature endpoint.
     API_PREFIX: str = ""
@@ -50,8 +53,8 @@ class Settings(BaseSettings):
     # local development works out of the box; startup refuses to use it when
     # ENVIRONMENT is not 'development'.
     JWT_SECRET_KEY: str = "dev-only-insecure-secret-change-me"
-    JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 12
+    JWT_ALGORITHM: Literal["HS256", "HS384", "HS512"] = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60 * 12, ge=1, le=10080)
 
     # --- Marketplace collection (Phase 4) ---
     # Amazon Product Advertising API 5.0. Requires an approved Amazon
@@ -66,7 +69,7 @@ class Settings(BaseSettings):
 
     # --- CORS ---
     # Comma-separated list of allowed frontend origins.
-    CORS_ORIGINS: list[str] = Field(
+    CORS_ORIGINS: Annotated[list[str], NoDecode] = Field(
         default=["http://localhost:5173", "http://127.0.0.1:5173"]
     )
 
@@ -79,8 +82,41 @@ class Settings(BaseSettings):
     def _split_cors_origins(cls, value: object) -> object:
         """Allow CORS_ORIGINS to be given as a comma-separated string."""
         if isinstance(value, str):
-            return [origin.strip() for origin in value.split(",") if origin.strip()]
+            return json.loads(value) if value.strip().startswith("[") else [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def _boolean_debug(cls, value: object) -> object:
+        # Some Windows shells export DEBUG=release. Map only these known labels;
+        # all other values still undergo strict Pydantic boolean parsing.
+        if isinstance(value, str):
+            value = value.strip().lower()
+            if value == "release":
+                return False
+            if value == "debug":
+                return True
+        return value
+
+    @field_validator("CORS_ORIGINS")
+    @classmethod
+    def _exact_origins(cls, values: list[str]) -> list[str]:
+        for origin in values:
+            parsed = urlsplit(origin)
+            if parsed.scheme not in {"http", "https"} or not parsed.netloc or parsed.path or parsed.query or parsed.fragment or parsed.username:
+                raise ValueError("CORS origins must be exact HTTP(S) origins without paths or credentials.")
+        return list(dict.fromkeys(values))
+
+    @model_validator(mode="after")
+    def _safe_runtime(self):
+        if not self.JWT_SECRET_KEY.strip():
+            raise ValueError("JWT_SECRET_KEY must not be empty.")
+        if not self.is_development:
+            if self.uses_default_jwt_secret or len(self.JWT_SECRET_KEY.encode()) < 32:
+                raise ValueError("Use a random JWT_SECRET_KEY of at least 32 bytes outside development.")
+            if self.DEBUG:
+                raise ValueError("DEBUG must be false outside development.")
+        return self
 
     @property
     def is_sqlite(self) -> bool:

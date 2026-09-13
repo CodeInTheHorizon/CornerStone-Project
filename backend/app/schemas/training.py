@@ -1,18 +1,19 @@
 """Request/response schemas for model training."""
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 AVAILABLE_MODELS = ["random_forest", "xgboost"]
 
 
 class TrainRequest(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
     #: "latest" (default) or a specific dataset id from /ml/dataset/status.
-    dataset_id: str | None = Field(default="latest")
-    models: list[str] | None = Field(
-        default=None,
+    dataset_id: str | None = Field(default="latest", min_length=1, max_length=64)
+    models: list[Literal["random_forest", "xgboost"]] | None = Field(
+        default=None, min_length=1, max_length=2,
         description="Subset of random_forest, xgboost. Omit to try both.",
     )
 

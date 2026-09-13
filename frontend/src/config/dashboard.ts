@@ -22,7 +22,7 @@ export const dashboardNav: DashboardNavItem[] = [
     label: 'ML Predictor',
     to: '/dashboard/predictor',
     icon: 'compass',
-    available: false,
+    available: true,
   },
   {
     label: 'Train Model',
@@ -34,13 +34,13 @@ export const dashboardNav: DashboardNavItem[] = [
     label: 'Trend Analysis',
     to: '/dashboard/trends',
     icon: 'trend',
-    available: false,
+    available: true,
   },
   {
     label: 'Analytics',
     to: '/dashboard/analytics',
     icon: 'chart',
-    available: false,
+    available: true,
   },
 ]
 

@@ -6,6 +6,8 @@ meaningful feature, but pretending a no-op endpoint revokes anything would be
 worse than not having one.
 """
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -16,6 +18,8 @@ from app.database import get_db
 from app.models import User
 from app.schemas.auth import Token, UserLogin, UserRead, UserRegister
 from app.services import user_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -61,6 +65,7 @@ def login(payload: UserLogin, db: Session = Depends(get_db)) -> Token:
     # One message for both "no such user" and "wrong password", so the response
     # does not reveal which emails are registered.
     if user is None:
+        logger.warning("Authentication rejected: invalid credentials")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password.",
@@ -68,6 +73,7 @@ def login(payload: UserLogin, db: Session = Depends(get_db)) -> Token:
         )
 
     if not user.is_active:
+        logger.warning("Authentication rejected: inactive account")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This account is inactive.",

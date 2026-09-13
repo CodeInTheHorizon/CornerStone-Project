@@ -5,6 +5,7 @@ Sits between the API layer and the ORM so route handlers stay thin.
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from app.auth.security import hash_password, verify_password
 from app.models import User
@@ -49,7 +50,13 @@ def create_user(db: Session, payload: UserRegister) -> User:
         hashed_password=hash_password(payload.password),
     )
     db.add(user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        if get_user_by_email(db, payload.email) is not None:
+            raise EmailAlreadyRegisteredError() from None
+        raise
     db.refresh(user)
     return user
 

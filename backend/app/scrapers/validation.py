@@ -15,6 +15,8 @@ real measurement.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from datetime import timezone
+from math import isfinite
 from urllib.parse import urlparse
 
 from app.models.enums import Platform
@@ -54,7 +56,14 @@ def validate_record(record: NormalizedRecord) -> ValidationResult:
     if record.collection_timestamp is None:
         return ValidationResult(None, warnings, "collection_timestamp is missing")
 
-    cleaned = record
+    stamp = record.collection_timestamp
+    stamp = stamp.replace(tzinfo=timezone.utc) if stamp.tzinfo is None else stamp.astimezone(timezone.utc)
+    cleaned = replace(record, collection_timestamp=stamp)
+    for field in ("price", "original_price", "rating", "review_count", "discount_percentage"):
+        value = getattr(cleaned, field)
+        if value is not None and not isfinite(value):
+            warnings.append(f"{field} was not finite and has been dropped")
+            cleaned = replace(cleaned, **{field: None})
 
     # --- Field-level corrections ---
     if cleaned.price is not None and cleaned.price < 0:

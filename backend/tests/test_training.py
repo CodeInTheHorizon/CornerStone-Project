@@ -57,8 +57,9 @@ def clean_snapshots(db_session):
 
 
 @pytest.fixture
-def clean_models(db_session):
-    """No previously trained models, so version numbering starts at v1."""
+def clean_models(db_session, tmp_path, monkeypatch):
+    """Each test owns metadata AND files, so numbering can safely start at v1."""
+    monkeypatch.setattr(training_service, "ARTIFACT_DIR", tmp_path / "models")
     db_session.query(ModelMetadata).delete()
     db_session.commit()
     yield
@@ -438,17 +439,21 @@ def test_retraining_versions_and_does_not_overwrite(
     build_dataset_via_api(client, auth_headers)
 
     first = client.post("/ml/train", headers=auth_headers, json={}).json()
+    first_record = db_session.query(ModelMetadata).filter_by(model_version=first["model_version"]).one()
+    original_bytes = Path(first_record.artifact_path).read_bytes()
     second = client.post("/ml/train", headers=auth_headers, json={}).json()
 
     assert first["model_version"] == "v1"
     assert second["model_version"] == "v2"
     assert Path(first["model_version"]).name != Path(second["model_version"]).name
 
+    # The API commits through a separate session; refresh this test session.
+    db_session.expire_all()
     records = {r.model_version: r for r in db_session.query(ModelMetadata).all()}
     assert records["v1"].is_active is False, "only one model may be active"
     assert records["v2"].is_active is True
     # The older artifact survives.
-    assert Path(records["v1"].artifact_path).exists()
+    assert Path(records["v1"].artifact_path).read_bytes() == original_bytes
 
 
 def test_status_and_metrics_after_training(client, auth_headers, clean_models, clean_snapshots):

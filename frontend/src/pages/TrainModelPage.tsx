@@ -65,6 +65,7 @@ export function TrainModelPage() {
 
   const [status, setStatus] = useState<DatasetStatus | null>(null)
   const [preview, setPreview] = useState<DatasetPreview | null>(null)
+  const [loadingStatus, setLoadingStatus] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
 
   const [platforms, setPlatforms] = useState<string[]>([])
@@ -87,29 +88,24 @@ export function TrainModelPage() {
 
   const load = useCallback(async () => {
     if (!token) return
+    setLoadingStatus(true)
     setLoadError(null)
-    try {
-      const nextStatus = await datasetService.fetchDatasetStatus(token)
-      setStatus(nextStatus)
-      if (nextStatus.has_dataset) {
-        setPreview(await datasetService.fetchDatasetPreview(token, 10))
-      }
+    const outcomes = await Promise.allSettled([
+      (async () => {
+        const nextStatus = await datasetService.fetchDatasetStatus(token)
+        setStatus(nextStatus)
+        setPreview(nextStatus.has_dataset ? await datasetService.fetchDatasetPreview(token, 10) : null)
+      })(),
+      (async () => {
+        const nextModel = await trainingService.fetchModelStatus(token)
+        setModelStatus(nextModel)
+        setMetrics(nextModel.trained ? await trainingService.fetchModelMetrics(token) : null)
+      })(),
+    ])
+    setLoadingStatus(false)
+    const failures = outcomes.filter((outcome) => outcome.status === 'rejected')
+    if (failures.length) setLoadError(failures.map((failure) => failure.reason instanceof Error ? failure.reason.message : 'Could not load status.').join(' '))
 
-      const nextModel = await trainingService.fetchModelStatus(token)
-      setModelStatus(nextModel)
-      // Metrics only exist once something has been trained.
-      setMetrics(
-        nextModel.trained
-          ? await trainingService.fetchModelMetrics(token)
-          : null,
-      )
-    } catch (error) {
-      setLoadError(
-        error instanceof ApiRequestError
-          ? error.message
-          : 'Could not load dataset status.',
-      )
-    }
   }, [token])
 
   useEffect(() => {
@@ -181,6 +177,7 @@ export function TrainModelPage() {
 
   return (
     <DashboardLayout title="MarketPulse AI — Train Model">
+      {loadingStatus && <p role="status" className="mb-4 text-sm text-muted">Loading dataset and model status?</p>}
       {loadError && (
         <div className="mb-6">
           <FormAlert>{loadError}</FormAlert>
@@ -502,7 +499,7 @@ export function TrainModelPage() {
               type="button"
               size="lg"
               onClick={() => void handleTrain()}
-              disabled={training || !status?.has_dataset || !selectedModels.length}
+              disabled={training || building || loadingStatus || !status?.has_dataset || !selectedModels.length}
             >
               <Icon name="target" className="size-4" />
               {training ? 'Training…' : 'Train Model'}
@@ -512,7 +509,7 @@ export function TrainModelPage() {
                 Fitting and evaluating models…
               </p>
             )}
-            {!status?.has_dataset && (
+            {!loadingStatus && !status?.has_dataset && (
               <p className="text-sm text-subtle">Build a dataset first.</p>
             )}
           </div>

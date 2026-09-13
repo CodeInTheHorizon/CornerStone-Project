@@ -4,7 +4,8 @@ All of these require authentication: collection performs outbound requests on
 the operator's credentials, and the stored data is the project's own dataset.
 """
 
-from datetime import datetime
+import logging
+from datetime import datetime, timezone
 
 from fastapi import (
     APIRouter,
@@ -21,7 +22,7 @@ from sqlalchemy.orm import Session
 from app.auth.dependencies import get_current_user
 from app.database import get_db
 from app.models import MarketplaceSnapshot, User
-from app.models.enums import SourceType
+from app.models.enums import SourceType, Platform
 from app.schemas.data import (
     CollectRequest,
     CollectResponse,
@@ -40,6 +41,8 @@ from app.scrapers import (
 )
 from app.services import collection_service, demo_service, import_service
 from app.services.ingest import IngestResult
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/data", tags=["marketplace-data"])
 
@@ -121,13 +124,14 @@ def import_dataset(
     deduplication as live collection. They are tagged IMPORTED, never LIVE:
     this system did not observe them and cannot attest to how they were taken.
     """
-    content = file.file.read()
+    content = file.file.read(import_service.MAX_IMPORT_BYTES + 1)
 
     try:
         result = import_service.import_dataset(
             db, content=content, filename=file.filename or ""
         )
     except import_service.ImportError_ as exc:
+        logger.warning("Dataset import rejected")
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
         ) from None
@@ -170,9 +174,9 @@ def load_demo(
     summary="Most recently collected marketplace records",
 )
 def latest(
-    platform: str | None = Query(default=None),
-    keyword: str | None = Query(default=None),
-    category: str | None = Query(default=None),
+    platform: Platform | None = Query(default=None),
+    keyword: str | None = Query(default=None, max_length=120),
+    category: str | None = Query(default=None, max_length=120),
     source_type: SourceType | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=500),
     db: Session = Depends(get_db),
@@ -197,9 +201,9 @@ def latest(
     summary="Stored snapshots over a time window, oldest first",
 )
 def history(
-    platform: str | None = Query(default=None),
-    product: str | None = Query(default=None),
-    category: str | None = Query(default=None),
+    platform: Platform | None = Query(default=None),
+    product: str | None = Query(default=None, max_length=512),
+    category: str | None = Query(default=None, max_length=120),
     source_type: SourceType | None = Query(default=None),
     start: datetime | None = Query(default=None),
     end: datetime | None = Query(default=None),
@@ -207,6 +211,8 @@ def history(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ) -> SnapshotListResponse:
+    start = (start.replace(tzinfo=timezone.utc) if start.tzinfo is None else start.astimezone(timezone.utc)) if start else None
+    end = (end.replace(tzinfo=timezone.utc) if end.tzinfo is None else end.astimezone(timezone.utc)) if end else None
     if start and end and start > end:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

@@ -9,9 +9,12 @@ import tempfile
 from pathlib import Path
 
 # Must be set before app.config is imported anywhere.
-_tmp_db = Path(tempfile.gettempdir()) / "marketpulse_test.db"
+_test_storage = tempfile.TemporaryDirectory(prefix="marketpulse_tests_")
+_tmp_db = Path(_test_storage.name) / "test.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_tmp_db.as_posix()}"
 os.environ["JWT_SECRET_KEY"] = "test-only-secret-not-used-anywhere-real"
+os.environ["DEBUG"] = "false"
+os.environ["MODEL_ARTIFACT_DIR"] = str(Path(_test_storage.name) / "artifacts")
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -21,6 +24,11 @@ from sqlalchemy import text  # noqa: E402
 from app.database import Base, SessionLocal, engine  # noqa: E402
 from app.database.migrate import upgrade_to_head  # noqa: E402
 from app.main import app  # noqa: E402
+from app.services import dataset_service  # noqa: E402
+
+# Preserve the bundled demo input, but never write generated test datasets
+# into the application's processed-data directory.
+dataset_service.PROCESSED_DIR = Path(_test_storage.name) / "processed"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -34,6 +42,8 @@ def _create_schema():
     upgrade_to_head(engine)
     yield
     _drop_everything()
+    engine.dispose()
+    _test_storage.cleanup()
 
 
 def _drop_everything() -> None:

@@ -2,7 +2,7 @@
  * Dashboard overview.
  *
  * Layout follows PROJECT_CONTEXT.md section 9. Collection figures come from
- * GET /data/status and are real. Everything not yet measurable is marked as
+ * GET /analytics/summary and are real. Everything not yet measurable is marked as
  * unavailable rather than given a placeholder number: model accuracy stays
  * "Not trained" until a real evaluation run fills it.
  */
@@ -15,11 +15,13 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { SummaryCard } from '@/components/dashboard/SummaryCard'
 import { Icon } from '@/components/Icon'
 import { StatusPill } from '@/components/StatusPill'
-import { supportedPlatforms } from '@/config/dashboard'
+import { MarketDataRefresh } from '@/components/dashboard/MarketDataRefresh'
+import { SourceBadge } from '@/components/SourceBadge'
+import { fetchAnalyticsSummary } from '@/services/analyticsService'
+import type { AnalyticsSummary } from '@/types/analytics'
 import { useAuth } from '@/hooks/useAuth'
-import * as dataService from '@/services/dataService'
 import * as trainingService from '@/services/trainingService'
-import type { CollectorStatus, ModelStatus } from '@/types/data'
+import type { ModelStatus } from '@/types/data'
 
 function formatTimestamp(value: string | null): string {
   if (!value) return 'No data yet'
@@ -32,17 +34,21 @@ export function DashboardPage() {
   const navigate = useNavigate()
   const firstName = user?.full_name?.split(' ')[0] ?? null
 
-  const [status, setStatus] = useState<CollectorStatus | null>(null)
+  const [status, setStatus] = useState<AnalyticsSummary | null>(null)
   const [model, setModel] = useState<ModelStatus | null>(null)
+  const [error, setError] = useState('')
+  const predictionCount = status?.total_predictions ?? null
 
   // Real collection figures, so the summary cards stop being static once data
   // exists. Failures are non-fatal: the cards fall back to their empty state.
   const loadStatus = useCallback(async () => {
     if (!token) return
     try {
-      setStatus(await dataService.fetchStatus(token))
+      setStatus(await fetchAnalyticsSummary(token))
+      setError('')
     } catch {
       setStatus(null)
+      setError('Dashboard summary unavailable. Reload stored analytics to retry.')
     }
 
     // Model status is independent: a collection failure should not blank
@@ -52,6 +58,7 @@ export function DashboardPage() {
     } catch {
       setModel(null)
     }
+
   }, [token])
 
   useEffect(() => {
@@ -61,13 +68,12 @@ export function DashboardPage() {
     void loadStatus()
   }, [loadStatus])
 
-  const collected = status?.total_snapshots ?? 0
+  const collected = status?.stored_records ?? 0
   const trained = model?.trained === true
   const bySource = status?.records_by_source_type ?? {}
   const liveRecords = bySource.live ?? 0
-  const availablePlatforms = status
-    ? Object.values(status.platforms).filter((p) => p.available).length
-    : 0
+  const availablePlatforms = status?.available_live_platforms.length
+
 
   return (
     <DashboardLayout title="MarketPulse AI — Platform Predictor Dashboard">
@@ -82,8 +88,8 @@ export function DashboardPage() {
               Predict marketplace opportunities for electronics products
             </h2>
             <p className="mt-3 leading-relaxed text-muted">
-              Using fresh cross-platform data and machine learning. Marketplace
-              collection is live; the model pipeline is still being built.
+              Compare recorded marketplace signals using an experimental model
+              pipeline. Data provenance and measured model quality accompany results.
             </p>
           </div>
 
@@ -93,14 +99,14 @@ export function DashboardPage() {
             <StatusPill tone={liveRecords > 0 ? 'ok' : 'idle'}>
               {collected > 0
                 ? `${collected} record${collected === 1 ? '' : 's'} stored`
-                : 'No data collected yet'}
+                : status ? 'No data collected yet' : 'Summary unavailable'}
             </StatusPill>
             <Link
               to="/dashboard/marketplace-data"
               className="inline-flex items-center gap-2 rounded-card border border-border-strong px-4 py-2 text-sm font-medium transition-colors hover:border-accent hover:text-accent-text"
             >
               <Icon name="refresh" className="size-4" />
-              Refresh Marketplace Data
+              Manage Marketplace Data
             </Link>
           </div>
         </div>
@@ -112,13 +118,14 @@ export function DashboardPage() {
           <SummaryCard
             label="Total Predictions"
             icon="compass"
-            value={0}
-            hint="No predictions have been made yet."
+            value={predictionCount ?? undefined}
+            unavailable={predictionCount === null ? 'Unavailable' : undefined}
+            hint="Your saved experimental predictions."
           />
           <SummaryCard
-            label="Model Accuracy"
+            label="Active Model ? Weighted F1"
             icon="target"
-            unavailable={trained ? undefined : 'Not trained'}
+            unavailable={trained ? undefined : model ? 'Not trained' : 'Unavailable'}
             value={
               trained && model?.primary_metric_value !== null &&
               model?.primary_metric_value !== undefined
@@ -127,7 +134,7 @@ export function DashboardPage() {
             }
             hint={
               trained
-                ? `${model?.active_model} ${model?.version}. Baseline (always guess the most common class): ${
+                ? `${model?.active_model} ${model?.version}. Majority baseline accuracy (a different metric): ${
                     model?.majority_baseline !== null &&
                     model?.majority_baseline !== undefined
                       ? `${(model.majority_baseline * 100).toFixed(1)}%`
@@ -137,16 +144,16 @@ export function DashboardPage() {
             }
           />
           <SummaryCard
-            label="Data Freshness"
+            label="Latest Observation"
             icon="clock"
             unavailable={
-              status?.last_collection
+              status?.latest_observation
                 ? undefined
-                : 'No data yet'
+                : status ? 'No data yet' : 'Unavailable'
             }
             value={
-              status?.last_collection
-                ? formatTimestamp(status.last_collection)
+              status?.latest_observation
+                ? formatTimestamp(status.latest_observation)
                 : undefined
             }
             hint={
@@ -155,17 +162,16 @@ export function DashboardPage() {
                 : 'Shows the last marketplace collection timestamp.'
             }
           />
-          <SummaryCard
-            label="Platforms"
-            icon="database"
-            value={supportedPlatforms.length}
-            hint={
-              status
-                ? `${availablePlatforms} of ${supportedPlatforms.length} collectable. ${supportedPlatforms.join(', ')}`
-                : supportedPlatforms.join(', ')
-            }
-          />
+          <SummaryCard label="Stored Records" icon="database" value={status?.stored_records} unavailable={status ? undefined : 'Unavailable'} hint={status ? `${status.stored_platforms.length} platforms represented in stored data.` : 'Stored platform coverage unavailable.'} />
+          <SummaryCard label="Usable Live Collectors" icon="refresh" value={availablePlatforms} unavailable={status ? undefined : 'Unavailable'} hint="Collector availability, independent of how many platforms have stored rows." />
+          <SummaryCard label="Latest Dataset Source" icon="layers" value={status?.latest_dataset?.source_types.map((source) => source.toUpperCase()).join(' / ') || undefined} unavailable={status?.latest_dataset?.source_types.length ? undefined : status ? 'No dataset' : 'Unavailable'} hint={status?.latest_dataset ? `${status.latest_dataset.dataset_id}. ${status.latest_dataset.file_available ? 'Dataset file present.' : 'Dataset file unavailable.'}` : 'Build a dataset from stored observations.'} />
         </div>
+      </section>
+
+      <section className="mt-6 space-y-3">
+        {error && <p role="alert" className="text-sm text-signal-warn">{error}</p>}
+        {status && <><div className="flex flex-wrap items-center gap-2 text-sm"><span>Latest observation:</span>{status.latest_observation_sources.map((source) => <SourceBadge key={source} kind={source} />)}</div><p className="text-sm text-muted">{status.notice}</p></>}
+        <MarketDataRefresh sources={status?.refresh_sources ?? null} onRefresh={() => { void loadStatus() }} />
       </section>
 
       {/* Main actions */}
@@ -174,7 +180,7 @@ export function DashboardPage() {
           <ActionCard
             icon="layers"
             title="Train Model"
-            description="Build the ML-ready dataset from stored snapshots, then train a model on it and record its measured accuracy. Dataset preparation is available now; training arrives next."
+            description="Build the ML-ready dataset from stored snapshots, then train a model and inspect measured validation quality."
             actionLabel={collected === 0 ? 'Train Model' : 'Prepare dataset'}
             blockedReason={
               collected === 0
@@ -188,7 +194,8 @@ export function DashboardPage() {
             title="Make Prediction"
             description="Choose an electronics product, compare marketplaces, and get a 0-100 opportunity score for each with the factors behind it."
             actionLabel="New Prediction"
-            blockedReason="Needs a trained model. No model has been trained yet."
+            blockedReason={trained ? undefined : 'Needs an active trained model. Open Train Model first.'}
+            onAction={() => navigate('/dashboard/predictor')}
           />
         </div>
       </section>
@@ -214,12 +221,9 @@ export function DashboardPage() {
         </h3>
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted">
           Accounts, sign-in, this dashboard, marketplace data collection, the
-          dataset builder and model training are live. Predictions and trend
-          charts are the next phases — the sidebar items marked{' '}
-          <span className="rounded-full border border-border-hair px-1.5 py-0.5 text-[10px] text-subtle">
-            Soon
-          </span>{' '}
-          are not built yet.
+          dataset builder, model training and experimental predictions are available.
+          Stored price, discount, rating, review and availability histories are available
+          in Trend Analysis; Analytics compares explicitly grouped products or categories.
         </p>
       </section>
     </DashboardLayout>

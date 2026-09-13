@@ -43,13 +43,17 @@ export function RegisterPage() {
       next.email = 'Enter a valid email address, e.g. name@example.com.'
     }
 
+    if (fullName.trim().length > 120) next.fullName = 'Name must be at most 120 characters.'
+
     if (!password) {
       next.password = 'Please choose a password.'
     } else if (password.length < MIN_PASSWORD_LENGTH) {
       next.password = `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`
-    } else if (!/[a-zA-Z]/.test(password)) {
+    } else if (password.length > 64 || new TextEncoder().encode(password).length > 72) {
+      next.password = 'Password must be at most 64 characters and 72 UTF-8 bytes.'
+    } else if (!/\p{L}/u.test(password)) {
       next.password = 'Password must contain at least one letter.'
-    } else if (!/\d/.test(password)) {
+    } else if (!/\p{N}/u.test(password)) {
       next.password = 'Password must contain at least one number.'
     }
 

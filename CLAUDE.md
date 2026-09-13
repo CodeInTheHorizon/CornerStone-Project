@@ -1,17 +1,17 @@
-# MarketPulse AI — Working Notes for Claude Code
+# MarketPulse AI â€” Working Notes for Claude Code
 
 Read `PROJECT_CONTEXT.md` before making changes. It is the source of truth for
 scope, architecture, the 10-day roadmap and the acceptance criteria.
 
 ## Current state
 
-**Phases 1-6 complete.** Phases 7-10 not started.
+**Phases 1-9 complete.** Phase 10 not started.
 
 Phase 1: repository structure, FastAPI backend with config/CORS/`/health`,
 SQLAlchemy models for `User`, `MarketplaceSnapshot`, `Prediction`,
 `ModelMetadata`, React + Vite + TypeScript + Tailwind frontend, typed API client.
 
-Phase 2: public landing page — navbar, hero, "Why Choose" flip cards, developer
+Phase 2: public landing page â€” navbar, hero, "Why Choose" flip cards, developer
 profile, feature grid, WhatsApp contact form, footer; light/dark theming with a
 pre-paint script; scroll reveals honouring `prefers-reduced-motion`.
 
@@ -40,7 +40,26 @@ Phase 6: model training - app/ml/{target,training}.py, training_service,
 ModelMetadata persistence, and training UI on Train Model plus the dashboard
 model status card.
 
-No prediction, opportunity score or analytics logic exists yet.
+Phase 7: saved-Pipeline prediction, conservative opportunity scores, authenticated
+/ml/predict and /ml/predictions history/detail, /ml/prediction-options product
+selection, migration 0004 with immutable result JSON, and an active ML Predictor
+page with comparison bars, provenance and model/baseline warnings.
+
+Phase 8: snapshot-only analytics_service, authenticated /analytics/{trends,
+platform-comparison,summary,options}, active Trends/Analytics pages, simple SVG
+charts, actual dashboard summaries, and a disabled live-refresh hook with reasons.
+Sources, currencies and listings remain separate; no model inference or training
+runs in analytics. See docs/PHASE_8_REPORT.md for policies and limitations.
+
+Phase 9: configuration/JWT/input hardening, shared request timeouts and session
+expiry, migration logging preservation, bounded import/preview reads, consistent
+unavailable collector status, training collision protection and mobile focus polish.
+Fresh-install API journey and frontend request regressions are in tests. See
+docs/PHASE_9_REPORT.md; browser interaction remains unverified (no available browser).
+
+No scheduled jobs or deployment persistence changes have been implemented.
+See docs/PHASE_7_REPORT.md for the exact score formula. Preserve historical
+model quality with every saved prediction.
 
 ## Layout
 
@@ -97,7 +116,7 @@ frontend/src/
 5. Marketplace collection must use officially permitted access paths. Never
    bypass CAPTCHAs, authentication, anti-bot protections or access controls. If
    a source cannot be collected reliably, return an explicit unsupported status.
-6. No secrets in frontend code — only `VITE_`-prefixed public values.
+6. No secrets in frontend code â€” only `VITE_`-prefixed public values.
 7. Run the checks below after every phase and report results honestly.
 
 ## Commands
@@ -110,16 +129,29 @@ frontend/src/
 # Frontend (from frontend/)
 npm run build     # tsc -b && vite build
 npm run lint
+npm test
 npm run dev
 ```
 
 ## Environment notes
 
 - Python 3.14 on Windows. Dependency pins in `requirements.txt` are the versions
-  verified installable on cp314 — several older pins have no 3.14 wheels, so
+  verified installable on cp314 â€” several older pins have no 3.14 wheels, so
   bump rather than downgrade Python if a pin fails.
 - The Vite dev server binds `localhost` (IPv6). `127.0.0.1:5173` will not
   connect; both origins are allowed in `CORS_ORIGINS` regardless.
 - The schema is managed by Alembic (`backend/migrations/`) and upgraded on
   startup. When you change a model, add a migration - `tests/test_migrations.py`
   fails if the migrated schema and the models disagree.
+- Tests isolate database, model artifacts and generated datasets in temporary
+  storage. Do not point test writes at the development artifact directory.
+- The existing inactive v1 database record and artifact disagree. Phase 7 leaves
+  them untouched and rejects incompatible metadata/pipelines. Current active metadata
+  is v4; Phases 8/9 preserve its files and below-baseline DEMO quality.
+- Prediction is a DEMO pipeline demonstration: accuracy 33.3% vs majority
+  baseline accuracy 40.6%, weighted F1 31.9%. Never equate class probability or
+  the heuristic opportunity score with reliable marketplace advice or sales demand.
+
+- DEBUG defaults false; legacy DEBUG=release is false. Exact CORS origins accept
+  comma-separated text or JSON. Non-development secrets need at least 32 bytes.
+- Training lock is process-local; run one worker pending cross-process coordination.

@@ -26,13 +26,13 @@ class CollectRequest(BaseModel):
             )
         return normalized
 
-    @field_validator("keyword", "category")
+    @field_validator("keyword", "category", mode="before")
     @classmethod
     def _clean(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
+        if not isinstance(value, str):
+            return value
         cleaned = " ".join(value.split())
-        return cleaned or None
+        return cleaned
 
 
 class CollectResponse(BaseModel):

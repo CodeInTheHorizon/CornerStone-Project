@@ -4,7 +4,7 @@
  * public site.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Icon } from '@/components/Icon'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -18,24 +18,46 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ title, children }: DashboardLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
 
-  // Close the drawer on Escape.
+  const drawer = useRef<HTMLDivElement>(null)
+  const opener = useRef<HTMLButtonElement>(null)
+
+  // Contain keyboard focus and background scrolling while the mobile drawer is open.
   useEffect(() => {
     if (!drawerOpen) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setDrawerOpen(false)
+    const returnFocus = opener.current
+    const oldOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const focusable = () => Array.from(drawer.current?.querySelectorAll<HTMLElement>('a[href], button:not(:disabled)') ?? [])
+    focusable()[0]?.focus()
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setDrawerOpen(false)
+      if (event.key !== 'Tab') return
+      const items = focusable()
+      const first = items[0], last = items.at(-1)
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+    }
+    const onResize = () => { if (window.innerWidth >= 1024) setDrawerOpen(false) }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('resize', onResize)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('resize', onResize)
+      document.body.style.overflow = oldOverflow
+      returnFocus?.focus()
+    }
   }, [drawerOpen])
 
   return (
     <div className="min-h-screen bg-background">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 lg:block">
+      <aside inert={drawerOpen} className="fixed inset-y-0 left-0 z-40 hidden w-64 lg:block">
         <Sidebar />
       </aside>
 
       {/* Mobile drawer */}
       {drawerOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div ref={drawer} id="mobile-navigation" role="dialog" aria-modal="true" aria-label="Dashboard navigation" className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
             aria-label="Close navigation"
@@ -48,13 +70,16 @@ export function DashboardLayout({ title, children }: DashboardLayoutProps) {
         </div>
       )}
 
-      <div className="lg:pl-64">
+      <div inert={drawerOpen} className="min-w-0 lg:pl-64">
         <header className="sticky top-0 z-30 border-b border-border-hair bg-background/85 backdrop-blur-md">
           <div className="flex h-16 items-center gap-3 px-5 sm:px-8">
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
+              ref={opener}
               aria-label="Open navigation"
+              aria-expanded={drawerOpen}
+              aria-controls="mobile-navigation"
               className="grid size-9 shrink-0 place-items-center rounded-card border border-border-hair text-muted transition-colors hover:border-accent hover:text-accent-text lg:hidden"
             >
               <Icon name="menu" className="size-[18px]" />
@@ -69,7 +94,7 @@ export function DashboardLayout({ title, children }: DashboardLayoutProps) {
         </header>
 
         <main className="px-5 py-8 sm:px-8 sm:py-10">
-          <div className="mx-auto max-w-6xl">{children}</div>
+          <div className="mx-auto min-w-0 max-w-6xl">{children}</div>
         </main>
       </div>
     </div>

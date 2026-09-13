@@ -1,11 +1,12 @@
 """Request/response schemas for the dataset builder."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.models.enums import SourceType
+from app.ml.normalization import normalize_platform, is_known_platform
 
 MAX_PREVIEW = 100
 
@@ -18,8 +19,8 @@ class DatasetBuildRequest(BaseModel):
     metadata.
     """
 
-    platforms: list[str] | None = None
-    categories: list[str] | None = None
+    platforms: list[str] | None = Field(default=None, max_length=4)
+    categories: list[str] | None = Field(default=None, max_length=50)
     keyword: str | None = Field(default=None, max_length=120)
     source_types: list[SourceType] | None = None
     start: datetime | None = None
@@ -34,6 +35,31 @@ class DatasetBuildRequest(BaseModel):
             return None
         cleaned = [item.strip() for item in value if item and item.strip()]
         return cleaned or None
+
+    @field_validator("platforms")
+    @classmethod
+    def _platforms(cls, value):
+        if value is None:
+            return value
+        normalized = [normalize_platform(item) for item in value]
+        if not all(is_known_platform(item) for item in normalized):
+            raise ValueError("Unsupported platform in dataset filters.")
+        return list(dict.fromkeys(normalized))
+
+    @field_validator("start", "end")
+    @classmethod
+    def _utc_dates(cls, value):
+        if value is None:
+            return value
+        return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
+
+    @model_validator(mode="after")
+    def _date_range(self):
+        if self.start and self.end and self.start > self.end:
+            raise ValueError("start must be on or before end.")
+        if self.categories and any(len(item) > 120 for item in self.categories):
+            raise ValueError("Category filters must be at most 120 characters.")
+        return self
 
     @field_validator("source_types", mode="before")
     @classmethod

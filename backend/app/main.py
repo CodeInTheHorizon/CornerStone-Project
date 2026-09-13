@@ -1,8 +1,11 @@
 """MarketPulse AI FastAPI application entrypoint."""
 
+import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
@@ -37,6 +40,25 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+logger = logging.getLogger(__name__)
+
+
+@app.exception_handler(RequestValidationError)
+async def invalid_request(request: Request, exc: RequestValidationError):
+    # Pydantic includes raw input (including passwords) unless explicitly removed.
+    errors = [{"loc": error["loc"], "msg": error["msg"], "type": error["type"]} for error in exc.errors()]
+    return JSONResponse(status_code=422, content={"detail": errors})
+
+
+@app.exception_handler(Exception)
+async def unexpected_failure(request: Request, exc: Exception):
+    # Exception text and full paths may contain user data; log only the failure class.
+    logger.error("Unhandled API failure: %s %s", request.method, type(exc).__name__)
+    origin = request.headers.get("origin")
+    headers = {"Access-Control-Allow-Origin": origin, "Access-Control-Allow-Credentials": "true", "Vary": "Origin"} if origin in settings.CORS_ORIGINS else {}
+    return JSONResponse(status_code=500, headers=headers, content={"detail": "The request could not be completed. Please retry; if it persists, contact the operator."})
+
 
 # Allow the local Vite dev server (and any configured deployed frontend)
 # to call this API from the browser.

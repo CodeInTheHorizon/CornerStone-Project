@@ -29,7 +29,7 @@ export const hero = {
   eyebrow: 'Marketplace intelligence for electronics sellers',
   title: 'MarketPulse AI',
   description:
-    'MarketPulse AI converts fresh e-commerce marketplace data into actionable trend insights and machine-learning predictions. Compare opportunities across major platforms and make data-driven product decisions.',
+    'Explore stored marketplace observations through trend charts and experimental opportunity scores. Current training data is synthetic DEMO data; live collection is unavailable.',
   primaryCta: { label: 'Explore Market Intelligence', href: '/dashboard' },
   secondaryCta: { label: 'View Features', href: '#features' },
   platforms: ['Amazon', 'Flipkart', 'Croma', 'Alibaba'],
@@ -50,8 +50,8 @@ export const whyCards: WhyCard[] = [
   },
   {
     icon: 'pulse',
-    title: 'Real-Time Analytics',
-    body: 'Fresh marketplace observations are collected and analysed to detect current trends and changing opportunities.',
+    title: 'Stored Trend Analytics',
+    body: 'Compare price, discount and review histories with visible DEMO, IMPORTED and LIVE provenance.',
   },
   {
     icon: 'target',
@@ -72,7 +72,7 @@ export const features: Feature[] = [
     icon: 'chart',
     title: 'Predictive Analytics',
     description:
-      'Trained models turn collected marketplace signals into marketplace opportunity predictions.',
+      'Experimental models demonstrate the prediction pipeline; current DEMO performance is below baseline.',
   },
   {
     icon: 'trend',
@@ -82,9 +82,9 @@ export const features: Feature[] = [
   },
   {
     icon: 'refresh',
-    title: 'Real-Time Updates',
+    title: 'Data Freshness',
     description:
-      'Trigger a fresh collection run and see exactly how recent the underlying data is.',
+      'Inspect observation timestamps and source labels. Live refresh remains unavailable until a supported collector is connected.',
   },
   {
     icon: 'dashboard',

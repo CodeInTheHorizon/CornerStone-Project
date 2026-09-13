@@ -53,6 +53,8 @@ export function MarketplaceDataPage() {
 
   const [status, setStatus] = useState<CollectorStatus | null>(null)
   const [snapshots, setSnapshots] = useState<Snapshot[]>([])
+  const loadSequence = useRef(0)
+  const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [sourceFilter, setSourceFilter] = useState<SourceType | ''>('')
 
@@ -77,6 +79,9 @@ export function MarketplaceDataPage() {
   const load = useCallback(
     async (filter: SourceType | '' = sourceFilter) => {
       if (!token) return
+      const sequence = ++loadSequence.current
+      setLoading(true)
+      setSnapshots([])
       setLoadError(null)
       try {
         const [nextStatus, latest] = await Promise.all([
@@ -86,15 +91,17 @@ export function MarketplaceDataPage() {
             sourceType: filter || undefined,
           }),
         ])
+        if (sequence !== loadSequence.current) return
         setStatus(nextStatus)
         setSnapshots(latest.items)
       } catch (error) {
+        if (sequence !== loadSequence.current) return
         setLoadError(
           error instanceof ApiRequestError
             ? error.message
             : 'Could not load marketplace data.',
         )
-      }
+      } finally { if (sequence === loadSequence.current) setLoading(false) }
     },
     [token, sourceFilter],
   )
@@ -104,6 +111,7 @@ export function MarketplaceDataPage() {
     // synchronously here; the rule cannot see across the async boundary.
     // oxlint-disable-next-line react/set-state-in-effect
     void load()
+    return () => { loadSequence.current += 1 }
   }, [load])
 
   const handleCollect = async (event: React.FormEvent) => {
@@ -150,6 +158,7 @@ export function MarketplaceDataPage() {
       return
     }
 
+    if (file.size > 5 * 1024 * 1024) { setImportError('File must be at most 5 MB.'); return }
     setImporting(true)
     try {
       setImportResult(await dataService.importDataset(token!, file))
@@ -196,6 +205,7 @@ export function MarketplaceDataPage() {
 
   return (
     <DashboardLayout title="MarketPulse AI — Marketplace Data">
+      {loading && <p role="status" className="mb-4 text-sm text-muted">Loading stored marketplace data?</p>}
       {loadError && (
         <div className="mb-6">
           <FormAlert>{loadError}</FormAlert>
@@ -445,8 +455,8 @@ export function MarketplaceDataPage() {
             <p className="mt-2 text-sm leading-relaxed text-muted">
               A synthetic fixture for development and testing:{' '}
               {demo?.record_count ?? '—'} records across{' '}
-              {demo?.platforms.length ?? 4} platforms and{' '}
-              {demo?.categories.length ?? 8} categories, over several dates.
+              {demo?.platforms.length ?? '?'} platforms and{' '}
+              {demo?.categories.length ?? '?'} categories, over several dates.
             </p>
 
             <p className="mt-4 rounded-card border border-border-strong bg-background-alt px-4 py-3 text-xs leading-relaxed text-muted">
@@ -589,7 +599,7 @@ export function MarketplaceDataPage() {
             </div>
           </div>
 
-          {snapshots.length === 0 ? (
+          {!loading && snapshots.length === 0 ? (
             <p className="px-6 py-12 text-center text-sm text-muted">
               No marketplace data has been collected yet. Collect, import a file,
               or load the demo dataset above to populate this table.

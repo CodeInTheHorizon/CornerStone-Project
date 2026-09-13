@@ -70,6 +70,7 @@ def decode_access_token(token: str) -> dict[str, Any] | None:
             token,
             settings.JWT_SECRET_KEY,
             algorithms=[settings.JWT_ALGORITHM],
+            options={"require": ["sub", "iat", "exp"]},
         )
     except InvalidTokenError:
         return None

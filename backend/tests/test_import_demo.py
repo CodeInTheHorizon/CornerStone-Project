@@ -315,7 +315,8 @@ def test_status_reports_ingestion_mode_and_required_configuration(
     body = client.get("/data/status", headers=auth_headers).json()
 
     amazon = body["platforms"]["amazon"]
-    assert amazon["ingestion_mode"] == IngestionMode.LIVE_API.value
+    assert amazon["ingestion_mode"] == IngestionMode.UNAVAILABLE.value
+    assert "deprecated" in amazon["reason"]
     assert amazon["available"] is False  # no credentials in tests
     assert "AMAZON_PAAPI_ACCESS_KEY" in amazon["required_configuration"]
 

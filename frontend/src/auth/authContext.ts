@@ -20,6 +20,7 @@ export interface AuthContextValue {
   user: User | null
   token: string | null
   status: AuthStatus
+  sessionError: string | null
   login: (payload: LoginPayload) => Promise<void>
   register: (payload: RegisterPayload) => Promise<void>
   logout: () => void
