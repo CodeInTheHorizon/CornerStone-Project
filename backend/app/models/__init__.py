@@ -15,6 +15,7 @@ from app.models.marketplace_snapshot import MarketplaceSnapshot
 from app.models.model_metadata import ModelMetadata
 from app.models.prediction import Prediction
 from app.models.user import User
+from app.storage.database import StoredObject
 
 __all__ = [
     "DataSource",
@@ -26,4 +27,5 @@ __all__ = [
     "SourceType",
     "TrainingStatus",
     "User",
+    "StoredObject",
 ]

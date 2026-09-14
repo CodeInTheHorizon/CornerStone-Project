@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -12,6 +12,16 @@ from app.database import get_db
 from app.schemas.health import HealthResponse
 
 router = APIRouter(tags=["system"])
+
+
+@router.get("/ready", summary="Deployment readiness check")
+def ready(db: Session = Depends(get_db)) -> dict[str, str]:
+    """Render must not route traffic to an instance with an unreachable DB."""
+    try:
+        db.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        raise HTTPException(status_code=503, detail="Database unavailable.") from None
+    return {"status": "ready", "database": "connected"}
 
 
 @router.get("/health", response_model=HealthResponse, summary="Service health check")

@@ -91,6 +91,7 @@ class DatasetMetadataRead(BaseModel):
     demo_only: bool = False
     csv_path: str | None = None
     metadata_path: str | None = None
+    storage: dict[str, Any] = Field(default_factory=dict)
 
 
 class DatasetBuildResponse(BaseModel):

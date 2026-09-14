@@ -1,0 +1,38 @@
+# Phase 10.5: provide a durable PostgreSQL database; no local storage fallback.
+# Keep the repository root: backend also reads the bundled data/demo fixture.
+services:
+  - type: web
+    name: marketpulse-api
+    runtime: python
+    plan: free
+    autoDeployTrigger: off
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && python -m app.start
+    healthCheckPath: /ready
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.7
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: SQL_ECHO
+        value: "false"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: ACCESS_LOG
+        value: "false"
+      - key: HOST
+        value: 0.0.0.0
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: STORAGE_BACKEND
+        value: database
+      - key: STORAGE_MAX_BYTES
+        value: "134217728"

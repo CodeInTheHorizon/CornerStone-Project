@@ -45,6 +45,8 @@ def prepared(tmp_path_factory):
 @pytest.fixture
 def ready(prepared, monkeypatch, db_session, client):
     directory, frame, outcome, key = prepared
+    monkeypatch.setattr(training_service, "ARTIFACT_DIR", directory)
+    monkeypatch.setattr(dataset_service, "PROCESSED_DIR", directory)
     db_session.query(Prediction).delete()
     db_session.query(ModelMetadata).delete()
     db_session.commit()

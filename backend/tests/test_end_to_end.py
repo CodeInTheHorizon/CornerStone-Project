@@ -3,13 +3,16 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import pytest
 
 
-def test_fresh_install_api_journey(tmp_path):
+@pytest.mark.parametrize("storage_backend", ["local", "database"])
+def test_fresh_install_api_journey(tmp_path, storage_backend):
     env = os.environ.copy()
-    env.update(DATABASE_URL=f"sqlite:///{(tmp_path/'fresh.db').as_posix()}", DATA_DIR=str(tmp_path/'data'), MODEL_ARTIFACT_DIR=str(tmp_path/'models'), DEBUG='release', ENVIRONMENT='development', JWT_SECRET_KEY='isolated-flow-secret-never-used-in-development')
+    env.update(STORAGE_BACKEND=storage_backend, DATABASE_URL=f"sqlite:///{(tmp_path/'fresh.db').as_posix()}", DATA_DIR=str(tmp_path/'data'), MODEL_ARTIFACT_DIR=str(tmp_path/'models'), DEBUG='release', ENVIRONMENT='development', JWT_SECRET_KEY='isolated-flow-secret-never-used-in-development')
     script = r'''
 import json
+import math
 from fastapi.testclient import TestClient
 from app.main import app
 from app.database import engine
@@ -17,6 +20,15 @@ from app.database import engine
 def ok(response, status=200):
     assert response.status_code == status, (response.status_code, response.text)
     return response.json()
+
+def same(a, b):
+    if isinstance(a, float) or isinstance(b, float):
+        return isinstance(a, (int, float)) and isinstance(b, (int, float)) and math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-12)
+    if isinstance(a, dict):
+        return isinstance(b, dict) and a.keys() == b.keys() and all(same(a[k], b[k]) for k in a)
+    if isinstance(a, list):
+        return isinstance(b, list) and len(a) == len(b) and all(same(x, y) for x, y in zip(a, b))
+    return a == b
 
 with TestClient(app) as client:
     assert ok(client.get('/health'))['database']=='connected'
@@ -68,6 +80,10 @@ with TestClient(app) as client:
     restored=ok(client.get('/ml/predictions/'+str(prediction['id']),headers=headers))
     assert restored==prediction
     assert ok(client.get('/data/status',headers=headers))['total_snapshots']==481
+    # Reload both the stored dataset and saved Pipeline after startup, then infer.
+    repeated=ok(client.post('/ml/predict',headers=headers,json={'product_key':key,'dataset_id':dataset['dataset_id']}))
+    # Parallel Random Forest probability sums may differ in the last float bit.
+    assert same(repeated['ranking'], prediction['ranking']), (repeated['ranking'], prediction['ranking'])
 engine.dispose()
 print('fresh API journey passed: auth, ingestion, dataset, training, prediction, score, analytics, history, isolation, restart')
 '''

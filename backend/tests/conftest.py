@@ -14,6 +14,8 @@ _tmp_db = Path(_test_storage.name) / "test.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_tmp_db.as_posix()}"
 os.environ["JWT_SECRET_KEY"] = "test-only-secret-not-used-anywhere-real"
 os.environ["DEBUG"] = "false"
+os.environ["ENVIRONMENT"] = "development"
+os.environ["STORAGE_BACKEND"] = "local"
 os.environ["MODEL_ARTIFACT_DIR"] = str(Path(_test_storage.name) / "artifacts")
 
 import pytest  # noqa: E402

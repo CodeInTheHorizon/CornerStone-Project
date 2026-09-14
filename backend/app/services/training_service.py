@@ -11,14 +11,11 @@ identifiable as such wherever it is reported.
 
 from __future__ import annotations
 
-import json
 import logging
 from threading import Lock
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
-import joblib
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -28,6 +25,8 @@ from app.ml.training import TrainingError, TrainingOutcome, train_models
 from app.models import ModelMetadata
 from app.models.enums import SourceType, TrainingStatus
 from app.services import dataset_service
+from app.storage.artifact_store import ArtifactStore
+from app.storage.base import StorageError
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +47,8 @@ def _next_version(db: Session) -> str:
         for version in existing
         if isinstance(version, str) and version.startswith("v") and version[1:].isdigit()
     ]
-    for path in ARTIFACT_DIR.glob("model_v*.*"):
-        suffix = path.name.split(".")[0].removeprefix("model_v")
+    for key in ArtifactStore(ARTIFACT_DIR).keys():
+        suffix = key.split(".")[0].removeprefix("model_v")
         if suffix.isdigit():
             numbers.append(int(suffix))
     return f"v{max(numbers, default=0) + 1}"
@@ -64,6 +63,9 @@ def train(db: Session, *, dataset_id: str | None = None, models: list[str] | Non
         raise TrainingError("A training run is already in progress. Wait for it to finish.", status="training_busy")
     try:
         return _train(db, dataset_id=dataset_id, models=models)
+    except StorageError:
+        db.rollback()
+        raise
     except TrainingError:
         db.rollback()
         raise
@@ -105,7 +107,7 @@ def _train(
     frame = dataset_service.load_dataset_frame(metadata["dataset_id"])
     if frame is None or frame.empty:
         raise TrainingError(
-            f"Dataset {metadata['dataset_id']} could not be read from disk.",
+            f"Dataset {metadata['dataset_id']} could not be read from storage.",
             status="no_dataset",
         )
 
@@ -116,27 +118,16 @@ def _train(
     outcome = train_models(frame, models)
 
     version = _next_version(db)
-    artifact_path = _persist_artifact(outcome, version, metadata)
+    artifact_path, storage_info = _persist_artifact(outcome, version, metadata)
 
-    record = _record_metadata(db, outcome, version, metadata, artifact_path)
+    record = _record_metadata(db, outcome, version, metadata, artifact_path, storage_info)
     return record
 
 
 def _persist_artifact(
     outcome: TrainingOutcome, version: str, dataset_meta: dict[str, Any]
-) -> Path:
-    """Write the fitted pipeline plus a JSON sidecar."""
-    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
-
-    artifact_path = ARTIFACT_DIR / f"model_{version}.pkl"
-    sidecar_path = ARTIFACT_DIR / f"model_{version}.metadata.json"
-
-    # The whole pipeline, so preprocessing travels with the model and
-    # prediction cannot accidentally use different encoding.
-    # Exclusive creation protects historical artifacts, including orphaned files.
-    with artifact_path.open("xb") as stream:
-        joblib.dump(outcome.selected.pipeline, stream)
-
+) -> tuple[str, dict]:
+    """Publish the fitted pipeline and its metadata through configured storage."""
     sidecar = {
         "model_version": version,
         "model_name": MODEL_NAME,
@@ -172,11 +163,9 @@ def _persist_artifact(
         "warnings": outcome.warnings,
         "notice": _notice(dataset_meta.get("source_types", [])),
     }
-    with sidecar_path.open("x", encoding="utf-8") as stream:
-        stream.write(json.dumps(sidecar, indent=2) + "\n")
-
-    logger.info("Saved model %s (%s) to %s", version, outcome.selected.name, artifact_path)
-    return artifact_path
+    location, info = ArtifactStore(ARTIFACT_DIR).save(outcome.selected.pipeline, version, sidecar)
+    logger.info("Saved model %s (%s)", version, outcome.selected.name)
+    return location, info
 
 
 def _record_metadata(
@@ -184,7 +173,8 @@ def _record_metadata(
     outcome: TrainingOutcome,
     version: str,
     dataset_meta: dict[str, Any],
-    artifact_path: Path,
+    artifact_path: str,
+    storage_info: dict,
 ) -> ModelMetadata:
     """Persist the run and make it the active model."""
     # Exactly one active model at a time.
@@ -202,6 +192,7 @@ def _record_metadata(
         dataset_rows=outcome.training_rows + outcome.validation_rows,
         feature_names=outcome.feature_names,
         hyperparameters={
+            "artifact_storage": storage_info,
             "split_strategy": outcome.split_strategy,
             "training_rows": outcome.training_rows,
             "validation_rows": outcome.validation_rows,
@@ -255,13 +246,7 @@ def training_history(db: Session, limit: int = 20) -> list[ModelMetadata]:
 
 def load_pipeline(record: ModelMetadata) -> Any | None:
     """Load a stored pipeline, or None when the artifact is gone."""
-    if not record.artifact_path:
-        return None
-    path = Path(record.artifact_path)
-    if not path.exists():
-        logger.warning("Model artifact missing at %s", path)
-        return None
-    return joblib.load(path)
+    return ArtifactStore(ARTIFACT_DIR).load(record)
 
 
 def source_types_for(record: ModelMetadata) -> list[str]:

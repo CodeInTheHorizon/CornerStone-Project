@@ -11,8 +11,10 @@ venv/
 # Environment
 .env
 .env.local
+.env.*
 *.env
 !.env.example
+.vercel/
 
 # Database
 *.db

@@ -19,7 +19,7 @@ config = context.config
 # Otherwise fall back to the configured application database.
 _external_connection = config.attributes.get("connection")
 if _external_connection is None:
-    config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+    config.set_main_option("sqlalchemy.url", settings.DATABASE_URL.replace("%", "%%"))
 
 if config.config_file_name is not None and _external_connection is None:
     # Embedded startup migrations must not reset or disable application loggers.

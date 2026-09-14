@@ -12,11 +12,16 @@ from app.api.router import api_router
 from app.api.routes import health
 from app.config import settings
 from app.database import init_db
+from app.storage.base import StorageError
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Prepare local storage directories and the database schema on startup."""
+    """Configure logging, then prepare storage and the database schema on startup."""
+    logging.basicConfig(
+        level=settings.LOG_LEVEL,
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    )
     # Refuse to run outside development with the shipped placeholder secret:
     # every token would be forgeable by anyone who has read this repository.
     if settings.uses_default_jwt_secret and not settings.is_development:
@@ -26,6 +31,8 @@ async def lifespan(app: FastAPI):
         )
 
     init_db()
+    # Settings already refuse local storage outside development.
+    logger.info("Application startup complete; environment=%s", settings.ENVIRONMENT)
     yield
 
 
@@ -42,6 +49,12 @@ app = FastAPI(
 )
 
 logger = logging.getLogger(__name__)
+
+
+@app.exception_handler(StorageError)
+async def storage_failure(request: Request, exc: StorageError):
+    logger.warning("Storage request failed: %s", type(exc).__name__)
+    return JSONResponse(status_code=503, content={"detail": {"status": "storage_unavailable", "reason": str(exc)}})
 
 
 @app.exception_handler(RequestValidationError)

@@ -7,7 +7,7 @@ MarketPulse AI imports or loads stored marketplace observations, turns them into
 a structured dataset, trains models on it, and surfaces trend analytics and
 experimental opportunity scores. Live collection is currently unavailable.
 
-> **Status: Phase 9 of 10 (Testing, Security and UI Polish).**
+> **Status: Phase 10 deployment and durable-storage work in progress; live deployment and real PostgreSQL unverified.**
 > The landing page, accounts, the dashboard, the data layer, the dataset
 > builder, model training, experimental predictions, opportunity scores, and
 > user-scoped prediction history work. Stored trend charts, platform comparisons,
@@ -540,3 +540,22 @@ frontend request tests, build and lint provide the automated evidence.
 
 See [Phase 9 report](docs/PHASE_9_REPORT.md) for the file inventory, checks and
 remaining Phase 10 blockers. No deployment was attempted.
+
+## Phase 10 deployment foundation
+
+Deployment instructions and all environment variables are in
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Vercel configuration lives in
+`frontend/vercel.json`; Render configuration lives in `render.yaml`.
+The pre-deployment checkpoint is `de173ee`. No live deployment has been verified.
+SQLite, processed datasets and models remain local files; the supplied free
+Render configuration is for a disposable demo pending durable storage work.
+See [docs/PHASE_10_REPORT.md](docs/PHASE_10_REPORT.md) for validation and blockers.
+
+## Phase 10.5 durable storage
+
+Production now requires PostgreSQL. Processed CSVs, metadata and model binaries
+are stored in the `stored_objects` table through the new storage adapters. Local
+development retains SQLite and the existing files. See
+[docs/DURABLE_STORAGE.md](docs/DURABLE_STORAGE.md). The earlier Phase 10
+free-service/local-storage notes describe the historical foundation and are
+superseded for production. No actual hosted database has been provisioned.

@@ -109,6 +109,7 @@ class DatasetMetadata:
     demo_only: bool = False
     csv_path: str | None = None
     metadata_path: str | None = None
+    storage: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -130,6 +131,7 @@ class DatasetMetadata:
             "demo_only": self.demo_only,
             "csv_path": self.csv_path,
             "metadata_path": self.metadata_path,
+            "storage": self.storage,
         }
 
 

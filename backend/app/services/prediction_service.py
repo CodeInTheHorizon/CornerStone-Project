@@ -26,6 +26,7 @@ from app.schemas.prediction import (
     PredictionHistoryItem, PredictionResponse,
 )
 from app.services import dataset_service, training_service
+from app.storage.base import StorageError, StorageIntegrityError
 
 logger = logging.getLogger(__name__)
 STALE_AFTER_DAYS = 7
@@ -68,8 +69,11 @@ def load_active(db: Session) -> tuple[ModelMetadata, Pipeline]:
         raise PredictionError("not_trained", "No completed active model. Train a model first.", 409)
     try:
         pipeline = training_service.load_pipeline(record)
+    except StorageError as exc:
+        code = "corrupt_artifact" if isinstance(exc, StorageIntegrityError) else "storage_unavailable"
+        raise PredictionError(code, str(exc), 503) from None
     except Exception:
-        logger.exception("Could not load active model %s", record.model_version)
+        logger.warning("Could not load active model %s", record.model_version)
         raise PredictionError("corrupt_artifact", "The active model artifact cannot be loaded. Restore a matching artifact or train explicitly.", 503) from None
     if pipeline is None:
         raise PredictionError("missing_artifact", "The active model artifact is missing. Restore it or train explicitly.", 503)
@@ -89,6 +93,8 @@ def dataset(dataset_id: str | None = None) -> tuple[dict, pd.DataFrame]:
         raise PredictionError("missing_dataset", "No matching processed dataset. Build one on Train Model first.")
     try:
         frame = dataset_service.load_dataset_frame(metadata["dataset_id"])
+    except StorageError as exc:
+        raise PredictionError("storage_unavailable", str(exc), 503) from None
     except Exception:
         raise PredictionError("invalid_dataset", "The processed dataset cannot be read. Build a new dataset.") from None
     if frame is None or frame.empty:

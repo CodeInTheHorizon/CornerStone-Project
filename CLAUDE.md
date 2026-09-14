@@ -1,17 +1,19 @@
-# MarketPulse AI â€” Working Notes for Claude Code
+# MarketPulse AI - Working Notes for Claude Code
 
 Read `PROJECT_CONTEXT.md` before making changes. It is the source of truth for
 scope, architecture, the 10-day roadmap and the acceptance criteria.
 
 ## Current state
 
-**Phases 1-9 complete.** Phase 10 not started.
+**Phases 1-9 complete.** Phase 10 partially implemented: deployment-ready
+configuration and durable storage exist, but **nothing has been deployed or
+live-verified** (no Render/Vercel service, no real PostgreSQL server tested).
 
 Phase 1: repository structure, FastAPI backend with config/CORS/`/health`,
 SQLAlchemy models for `User`, `MarketplaceSnapshot`, `Prediction`,
 `ModelMetadata`, React + Vite + TypeScript + Tailwind frontend, typed API client.
 
-Phase 2: public landing page â€” navbar, hero, "Why Choose" flip cards, developer
+Phase 2: public landing page - navbar, hero, "Why Choose" flip cards, developer
 profile, feature grid, WhatsApp contact form, footer; light/dark theming with a
 pre-paint script; scroll reveals honouring `prefers-reduced-motion`.
 
@@ -57,7 +59,18 @@ unavailable collector status, training collision protection and mobile focus pol
 Fresh-install API journey and frontend request regressions are in tests. See
 docs/PHASE_9_REPORT.md; browser interaction remains unverified (no available browser).
 
-No scheduled jobs or deployment persistence changes have been implemented.
+Phase 10 (in progress): `render.yaml` + `python -m app.start` (one worker),
+`/ready` returning 503 when the DB is unreachable, `frontend/vercel.json` with SPA
+rewrite, Vercel builds requiring an HTTPS `VITE_API_BASE_URL`, and production
+settings validation. Durable storage: `app/storage/` (local and database
+adapters, checksummed immutable bundles), `STORAGE_BACKEND`/`STORAGE_MAX_BYTES`,
+and migration 0005 (`stored_objects`). Outside development, settings require a
+PostgreSQL `DATABASE_URL` (normalized to `postgresql+psycopg`) and database
+storage; development keeps SQLite and local files. The interrupted durable-storage
+run was stabilized, not signed off; no Phase 10.5 report exists. See
+docs/PHASE_10_REPORT.md, docs/DEPLOYMENT.md and docs/DURABLE_STORAGE.md.
+
+No scheduled jobs have been implemented.
 See docs/PHASE_7_REPORT.md for the exact score formula. Preserve historical
 model quality with every saved prediction.
 
@@ -68,13 +81,15 @@ backend/app/
   config.py       env-driven settings (pydantic-settings)
   main.py         app factory, CORS, router wiring
   api/            routes/ + aggregate router (feature routers land here)
+  start.py        production entrypoint (python -m app.start)
   database/       engine, session, declarative Base
   models/         ORM models
   schemas/        pydantic request/response shapes
   auth/           security.py (hashing, JWT), dependencies.py (get_current_user)
   scrapers/       base, parsing, validation, registry + one module per platform
-  ml/             normalization, features, dataset_builder, target, training
-  services/       ingest, collection, import, demo, dataset, training, user
+  ml/             normalization, features, dataset_builder, target, training, opportunity
+  services/       ingest, collection, import, demo, dataset, training, prediction, analytics, user
+  storage/        dataset/artifact stores over local files or DB bundles
 frontend/src/
   components/     reusable UI primitives
   sections/       landing page sections
@@ -116,7 +131,7 @@ frontend/src/
 5. Marketplace collection must use officially permitted access paths. Never
    bypass CAPTCHAs, authentication, anti-bot protections or access controls. If
    a source cannot be collected reliably, return an explicit unsupported status.
-6. No secrets in frontend code â€” only `VITE_`-prefixed public values.
+6. No secrets in frontend code - only `VITE_`-prefixed public values.
 7. Run the checks below after every phase and report results honestly.
 
 ## Commands
@@ -136,7 +151,7 @@ npm run dev
 ## Environment notes
 
 - Python 3.14 on Windows. Dependency pins in `requirements.txt` are the versions
-  verified installable on cp314 â€” several older pins have no 3.14 wheels, so
+  verified installable on cp314 - several older pins have no 3.14 wheels, so
   bump rather than downgrade Python if a pin fails.
 - The Vite dev server binds `localhost` (IPv6). `127.0.0.1:5173` will not
   connect; both origins are allowed in `CORS_ORIGINS` regardless.
@@ -146,11 +161,19 @@ npm run dev
 - Tests isolate database, model artifacts and generated datasets in temporary
   storage. Do not point test writes at the development artifact directory.
 - The existing inactive v1 database record and artifact disagree. Phase 7 leaves
-  them untouched and rejects incompatible metadata/pipelines. Current active metadata
-  is v4; Phases 8/9 preserve its files and below-baseline DEMO quality.
-- Prediction is a DEMO pipeline demonstration: accuracy 33.3% vs majority
-  baseline accuracy 40.6%, weighted F1 31.9%. Never equate class probability or
-  the heuristic opportunity score with reliable marketplace advice or sales demand.
+  them untouched and rejects incompatible metadata/pipelines.
+- Development database (inspected read-only 2026-09-14): active model is **v5**
+  (XGBoost, trained 2026-09-13 during the interrupted Phase 10 run; v1-v4 are
+  inactive), 24 users, 2 saved predictions, 480 DEMO snapshots. Alembic is still
+  at **0004**; the next normal backend startup applies 0005 (adds `stored_objects`
+  only). Do not delete or retrain over these files without being asked.
+- Prediction is a DEMO pipeline demonstration: v5 (like v4) scores accuracy 33.3%
+  vs majority baseline accuracy 40.6%, weighted F1 31.9%. Never equate class
+  probability or the heuristic opportunity score with reliable marketplace advice
+  or sales demand.
+- In this sandbox pytest cannot write its default temp root; pass
+  `--basetemp` pointing at a writable scratch directory if fixtures fail with
+  `PermissionError`.
 
 - DEBUG defaults false; legacy DEBUG=release is false. Exact CORS origins accept
   comma-separated text or JSON. Non-development secrets need at least 32 bytes.

@@ -10,7 +10,7 @@ from app.database.base import Base
 
 # check_same_thread is a SQLite-only connect arg; passing it to any other
 # driver raises, so it is applied conditionally.
-_connect_args = {"check_same_thread": False} if settings.is_sqlite else {}
+_connect_args = {"check_same_thread": False} if settings.is_sqlite else {"connect_timeout": 10}
 
 engine = create_engine(
     settings.DATABASE_URL,
@@ -42,8 +42,9 @@ def init_db() -> None:
     from app import models  # noqa: F401
     from app.database.migrate import upgrade_to_head
 
-    settings.DATA_DIR.mkdir(parents=True, exist_ok=True)
-    settings.MODEL_ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
+    if settings.storage_backend == "local":
+        settings.DATA_DIR.mkdir(parents=True, exist_ok=True)
+        settings.MODEL_ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     upgrade_to_head(engine)
 
 

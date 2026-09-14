@@ -15,7 +15,6 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from datetime import datetime, time, timezone
-from pathlib import Path
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -333,7 +332,7 @@ def summary(db: Session, user_id: int) -> dict:
         "latest_dataset": None if dataset is None else {
             "dataset_id": dataset["dataset_id"], "source_types": dataset.get("source_types", []),
             "generated_at": dataset.get("generated_at"),
-            "file_available": bool(dataset.get("csv_path") and Path(dataset["csv_path"]).is_file()),
+            "file_available": dataset_service.dataset_available(dataset),
         },
         "notice": "Observation time records when the source was observed, not when the dashboard loaded or a dataset was built. DEMO and IMPORTED records are not live updates.",
     }

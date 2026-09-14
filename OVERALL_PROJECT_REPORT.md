@@ -1,7 +1,26 @@
 # MarketPulse AI - Overall Project Report
 
-**Report date:** September 13, 2026  
-**Current stage:** Phase 9 implemented and automated checks passing. Phase 10 has not started.
+**Report date:** September 13, 2026 (status addenda updated September 14, 2026)
+
+**Current stage:** Phases 1-9 complete. Phase 10 partially implemented: deployment configuration and durable-storage code are committed in the "checkpoint marketpulse through phase 10 prep" commit. Local automated checks pass; nothing has been deployed, and real PostgreSQL behavior is unverified. See [Durable storage](docs/DURABLE_STORAGE.md) and [Phase 10 report](docs/PHASE_10_REPORT.md).
+
+**Durable storage addendum:** Configuration requires PostgreSQL and database
+storage in production, and dataset/model bundles persist through the storage
+abstraction (migration `0005`). No Phase 10.5 report has been written; the work
+was interrupted and then stabilized, not signed off. Development data is preserved.
+The historical inspection below does not describe the new production storage.
+
+**Development database addendum (read-only inspection, September 14):** the
+active model is now **XGBoost v5**, trained September 13 during the interrupted
+Phase 10 run on the same DEMO data; its accuracy 33.33%, weighted F1 31.87% and
+majority baseline 40.62% match v4. The database holds 24 users, 2 saved
+predictions, 5 model records and 480 DEMO snapshots. Alembic is still at `0004`;
+the next normal backend startup applies `0005`, which only adds `stored_objects`.
+
+**Phase 10 addendum:** The report below preserves the Phase 1-9 inspection.
+Checkpoint `de173ee` now preserves that work in Git. Deployment configuration,
+production startup, readiness and configuration checks have since been added.
+Storage redesign remains deferred; development data and ML behavior are preserved.
 
 ## Report scope and evidence
 
@@ -47,7 +66,7 @@ and the active model performs below the majority-class baseline.
 | 7 - Predictions | Complete | Saved-Pipeline inference, explained Opportunity Scores, user-scoped prediction history and immutable result snapshots. |
 | 8 - Trend analytics | Complete | Stored price, discount, rating, review and availability histories; platform comparisons; charts and actual dashboard summaries. |
 | 9 - Stabilization | Implemented; automated checks pass | Security/configuration fixes, input validation, failure handling, persistence safeguards, API journey tests and UI/accessibility polish. Browser interaction remains unverified. |
-| 10 - Deployment | Not started | Hosting, durable storage, production configuration and deployment verification remain. |
+| 10 - Deployment | Partially implemented; not deployed | Render/Vercel configuration, production settings validation, readiness check and database-backed storage exist and pass local checks. Hosting, real PostgreSQL and deployment verification remain. |
 
 Phase completion describes the implemented software, not the fulfillment of live
 marketplace access or production-readiness requirements.
@@ -173,6 +192,8 @@ on the local filesystem rather than being stored as database blobs.
 ## Data and model at the last verified inspection
 
 The development database was inspected read-only during the September 11 verification.
+This table is historical; see the September 14 addendum at the top for the current
+active model (v5), user and prediction counts, and migration state.
 
 | Item | Current value |
 | --- | --- |
@@ -269,9 +290,9 @@ Local model artifacts are trusted files and must not come from untrusted uploads
 ## Repository and documentation
 
 - Branch: `master`.
-- Latest commit: `c7d4b86` - `docs: Phase 6 report`.
-- Phase 7-9 work is present as uncommitted working-tree changes.
-- No deployment or Phase 10 implementation has been performed.
+- `de173ee` checkpoints Phases 1-9; the following "checkpoint marketpulse through
+  phase 10 prep" commit adds the Phase 10 deployment and durable-storage work.
+- No deployment has been performed and no Git remote push is recorded here.
 
 ## How to interpret older documentation
 
@@ -279,12 +300,11 @@ PROJECT_CONTEXT.md records the intended scope and roadmap; its proposed features
 are not proof of implementation. Phase reports capture the state at their own
 completion. For example, the Phase 6 description of Prediction as unused is
 superseded by Phase 7, and older active-model references are superseded by the
-later v4 database inspection. Historical statements that a later phase had not
-started apply to the date of those reports.
+later database inspections (v4 on September 11, v5 on September 14). Historical
+statements that a later phase had not started apply to the date of those reports.
 
-The latest Git commit is still the Phase 6 documentation commit, even though
-Phases 7-9 exist in the working tree. A clean checkout of that commit alone would
-therefore omit this later work. No commit was created for this report.
+Development databases, processed datasets and model artifacts are ignored by Git,
+so a clean checkout contains the code and demo fixture but not the local v5 model.
 
 ## Existing test coverage
 
