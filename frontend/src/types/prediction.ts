@@ -10,6 +10,12 @@ export interface ModelQuality {
   below_baseline: boolean | null
   source_types: SourceType[]
   warning: string
+  /** Phase 12; absent on predictions saved earlier. */
+  quality_status?: string | null
+  calibration_status?: string
+  probability_assessment?: string | null
+  baselines?: { majority_baseline?: number | null; training_majority_accuracy?: number | null; persistence_accuracy?: number | null; best_baseline_accuracy?: number | null }
+  legacy_model?: boolean | null
 }
 
 export interface PlatformPrediction {

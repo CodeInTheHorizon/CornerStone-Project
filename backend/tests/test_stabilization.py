@@ -123,7 +123,7 @@ def test_registration_race_rolls_back(monkeypatch, db_session):
 def test_training_busy_is_conflict(client, headers):
     assert training_service._TRAINING_LOCK.acquire(blocking=False)
     try:
-        response=client.post('/ml/train',headers=headers,json={})
+        response=client.post('/ml/train',headers=headers,json={'source_types':['demo']})
         assert response.status_code == 409
         assert response.json()['detail']['status'] == 'training_busy'
     finally: training_service._TRAINING_LOCK.release()

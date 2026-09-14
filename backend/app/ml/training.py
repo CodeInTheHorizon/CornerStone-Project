@@ -8,10 +8,12 @@ Everything that could inflate a score is treated as a defect:
 
 * Preprocessing is fitted inside the pipeline, on training data only, so
   validation statistics never leak backwards through an imputer or encoder.
-* The split is time-aware, because the same listing appears on consecutive
-  dates and a random split would put near-duplicate rows on both sides.
-* Every result is reported next to the majority-class baseline, so a score
-  that merely matches "always guess the most common class" is visible as such.
+* The split is time-aware and boundary-first (Phase 12): labels are generated
+  inside each partition, so no training label depends on a validation-period
+  price. Any target already present on the input frame is discarded.
+* Every result is reported next to naive baselines (majority class, training
+  majority, persistence), so a score that merely matches a guess is visible.
+* Minimum data requirements are enforced before fitting, not after.
 """
 
 from __future__ import annotations
@@ -35,12 +37,13 @@ from sklearn.metrics import (
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
+from app.config import settings
+from app.ml import validation as validation_module
 from app.ml.target import (
     CLASSES,
     TARGET_COLUMN,
     TARGET_HELPER_COLUMNS,
     class_distribution,
-    majority_baseline,
 )
 
 logger = logging.getLogger(__name__)
@@ -52,9 +55,43 @@ RANDOM_SEED = 42
 #: this high almost always means leakage or train/validation overlap.
 SUSPICIOUS_ACCURACY = 0.95
 
-#: Below this, a train/validation split is not meaningful.
-MIN_TRAINING_ROWS = 40
-MIN_VALIDATION_ROWS = 10
+
+@dataclass(frozen=True)
+class TrainingRequirements:
+    """Minimum evidence before any model is fitted. Configurable via ML_MIN_* settings.
+
+    Defaults: 100 labelled rows so the validation share is not a handful of
+    rows; 60 training / 20 validation rows so each side has a few examples per
+    class; 10 products so a model is not a lookup of a few listings; 4 dates
+    because each side of the boundary needs two dates to label anything; and 5
+    training rows per class so no class is learned from one or two examples.
+    """
+
+    min_labelled_rows: int = 100
+    min_training_rows: int = 60
+    min_validation_rows: int = 20
+    min_unique_products: int = 10
+    min_observation_dates: int = 4
+    min_rows_per_class: int = 5
+
+    @classmethod
+    def from_settings(cls) -> "TrainingRequirements":
+        return cls(
+            min_labelled_rows=settings.ML_MIN_LABELLED_ROWS,
+            min_training_rows=settings.ML_MIN_TRAINING_ROWS,
+            min_validation_rows=settings.ML_MIN_VALIDATION_ROWS,
+            min_unique_products=settings.ML_MIN_UNIQUE_PRODUCTS,
+            min_observation_dates=settings.ML_MIN_OBSERVATION_DATES,
+            min_rows_per_class=settings.ML_MIN_ROWS_PER_CLASS,
+        )
+
+    def to_dict(self) -> dict[str, int]:
+        return dict(self.__dict__)
+
+
+#: Backwards-compatible names for the default minimums.
+MIN_TRAINING_ROWS = TrainingRequirements.min_training_rows
+MIN_VALIDATION_ROWS = TrainingRequirements.min_validation_rows
 
 try:  # pragma: no cover - environment dependent
     from xgboost import XGBClassifier
@@ -81,6 +118,7 @@ EXCLUDED_COLUMNS: dict[str, str] = {
     "collection_timestamp": "raw timestamp - would let the model memorise dates",
     "forward_price": "derived from the future - direct target leakage",
     "forward_price_change_pct": "the target's own source - direct target leakage",
+    "target_observed_at": "timestamp of the future observation behind the label - direct target leakage",
     TARGET_COLUMN: "the target itself",
 }
 
@@ -128,6 +166,16 @@ class TrainingOutcome:
     majority_baseline: float | None
     selection_rule: str
     warnings: list[str] = field(default_factory=list)
+    #: Phase 12 evaluation evidence.
+    split: dict[str, Any] = field(default_factory=dict)
+    baselines: dict[str, Any] = field(default_factory=dict)
+    probability_quality: dict[str, Any] = field(default_factory=dict)
+    group_overlap: dict[str, Any] = field(default_factory=dict)
+    data_summary: dict[str, Any] = field(default_factory=dict)
+    requirements: dict[str, int] = field(default_factory=dict)
+    training_class_distribution: dict[str, int] = field(default_factory=dict)
+    validation_class_distribution: dict[str, int] = field(default_factory=dict)
+    unseen_product_accuracy: float | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -154,39 +202,16 @@ def select_features(frame: pd.DataFrame) -> tuple[list[str], list[str]]:
 def time_aware_split(
     frame: pd.DataFrame, validation_fraction: float = 0.2
 ) -> tuple[pd.DataFrame, pd.DataFrame, str]:
-    """Split on observation date: earlier dates train, the latest validate.
+    """Leakage-safe temporal split returning labelled (train, validation, description).
 
-    Each listing appears on several consecutive dates, so a random split would
-    place day 3 and day 4 of the same listing on opposite sides -- rows that
-    are near-identical by construction. The model would score well by having
-    effectively seen the validation rows already.
+    Any target already on `frame` is discarded: labels are regenerated inside
+    each side of a date boundary (see app.ml.validation.temporal_split).
     """
-    dates = sorted(frame["collection_timestamp"].unique())
-
-    if len(dates) < 2:
-        raise TrainingError(
-            "The dataset covers a single observation date, so no time-aware "
-            "split is possible. Collect or import data over more than one date.",
-            status="insufficient_data",
-        )
-
-    # Take whole dates from the end until the validation share is reached.
-    cutoff_index = len(dates)
-    for index in range(len(dates) - 1, 0, -1):
-        share = frame["collection_timestamp"].isin(dates[index:]).mean()
-        cutoff_index = index
-        if share >= validation_fraction:
-            break
-
-    cutoff = dates[cutoff_index]
-    train = frame[frame["collection_timestamp"] < cutoff].copy()
-    validation = frame[frame["collection_timestamp"] >= cutoff].copy()
-
-    description = (
-        f"time-aware: train < {pd.Timestamp(cutoff).date()}, "
-        f"validate >= {pd.Timestamp(cutoff).date()}"
-    )
-    return train, validation, description
+    try:
+        split = validation_module.temporal_split(frame, validation_fraction)
+    except validation_module.SplitError as exc:
+        raise TrainingError(str(exc), status="insufficient_data") from None
+    return split.train, split.validation, split.description
 
 
 # ---------------------------------------------------------------------------
@@ -294,57 +319,102 @@ SELECTION_RULE = (
 )
 
 
+def _probabilities(pipeline: Any, name: str, features: pd.DataFrame) -> np.ndarray | None:
+    """Class probabilities with columns in CLASSES order, or None."""
+    if not hasattr(pipeline, "predict_proba"):
+        return None
+    raw = np.asarray(pipeline.predict_proba(features), dtype=float)
+    classes = list(getattr(pipeline, "classes_", []))
+    if name == "xgboost":
+        # Integer ids map through CLASSES, exactly as at fit time.
+        classes = [CLASSES[int(value)] for value in classes] if classes else CLASSES[: raw.shape[1]]
+    aligned = np.zeros((raw.shape[0], len(CLASSES)))
+    for column, label in enumerate(classes):
+        if label in CLASSES:
+            aligned[:, CLASSES.index(label)] = raw[:, column]
+    return aligned
+
+
+def _predict(pipeline: Any, name: str, features: pd.DataFrame) -> np.ndarray:
+    if name == "xgboost":
+        return np.array([CLASSES[int(value)] for value in pipeline.predict(features)])
+    return np.asarray(pipeline.predict(features))
+
+
+def _insufficient(reason: str) -> TrainingError:
+    return TrainingError(reason, status="insufficient_data")
+
+
 def train_models(
     frame: pd.DataFrame,
     model_names: list[str] | None = None,
     validation_fraction: float = 0.2,
+    requirements: TrainingRequirements | None = None,
 ) -> TrainingOutcome:
-    """Train the candidate models and return every result plus the winner."""
+    """Train the candidate models on a leakage-safe split and return every result.
+
+    `frame` is a processed dataset. Any target columns already on it are
+    discarded and regenerated inside each split partition, so a frame labelled
+    over the whole history cannot smuggle boundary-crossing labels in.
+    """
+    requirements = requirements or TrainingRequirements.from_settings()
     warnings: list[str] = []
 
-    if TARGET_COLUMN not in frame.columns:
+    required = {"platform", "product_key", "collection_timestamp", "effective_price"}
+    missing = sorted(required - set(frame.columns))
+    if missing:
         raise TrainingError(
-            f"The dataset has no '{TARGET_COLUMN}' column.", status="missing_target"
+            f"The dataset cannot produce '{TARGET_COLUMN}': missing column(s) {', '.join(missing)}.",
+            status="missing_target",
         )
 
-    labelled = frame[frame[TARGET_COLUMN].notna()].copy()
-    if labelled.empty:
-        raise TrainingError(
-            "No rows could be labelled. Each listing needs at least two "
-            "observations so a following price is available.",
-            status="insufficient_data",
+    dates = validation_module.observation_dates(frame)
+    products = int(frame["product_key"].nunique())
+    if len(dates) < requirements.min_observation_dates:
+        raise _insufficient(
+            f"The dataset covers {len(dates)} observation date(s); at least "
+            f"{requirements.min_observation_dates} are required so both sides of the time split can be "
+            "labelled. Collect or import observations over more dates."
         )
+    if products < requirements.min_unique_products:
+        raise _insufficient(
+            f"The dataset has {products} unique product(s); at least {requirements.min_unique_products} are required."
+        )
+
+    try:
+        split = validation_module.temporal_split(frame, validation_fraction)
+    except validation_module.SplitError as exc:
+        raise _insufficient(str(exc)) from None
+    train, validation = split.train, split.validation
+    labelled = pd.concat([train, validation])
 
     distribution = class_distribution(labelled)
     if len(distribution) < 2:
-        raise TrainingError(
-            f"Target contains only one class ({list(distribution)}). "
-            "A classifier needs at least two.",
-            status="insufficient_data",
+        raise _insufficient(
+            f"Target contains only one class ({list(distribution)}). A classifier needs at least two."
         )
-
-    train, validation, split_description = time_aware_split(
-        labelled, validation_fraction
-    )
-
-    if len(train) < MIN_TRAINING_ROWS:
-        raise TrainingError(
-            f"Only {len(train)} training rows after splitting; at least "
-            f"{MIN_TRAINING_ROWS} are needed.",
-            status="insufficient_data",
+    if len(labelled) < requirements.min_labelled_rows:
+        raise _insufficient(
+            f"Only {len(labelled)} rows can be labelled without crossing the split boundary; "
+            f"at least {requirements.min_labelled_rows} are required."
         )
-    if len(validation) < MIN_VALIDATION_ROWS:
-        raise TrainingError(
-            f"Only {len(validation)} validation rows after splitting; at least "
-            f"{MIN_VALIDATION_ROWS} are needed.",
-            status="insufficient_data",
+    if len(train) < requirements.min_training_rows:
+        raise _insufficient(
+            f"Only {len(train)} training rows after the leakage-safe split; at least "
+            f"{requirements.min_training_rows} are needed."
         )
-
-    if len(set(train[TARGET_COLUMN])) < 2:
-        raise TrainingError(
-            "The training split contains only one class after the time-aware "
-            "split.",
-            status="insufficient_data",
+    if len(validation) < requirements.min_validation_rows:
+        raise _insufficient(
+            f"Only {len(validation)} validation rows after the leakage-safe split; at least "
+            f"{requirements.min_validation_rows} are needed."
+        )
+    train_distribution = class_distribution(train)
+    thin = [label for label in CLASSES if train_distribution.get(label, 0) < requirements.min_rows_per_class]
+    if thin:
+        raise _insufficient(
+            "The training period has too few examples of class(es) "
+            + ", ".join(f"{label} ({train_distribution.get(label, 0)})" for label in thin)
+            + f"; at least {requirements.min_rows_per_class} per class are required."
         )
 
     numeric, categorical = select_features(labelled)
@@ -354,6 +424,14 @@ def train_models(
     feature_columns = numeric + categorical
     x_train, y_train = train[feature_columns], train[TARGET_COLUMN]
     x_validation, y_validation = validation[feature_columns], validation[TARGET_COLUMN]
+
+    empty_in_training = [column for column in numeric if x_train[column].isna().all()]
+    if empty_in_training:
+        warnings.append(
+            "These features have no values in the training period and carry no signal (the imputer "
+            f"drops them): {', '.join(empty_in_training)}. Trend features need at least three prior "
+            "observations per listing before the split boundary."
+        )
 
     candidates = _candidates(model_names)
     if not candidates:
@@ -371,30 +449,17 @@ def train_models(
                     ("model", estimator),
                 ]
             )
-
             if name == "xgboost":
                 # XGBoost needs integer labels; map and map back on predict.
-                mapping = {label: index for index, label in enumerate(CLASSES)}
-                inverse = {index: label for label, index in mapping.items()}
-                pipeline.fit(x_train, y_train.map(mapping))
-                predictions = np.array(
-                    [inverse[int(p)] for p in pipeline.predict(x_validation)]
-                )
+                pipeline.fit(x_train, y_train.map({label: index for index, label in enumerate(CLASSES)}))
             else:
                 pipeline.fit(x_train, y_train)
-                predictions = pipeline.predict(x_validation)
-
+            predictions = _predict(pipeline, name, x_validation)
             results.append(_evaluate(name, y_validation, predictions, pipeline))
         except Exception as exc:  # a failing candidate must not kill the run
             logger.exception("Training %s failed", name)
             results.append(
-                ModelResult(
-                    name=name,
-                    metrics={},
-                    confusion_matrix=[],
-                    labels=[],
-                    error=str(exc),
-                )
+                ModelResult(name=name, metrics={}, confusion_matrix=[], labels=[], error=str(exc))
             )
 
     trained = [r for r in results if r.trained]
@@ -411,21 +476,47 @@ def train_models(
         key=lambda r: (r.metrics.get("f1_weighted", 0), r.name == "random_forest"),
     )
 
-    baseline = majority_baseline(validation)
-    if baseline is not None and selected.metrics.get("accuracy", 0) <= baseline:
+    baseline_report = validation_module.baselines(train, validation)
+    accuracy = selected.metrics.get("accuracy", 0)
+    majority = baseline_report["majority_baseline"]
+    best = baseline_report["best_baseline_accuracy"]
+    if majority is not None and accuracy <= majority:
         warnings.append(
-            f"The selected model's accuracy ({selected.metrics.get('accuracy')}) "
-            f"does not beat always guessing the most common class ({baseline}). "
-            "On this data that is expected rather than a bug -- see the "
-            "limitations note."
+            f"The selected model's accuracy ({accuracy}) does not beat always guessing the most "
+            f"common class ({majority})."
+        )
+    elif best is not None and accuracy <= best:
+        warnings.append(
+            f"The selected model's accuracy ({accuracy}) does not beat the strongest naive baseline ({best})."
         )
 
-    if selected.metrics.get("accuracy", 0) >= SUSPICIOUS_ACCURACY:
+    if accuracy >= SUSPICIOUS_ACCURACY:
         warnings.append(
             "Validation accuracy is near-perfect, which usually indicates "
             "target leakage or train/validation overlap rather than a good "
             "model. Inspect before trusting this result."
         )
+
+    probability_report = validation_module.probability_quality(
+        y_validation, _probabilities(selected.pipeline, selected.name, x_validation), train_distribution
+    )
+    overlap = validation_module.group_overlap(train, validation)
+    unseen_accuracy = None
+    unseen = validation[~validation["product_key"].isin(set(train["product_key"]))]
+    if len(unseen) >= requirements.min_validation_rows:
+        unseen_predictions = _predict(selected.pipeline, selected.name, unseen[feature_columns])
+        unseen_accuracy = round(float((unseen_predictions == unseen[TARGET_COLUMN].to_numpy()).mean()), 4)
+
+    data_summary = {
+        "observation_rows": int(len(frame)),
+        "labelled_rows": int(len(labelled)),
+        "training_rows": int(len(train)),
+        "validation_rows": int(len(validation)),
+        "observation_dates": len(dates),
+        "validation_label_dates": len(validation_module.observation_dates(validation)),
+        "unique_products": products,
+        "boundary_purged_rows": split.boundary_purged_rows,
+    }
 
     return TrainingOutcome(
         target=TARGET_COLUMN,
@@ -435,18 +526,23 @@ def train_models(
         numeric_features=numeric,
         categorical_features=categorical,
         excluded_columns={
-            k: v for k, v in EXCLUDED_COLUMNS.items() if k in frame.columns
+            k: v for k, v in EXCLUDED_COLUMNS.items() if k in labelled.columns or k in frame.columns
         },
         training_rows=len(train),
         validation_rows=len(validation),
-        split_strategy=split_description,
-        split_rationale=(
-            "Repeated observations of the same listing on consecutive dates "
-            "make a random split leak: adjacent days are near-duplicates. "
-            "Splitting on date keeps every listing's future strictly unseen."
-        ),
+        split_strategy=split.description,
+        split_rationale=validation_module.SPLIT_RATIONALE,
         class_distribution=distribution,
-        majority_baseline=baseline,
+        majority_baseline=majority,
         selection_rule=SELECTION_RULE,
         warnings=warnings,
+        split=split.summary(),
+        baselines=baseline_report,
+        probability_quality=probability_report,
+        group_overlap=overlap,
+        data_summary=data_summary,
+        requirements=requirements.to_dict(),
+        training_class_distribution=train_distribution,
+        validation_class_distribution=class_distribution(validation),
+        unseen_product_accuracy=unseen_accuracy,
     )

@@ -9,7 +9,82 @@
 
 import { Icon } from '@/components/Icon'
 import { SourceBadge } from '@/components/SourceBadge'
-import type { ModelMetrics } from '@/types/data'
+import { StatusPill } from '@/components/StatusPill'
+import {
+  BELOW_BASELINE_MESSAGE,
+  DEMO_MODEL_MESSAGE,
+  dateOnly,
+  percentOrDash,
+  qualityPresentation,
+} from '@/lib/modelQuality'
+import type { ModelMetrics, QualityReport } from '@/types/data'
+
+function QualitySection({ quality, sources }: { quality: QualityReport; sources: string[] }) {
+  const presentation = qualityPresentation[quality.quality_status]
+  const usesDemo = quality.source_policy.uses_demo ?? sources.includes('demo')
+  const probability = quality.probability_quality
+  const data = quality.data_summary
+  const baselines = quality.baselines
+  const rows: [string, string][] = [
+    ['Selected source types', (quality.source_policy.selected_source_types ?? []).map((s) => s.toUpperCase()).join(', ') || '—'],
+    ['Labelled rows', `${data.labelled_rows ?? '—'} (${data.training_rows ?? '—'} train / ${data.validation_rows ?? '—'} validate)`],
+    ['Observation dates', String(data.observation_dates ?? '—')],
+    ['Unique products', String(data.unique_products ?? '—')],
+    ['Split', quality.split.strategy ?? '—'],
+    ['Split boundary', quality.split.boundary ? `${dateOnly(quality.split.boundary)} · ${quality.split.boundary_purged_rows ?? 0} boundary-crossing labels purged` : '—'],
+    ['Majority baseline accuracy', percentOrDash(baselines.majority_baseline)],
+    ['Training-majority accuracy', percentOrDash(baselines.training_majority_accuracy)],
+    ['Previous-direction accuracy', percentOrDash(baselines.persistence_accuracy)],
+    ['Calibration', `${quality.calibration_status} · ${probability.assessment?.replace(/_/g, ' ') ?? 'not measured'}`],
+  ]
+
+  return (
+    <div className="mt-6 border-t border-border-hair pt-6">
+      <div className="flex flex-wrap items-center gap-3">
+        <h3 className="text-xs font-medium text-muted">Model quality</h3>
+        <StatusPill tone={presentation.tone}>{presentation.label}</StatusPill>
+      </div>
+
+      {quality.quality_status === 'below_baseline' && (
+        <p role="alert" className="mt-4 flex items-start gap-2.5 rounded-card border border-signal-down/30 bg-signal-down/10 px-4 py-3 text-sm font-semibold text-signal-down">
+          <Icon name="alert" className="mt-0.5 size-4 shrink-0" />
+          <span>{BELOW_BASELINE_MESSAGE}</span>
+        </p>
+      )}
+      {usesDemo && (
+        <p className="mt-3 flex items-start gap-2.5 rounded-card border border-signal-warn/30 bg-signal-warn/10 px-4 py-3 text-sm text-signal-warn">
+          <Icon name="alert" className="mt-0.5 size-4 shrink-0" />
+          <span>{DEMO_MODEL_MESSAGE}</span>
+        </p>
+      )}
+      {quality.legacy && (
+        <p className="mt-3 text-xs leading-relaxed text-signal-warn">
+          Trained before the Phase 12 leakage fix: its labels were generated before the time split, so its
+          validation score is overstated. Probabilities were never measured.
+        </p>
+      )}
+
+      <dl className="mt-4 grid gap-x-6 gap-y-2 text-xs sm:grid-cols-2">
+        {rows.map(([label, value]) => (
+          <div key={label} className="flex justify-between gap-3 border-b border-border-hair/60 py-1.5">
+            <dt className="text-subtle">{label}</dt>
+            <dd className="text-right font-mono">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      {probability.log_loss !== undefined && (
+        <p className="mt-2 text-xs text-subtle">
+          Log loss {probability.log_loss} vs class prior {probability.class_prior_log_loss} · Brier {probability.brier_score} · ECE {probability.expected_calibration_error} on {probability.rows} rows. Probabilities are not recalibrated.
+        </p>
+      )}
+      {quality.quality_reasons.length > 0 && (
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-xs leading-relaxed text-muted">
+          {quality.quality_reasons.map((reason) => <li key={reason}>{reason}</li>)}
+        </ul>
+      )}
+    </div>
+  )
+}
 
 const METRIC_LABELS: Record<string, string> = {
   accuracy: 'Accuracy',
@@ -85,10 +160,12 @@ export function TrainingResults({ metrics }: { metrics: ModelMetrics }) {
             {percent(metrics.metrics.accuracy)}
           </strong>
           {beatsBaseline
-            ? ' — it is doing better than guessing.'
+            ? ' — it beats that constant guess. Check the quality status below before trusting it.'
             : ' — it is not beating that baseline, so it has found no usable signal in this data.'}
         </span>
       </div>
+
+      {metrics.quality && <QualitySection quality={metrics.quality} sources={metrics.dataset_source_types} />}
 
       {metrics.warnings.length > 0 && (
         <ul className="mt-4 space-y-2">

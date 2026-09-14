@@ -83,6 +83,7 @@ export function TrainModelPage() {
     'random_forest',
     'xgboost',
   ])
+  const [trainSourceChoice, setTrainSourceChoice] = useState<SourceType[] | null>(null)
   const [training, setTraining] = useState(false)
   const [trainError, setTrainError] = useState<string | null>(null)
 
@@ -137,6 +138,8 @@ export function TrainModelPage() {
         persist: true,
       })
       setResult(response)
+      // A new dataset resets the training provenance to what it contains.
+      setTrainSourceChoice(null)
       await load()
     } catch (error) {
       setBuildError(
@@ -151,11 +154,16 @@ export function TrainModelPage() {
 
   const handleTrain = async () => {
     setTrainError(null)
+    if (!trainingSources.length) {
+      setTrainError('Select the source types this model may be trained on.')
+      return
+    }
     setTraining(true)
     try {
       await trainingService.trainModel(token!, {
         dataset_id: 'latest',
         models: selectedModels.length ? selectedModels : undefined,
+        source_types: trainingSources,
       })
       await load()
     } catch (error) {
@@ -171,6 +179,10 @@ export function TrainModelPage() {
 
   const latest = result?.metadata ?? status?.latest ?? null
   const notice = result?.notice ?? status?.notice ?? null
+  // Training provenance is chosen deliberately; it starts from what the
+  // dataset actually contains and the backend rejects any mismatch.
+  const trainingSources: SourceType[] = trainSourceChoice ?? latest?.source_types ?? []
+  const datasetHasDemo = latest?.source_types.includes('demo') ?? false
   const previewColumns = preview
     ? PREVIEW_COLUMNS.filter((column) => preview.columns.includes(column))
     : []
@@ -455,10 +467,47 @@ export function TrainModelPage() {
           <h2 className="text-lg font-semibold">Model training</h2>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">
             Trains on the dataset above and reports measured validation
-            metrics. The split is time-aware — earlier dates train, the latest
-            date validates — because the same listing appears on consecutive
-            days and a random split would leak.
+            metrics against naive baselines. The split is temporal and
+            boundary-first: a date boundary is fixed, then each side is labelled
+            separately, so no training label comes from a validation-period price.
+            The target is the direction of a listing&rsquo;s next price, an
+            opportunity proxy, not sales demand.
           </p>
+
+          <fieldset className="mt-6">
+            <legend className="text-sm font-medium text-muted">Training source types</legend>
+            <p className="mt-1 text-xs text-subtle">
+              Must match the dataset&rsquo;s provenance. DEMO cannot be combined with IMPORTED or LIVE.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(['demo', 'imported', 'live'] as SourceType[]).map((type) => {
+                const active = trainingSources.includes(type)
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => toggle(trainingSources, type, (next) => setTrainSourceChoice(next))}
+                    className={`rounded-card border px-3.5 py-2 transition-colors ${
+                      active ? 'border-accent bg-accent-soft' : 'border-border-hair hover:border-border-strong'
+                    }`}
+                  >
+                    <SourceBadge kind={type} />
+                  </button>
+                )
+              })}
+            </div>
+            {latest && (
+              <p className="mt-2 text-xs text-subtle">
+                Dataset {latest.dataset_id} contains: {latest.source_types.map((type) => type.toUpperCase()).join(', ') || 'unknown'}.
+              </p>
+            )}
+            {datasetHasDemo && trainingSources.includes('demo') && (
+              <p className="mt-2 text-xs text-signal-warn">
+                Development model — trained on synthetic DEMO data.
+              </p>
+            )}
+          </fieldset>
 
           <fieldset className="mt-6">
             <legend className="text-sm font-medium text-muted">Models</legend>
@@ -547,6 +596,7 @@ export function TrainModelPage() {
                     <th scope="col" className="px-4 py-3 font-medium">Trained</th>
                     <th scope="col" className="px-4 py-3 font-medium">Dataset</th>
                     <th scope="col" className="px-4 py-3 text-right font-medium">F1</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Quality</th>
                     <th scope="col" className="px-4 py-3 font-medium">Active</th>
                   </tr>
                 </thead>
@@ -570,6 +620,9 @@ export function TrainModelPage() {
                         {run.f1_weighted === null
                           ? '—'
                           : `${(run.f1_weighted * 100).toFixed(1)}%`}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted">
+                        {run.quality_status?.replace(/_/g, ' ') ?? '—'}
                       </td>
                       <td className="px-4 py-3 text-xs">
                         {run.is_active ? (

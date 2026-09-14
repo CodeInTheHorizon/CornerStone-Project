@@ -74,6 +74,19 @@ class Settings(BaseSettings):
     AMAZON_PAAPI_REGION: str = "eu-west-1"
     AMAZON_PAAPI_MARKETPLACE: str = "www.amazon.in"
 
+    # --- Model training minimums (Phase 12) ---
+    # Training returns insufficient_data below these, even when scikit-learn
+    # could technically fit something. See docs/PHASE_12_REPORT.md.
+    # Labelled rows remaining after leakage-safe, per-partition labelling.
+    ML_MIN_LABELLED_ROWS: int = Field(default=100, ge=10)
+    ML_MIN_TRAINING_ROWS: int = Field(default=60, ge=10)
+    ML_MIN_VALIDATION_ROWS: int = Field(default=20, ge=5)
+    ML_MIN_UNIQUE_PRODUCTS: int = Field(default=10, ge=2)
+    # Each side of the split needs two dates to label anything; 4 is structural.
+    ML_MIN_OBSERVATION_DATES: int = Field(default=4, ge=4)
+    # Per class, in the training partition.
+    ML_MIN_ROWS_PER_CLASS: int = Field(default=5, ge=1)
+
     # --- Flipkart Affiliate API (Phase 11) ---
     # Credentials from an approved Flipkart Affiliate account (API > API Token).
     # Backend environment only; never VITE_-prefixed, logged or stored.

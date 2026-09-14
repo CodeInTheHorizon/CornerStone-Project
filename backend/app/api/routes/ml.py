@@ -18,6 +18,7 @@ from app.schemas.training import (
     ModelMetricsResponse,
     ModelRunResult,
     ModelStatusResponse,
+    QualityReport,
     TrainingRunSummary,
     TrainRequest,
     TrainResponse,
@@ -27,7 +28,7 @@ from app.services import training_service
 router = APIRouter(prefix="/ml", tags=["ml"])
 
 #: Statuses that mean "the request was fine, the data was not".
-DATA_STATUSES = {"no_dataset", "insufficient_data", "missing_target", "missing_features", "no_models"}
+DATA_STATUSES = {"no_dataset", "insufficient_data", "missing_target", "missing_features", "no_models", "provenance_rejected"}
 
 
 def _hyper(record: ModelMetadata) -> dict[str, Any]:
@@ -36,6 +37,10 @@ def _hyper(record: ModelMetadata) -> dict[str, Any]:
 
 def _metrics(record: ModelMetadata) -> dict[str, Any]:
     return record.metrics or {}
+
+
+def _quality(record: ModelMetadata) -> QualityReport:
+    return QualityReport(**training_service.quality_report(record))
 
 
 def _summary(record: ModelMetadata) -> TrainingRunSummary:
@@ -49,6 +54,7 @@ def _summary(record: ModelMetadata) -> TrainingRunSummary:
         f1_weighted=record.f1_score,
         source_types=hyper.get("dataset_source_types", []),
         is_active=record.is_active,
+        quality_status=training_service.quality_report(record)["quality_status"],
     )
 
 
@@ -64,7 +70,11 @@ def train(
 ) -> TrainResponse:
     try:
         record = training_service.train(
-            db, dataset_id=payload.dataset_id, models=payload.models
+            db,
+            dataset_id=payload.dataset_id,
+            models=payload.models,
+            source_types=payload.source_types,
+            development_override=payload.development_override,
         )
     except TrainingError as exc:
         # 422 when the data was inadequate, 500 when training itself broke.
@@ -101,6 +111,7 @@ def train(
         split_strategy=hyper.get("split_strategy", ""),
         warnings=metrics.get("warnings", []),
         notice=training_service.notice_for(record),
+        quality=_quality(record),
     )
 
 
@@ -145,6 +156,7 @@ def model_status(
         available_models=AVAILABLE_MODELS,
         history=history,
         notice=training_service.notice_for(record),
+        quality=_quality(record),
     )
 
 
@@ -196,4 +208,5 @@ def model_metrics(
         all_models=[ModelRunResult(**run) for run in metrics.get("all_models", [])],
         warnings=metrics.get("warnings", []),
         notice=training_service.notice_for(record),
+        quality=_quality(record),
     )

@@ -42,7 +42,8 @@ def test_complete_migration_chain_generates_postgresql_sql(monkeypatch):
     assert 'CREATE TABLE stored_objects' in sql
     assert 'BYTEA' in sql
     assert 'RENAME source TO source_type' in sql
-    assert "'0006'" in sql
+    assert "'0007'" in sql
+    assert 'quality_status' in sql
     assert 'CREATE TABLE collection_attempts' in sql
     assert '_alembic_tmp' not in sql
     for table in Base.metadata.sorted_tables:
@@ -70,7 +71,7 @@ def test_postgresql_upgrade_persistence_and_schema():
         upgrade_to_head(engine)
         with engine.connect() as connection:
             assert connection.execute(text('SELECT count(*) FROM users')).scalar_one() == 1
-            assert connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one() == '0006'
+            assert connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one() == '0007'
             assert not compare_metadata(MigrationContext.configure(connection), Base.metadata)
         store = DatabaseStore(engine, 'artifacts', 1024)
         meta = store.put('model_v1.pkl', b'persisted', {'model_version': 'v1'})
@@ -136,7 +137,7 @@ def test_concurrent_startup_migrations_serialize(pg_schema):
     engine = create_engine(_schema_url(url, schema))
     try:
         with engine.connect() as connection:
-            assert connection.execute(text('SELECT version_num FROM alembic_version')).scalars().all() == ['0006']
+            assert connection.execute(text('SELECT version_num FROM alembic_version')).scalars().all() == ['0007']
     finally:
         engine.dispose()
 
@@ -207,7 +208,7 @@ def test_production_journey_on_postgresql(pg_schema, tmp_path):
             assert ok(client.get('/ml/status', headers=headers))['trained'] is False
             assert ok(client.post('/data/demo/load', headers=headers))['stored'] == 480
             dataset = ok(client.post('/ml/dataset/build', headers=headers, json={'source_types': ['demo']}))
-            trained = ok(client.post('/ml/train', headers=headers, json={'dataset_id': dataset['dataset_id'], 'models': ['random_forest']}))
+            trained = ok(client.post('/ml/train', headers=headers, json={'dataset_id': dataset['dataset_id'], 'models': ['random_forest'], 'source_types': ['demo']}))
             assert trained['model_version'] == 'v1'
             key = ok(client.get('/ml/prediction-options', headers=headers, params={'q': 'acme 20000mah'}))['products'][0]['product_key']
             request = {'product_key': key, 'dataset_id': dataset['dataset_id']}

@@ -9,7 +9,8 @@ experimental opportunity scores. A Flipkart Affiliate API connector exists for
 LIVE collection but is disabled until credentials and Flipkart's data-use
 approval are configured; no LIVE data is stored.
 
-> **Status: Phase 11 - LIVE connector implemented and gated; 0 LIVE records.** Phase 10:
+> **Status: Phase 12 complete - ML validation hardened; forward-label boundary leak fixed. Active model v5 is DEMO-trained and below baseline; 0 LIVE observations; no model is real-data trained.**
+> Phase 11: LIVE connector implemented and gated; 0 LIVE records. Phase 10:
 > deployment-ready and locally production-verified, not deployed.
 > PostgreSQL storage, migrations, a Linux build and start of the Render
 > configuration, and desktop/tablet/mobile browser flows were verified locally.
@@ -107,6 +108,8 @@ All configuration is environment-driven; see [`.env.example`](.env.example).
 | `FLIPKART_AFFILIATE_ID` / `FLIPKART_AFFILIATE_TOKEN` | Flipkart Affiliate API credentials, backend only. The token is a secret. | *(empty)* |
 | `FLIPKART_DATA_USE_APPROVED` | Set `true` only after Flipkart confirms in writing that storing history, analytics and ML use are permitted. Credentials alone never enable collection. | `false` |
 | `FLIPKART_TIMEOUT_SECONDS` | Flipkart request timeout (1-60). | `15` |
+| `ML_MIN_LABELLED_ROWS` / `ML_MIN_TRAINING_ROWS` / `ML_MIN_VALIDATION_ROWS` | Training minimums after leakage-safe labelling; below them training returns `insufficient_data`. | `100` / `60` / `20` |
+| `ML_MIN_UNIQUE_PRODUCTS` / `ML_MIN_OBSERVATION_DATES` / `ML_MIN_ROWS_PER_CLASS` | Further training minimums (dates: at least 4, structurally). | `10` / `4` / `5` |
 | `AMAZON_PAAPI_ACCESS_KEY` / `_SECRET_KEY` / `_PARTNER_TAG` | Legacy PA-API configuration. PA-API was retired on 15 May 2026; nothing is enabled by these. | *(empty)* |
 | `VITE_API_BASE_URL` | Backend base URL used by the browser, set at build time. The localhost default applies only to `npm run dev`; production builds must set it (Vercel builds require HTTPS). | dev server: `http://127.0.0.1:8000` |
 | `VITE_WHATSAPP_NUMBER` | Destination for the contact form, digits only (e.g. `919876543210`). Empty disables the form, which then says so. | *(empty)* |
@@ -167,7 +170,7 @@ frontend/vercel.json        Vercel build settings and SPA rewrite
 | `POST` | `/ml/dataset/build` | Bearer | Build an ML-ready dataset from stored snapshots |
 | `GET` | `/ml/dataset/status` | Bearer | Metadata for the most recent dataset |
 | `GET` | `/ml/dataset/preview` | Bearer | First N rows of a stored dataset |
-| `POST` | `/ml/train` | Bearer | Train, evaluate, compare and persist a model |
+| `POST` | `/ml/train` | Bearer | Train on explicitly selected `source_types`, evaluate against baselines, apply the quality gate and persist |
 | `GET` | `/ml/status` | Bearer | Active model, version and training history |
 | `GET` | `/ml/metrics` | Bearer | Measured evaluation results for the active model |
 | `GET` | `/ml/prediction-options` | Bearer | Stored products available for prediction |
@@ -258,10 +261,15 @@ These are current and deliberate — please read before evaluating the project.
 - **The trained model has no predictive power on the current data, and that is
   the expected result.** The demo fixture drifts prices by an independent random
   draw each step, so next-period direction is close to unpredictable by
-  construction. The latest run scores 33.3% accuracy against a 40.6% majority
-  baseline -- worse than guessing. This demonstrates that the training pipeline
-  works end to end and that its honesty guards fire correctly. It demonstrates
-  nothing whatsoever about real marketplace behaviour.
+  construction. Active model v5 scores 33.3% accuracy against a 40.6% majority
+  baseline -- worse than guessing -- and its quality status is `below_baseline`.
+  It was trained before the Phase 12 leakage fix, so even that score is
+  overstated. It demonstrates nothing about real marketplace behaviour.
+- **No model is real-data trained.** There are 0 LIVE observations and the LIVE
+  connector is gated. See [docs/PHASE_12_REPORT.md](docs/PHASE_12_REPORT.md) for
+  the conditions a future model must meet before being called real-data trained.
+- **Probabilities are uncalibrated.** Log loss, Brier score and calibration error
+  are measured and shown; nothing is recalibrated on this little data.
 - **SQLite and local files are development-only.** Render's filesystem is
   ephemeral, so production requires a PostgreSQL `DATABASE_URL` and stores datasets
   and models in the database. Durability depends on that database's backups.
@@ -354,8 +362,9 @@ baseline revision and upgraded in place, preserving existing rows.
 - On PostgreSQL the upgrade is one transaction, so a failure rolls back.
 - Concurrent startups against PostgreSQL are serialized by an advisory lock, so an
   overlapping deploy and restart cannot race.
-- Migrations `0001`-`0006` add or rename without dropping data. `0005` adds
-  `stored_objects`; `0006` adds `collection_attempts`. Back up before any manual downgrade.
+- Migrations `0001`-`0007` add or rename without dropping data. `0005` adds
+  `stored_objects`; `0006` adds `collection_attempts`; `0007` adds model
+  `quality_status` and `calibration_status`. Back up before any manual downgrade.
 
 ```bash
 cd backend
@@ -451,16 +460,28 @@ sales demand. Marketplace pages do not expose unit sales.
 Predicting price direction is genuinely hard. Everything that could make a
 result look better than it is has been treated as a defect:
 
-- **Time-aware split.** Each listing appears on consecutive dates, so a random
-  split would put day 3 and day 4 of the same listing on opposite sides --
-  near-duplicates. Earlier dates train, the latest date validates.
+- **Boundary-first temporal split (Phase 12).** A date boundary is chosen first
+  and each side is labelled separately, so no training label comes from a
+  validation-period price. Before Phase 12, labels were generated first: 96 of 288
+  DEMO training labels crossed the boundary. Listings are shared across the split
+  on purpose (the product forecasts listings a seller already watches); overlap
+  and unseen-product accuracy are reported.
+- **Explicit provenance.** Training requires `source_types`, and the dataset
+  may contain only those. DEMO cannot be combined with IMPORTED or LIVE except
+  through a development-only override.
 - **Preprocessing inside the pipeline**, fitted on the training fold only, so
   imputer and encoder statistics never leak backwards.
 - **Nine columns excluded** as identifiers or target-derived, each with a
   recorded reason, surfaced in `/ml/metrics`.
-- **Majority baseline reported beside every score.** A model that merely
-  matches "always guess the most common class" is visible as such, in the API
-  and in the UI.
+- **Baselines reported beside every score, all as accuracies:** majority class,
+  training-majority class and previous direction. Weighted F1 is never compared
+  with them.
+- **Quality gate.** Every model is `below_baseline`, `experimental`, `candidate`
+  or `validated`. DEMO data caps a model at experimental; "validated" needs real
+  data, 200+ validation rows over 2+ dates, a 95% accuracy lower bound above
+  every baseline, and log loss better than the class prior.
+- **Minimum data.** Configurable `ML_MIN_*` limits return `insufficient_data`
+  before fitting.
 - **Near-perfect accuracy is flagged as suspicious**, not celebrated: at or
   above 95% the run carries a warning to inspect for leakage.
 
@@ -476,6 +497,7 @@ proportion to how often it occurs. Ties break toward the simpler model.
 - [CLAUDE.md](CLAUDE.md) — working rules and current state
 - [docs/design-direction.md](docs/design-direction.md) — visual language
 - [docs/PHASE_7_REPORT.md](docs/PHASE_7_REPORT.md) — prediction contract, formula, verification and limitations
+- [docs/PHASE_12_REPORT.md](docs/PHASE_12_REPORT.md) — ML validation audit, leakage fix, provenance policy, quality gate and real-data conditions
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Render/Vercel runbook, environment variables, backups, smoke test
 - [docs/DURABLE_STORAGE.md](docs/DURABLE_STORAGE.md) — production dataset/model storage and migration 0005
 - [docs/MARKETPLACE_SOURCES.md](docs/MARKETPLACE_SOURCES.md) — provider findings, the Flipkart LIVE connector, fields and constraints

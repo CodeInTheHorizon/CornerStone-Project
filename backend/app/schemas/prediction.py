@@ -26,6 +26,14 @@ class ModelQuality(BaseModel):
     below_baseline: bool | None
     source_types: list[str]
     warning: str
+    # Phase 12. Defaults keep predictions saved before Phase 12 readable.
+    quality_status: str | None = None
+    calibration_status: str = "uncalibrated"
+    probability_assessment: str | None = None
+    #: Accuracy of every naive baseline the model was compared with.
+    baselines: dict[str, Any] = Field(default_factory=dict)
+    #: True when the model was trained before the boundary-leakage fix.
+    legacy_model: bool | None = None
 
 
 class PlatformPrediction(BaseModel):

@@ -5,7 +5,14 @@ scope, architecture, the 10-day roadmap and the acceptance criteria.
 
 ## Current state
 
-**Phases 1-11 implemented.** Phase 11 status, verbatim for reports:
+**Phases 1-12 complete.** Phase 12 complete. Active model still **v5** (XGBoost), **DEMO-trained**, quality status **`below_baseline`**. Forward-label boundary leak fixed. **0 LIVE observations**; no model is real-data trained. Phase 12 details, verbatim for reports:
+- Active model is still **v5** (XGBoost), DEMO-trained, quality status **`below_baseline`**, flagged as trained before the leakage fix. Not retrained or modified.
+- Forward-label boundary leakage fixed: boundary-first temporal split, labels generated per partition (the old method let 96/288 DEMO training labels cross).
+- Training requires explicit `source_types`; DEMO never combines with IMPORTED/LIVE except a development-only override.
+- Quality gate (`below_baseline`/`experimental`/`candidate`/`validated`) persisted; probabilities measured but always `uncalibrated`.
+- 0 LIVE observations; no model is real-data trained. Target unchanged: price-direction proxy, not sales demand.
+
+Phase 11 status, verbatim for reports:
 - Flipkart Affiliate API LIVE connector implemented and tested with mocked responses.
 - Connector is gated: credentials **and** Flipkart's written data-use approval are required.
 - Flipkart credentials are missing (state `credentials_missing`).
@@ -113,6 +120,29 @@ Phase 11 (LIVE marketplace data; details in docs/MARKETPLACE_SOURCES.md):
   `tests/test_live_collection.py`). `tests/test_flipkart_live.py` is opt-in via
   `RUN_FLIPKART_LIVE_TEST=1` plus credentials and approval.
 
+Phase 12 (ML validation; details in docs/PHASE_12_REPORT.md):
+- **Split and labels:** `app/ml/validation.py` chooses the date boundary first
+  and labels each partition with `target.add_target` (which records
+  `target_observed_at`). `train_models` discards any precomputed target. Never
+  label globally before splitting.
+- **Provenance:** `app/ml/provenance.py` requires `/ml/train` to pass
+  `source_types`, and the dataset may contain only those types. Do not add
+  row filtering as a shortcut: market features cross provenance.
+- **Gate:** `validation.quality_gate` sets `quality_status`. DEMO,
+  development-override and legacy models are capped at experimental.
+  "validated" needs real data, >=200 validation rows on >=2 dates, a Wilson
+  lower bound above every baseline and log loss better than the class prior.
+- **Legacy records:** `training_service.quality_report` interprets
+  pre-Phase 12 records (no `training_policy_version`) on read. Never backfill
+  or rewrite them.
+- **Minimums:** `ML_MIN_*` settings (100 labelled, 60 train, 20 validation,
+  10 products, 4 dates, 5 per class) return `insufficient_data` before fitting.
+- **Baselines** are accuracies (majority, training majority, previous
+  direction). Never compare weighted F1 with them.
+- **Prediction label:** "Highest experimental opportunity score" unless the
+  model is candidate/validated. Saved pre-Phase 12 predictions must keep
+  validating (new ModelQuality fields need defaults).
+
 No scheduled jobs have been implemented.
 See docs/PHASE_7_REPORT.md for the exact score formula. Preserve historical
 model quality with every saved prediction.
@@ -168,10 +198,11 @@ frontend/src/
    In feature engineering this means a value that cannot be computed is NaN,
    never 0 -- zero is a claim that nothing changed. Trend features must not
    look ahead: use expanding windows over each listing's own past only.
-   In training it means metrics are always reported beside the majority-class
-   baseline, near-perfect accuracy is flagged as suspected leakage rather than
-   success, and the split stays time-aware because repeated observations of one
-   listing make a random split leak.
+   In training it means metrics are always reported beside the naive baselines
+   (as accuracies), near-perfect accuracy is flagged as suspected leakage rather
+   than success, the split stays time-aware and boundary-first because repeated
+   observations of one listing make a random split leak, and no model trained on
+   DEMO data may be described as real-data trained or reliable.
 5. Marketplace collection must use officially permitted access paths. Never
    bypass CAPTCHAs, authentication, anti-bot protections or access controls. If
    a source cannot be collected reliably, return an explicit unsupported status.
@@ -209,8 +240,8 @@ npm run dev
 - Development database (inspected read-only 2026-09-14): active model is **v5**
   (XGBoost, trained 2026-09-13 during the interrupted Phase 10 run; v1-v4 are
   inactive), 24 users, 2 saved predictions, 480 DEMO snapshots, 0 LIVE. Alembic is
-  still at **0004**; the next normal backend startup applies 0005 and 0006 (adds
-  `stored_objects` and `collection_attempts` only). Do not delete or retrain over
+  still at **0004**; the next normal backend startup applies 0005-0007 (adds
+  `stored_objects`, `collection_attempts` and two nullable model-quality columns). Do not delete or retrain over
   these files without being asked.
 - Prediction is a DEMO pipeline demonstration: v5 (like v4) scores accuracy 33.3%
   vs majority baseline accuracy 40.6%, weighted F1 31.9%. Never equate class

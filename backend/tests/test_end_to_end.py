@@ -50,7 +50,7 @@ with TestClient(app) as client:
     assert 'DEMO' in dataset['notice']
     preview=ok(client.get('/ml/dataset/preview',headers=headers,params={'dataset_id':dataset['dataset_id'],'limit':5}))
     assert len(preview['rows'])==5 and all(row['source_type']=='demo' for row in preview['rows'])
-    trained=ok(client.post('/ml/train',headers=headers,json={'dataset_id':dataset['dataset_id'],'models':['random_forest']}))
+    trained=ok(client.post('/ml/train',headers=headers,json={'dataset_id':dataset['dataset_id'],'models':['random_forest'],'source_types':['demo']}))
     assert trained['dataset_source_types']==['demo'] and trained['model_version']=='v1'
     assert trained['majority_baseline'] is not None
     metrics=ok(client.get('/ml/metrics',headers=headers))

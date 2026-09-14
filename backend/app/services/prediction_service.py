@@ -42,25 +42,52 @@ class PredictionError(Exception):
         self.http_status = http_status
 
 
+#: Only these model statuses may present the top score without "experimental".
+TRUSTED_QUALITY = {"candidate", "validated"}
+EXPERIMENTAL_LABEL = "Highest experimental opportunity score"
+TRUSTED_LABEL = "Highest observed opportunity score"
+
+
 def quality(record: ModelMetadata) -> ModelQuality:
+    report = training_service.quality_report(record)
     baseline = opportunity.number((record.metrics or {}).get("majority_baseline"))
     accuracy = opportunity.number(record.accuracy)
     below = None if baseline is None or accuracy is None else accuracy <= baseline
     sources = training_service.source_types_for(record)
-    warning = "Experimental result: "
-    warning += "the current model is trained on DEMO data" if "demo" in sources else "this model predicts a price-direction proxy"
-    if below:
-        warning += " and does not outperform the validation baseline"
-    elif below is None:
-        warning += "; a complete accuracy/baseline comparison is unavailable"
-    warning += ". Use this prediction only to demonstrate the pipeline. It does not predict actual sales demand."
+    status = report["quality_status"]
+    if status in TRUSTED_QUALITY:
+        warning = (
+            f"Model quality is '{status}' on {', '.join(s.upper() for s in sources) or 'unrecorded'} data. "
+            "It predicts a price-direction opportunity proxy, not sales demand. Class probabilities are uncalibrated."
+        )
+    else:
+        warning = "Experimental result: "
+        warning += "the current model is trained on DEMO data" if "demo" in sources else "this model predicts a price-direction proxy"
+        if below:
+            warning += " and does not outperform the validation baseline"
+        elif below is None:
+            warning += "; a complete accuracy/baseline comparison is unavailable"
+        warning += ". Use this prediction only to demonstrate the pipeline. It does not predict actual sales demand."
+        if report.get("legacy"):
+            warning += " This model was trained before the Phase 12 boundary-leakage fix, so its validation score is overstated."
+        warning += " Class probabilities are uncalibrated."
     return ModelQuality(
         version=record.model_version, type=record.algorithm,
         target=(record.hyperparameters or {}).get("target", ""),
         primary_metric_value=record.f1_score, accuracy=accuracy,
         majority_baseline=baseline, below_baseline=below,
         source_types=sources, warning=warning,
+        quality_status=status,
+        calibration_status=report.get("calibration_status", "uncalibrated"),
+        probability_assessment=(report.get("probability_quality") or {}).get("assessment"),
+        baselines=report.get("baselines") or {},
+        legacy_model=bool(report.get("legacy")),
     )
+
+
+def recommendation_label(model: ModelQuality) -> str:
+    """Never call the top score a recommendation unless the model earned it."""
+    return TRUSTED_LABEL if model.quality_status in TRUSTED_QUALITY and not model.below_baseline else EXPERIMENTAL_LABEL
 
 
 def load_active(db: Session) -> tuple[ModelMetadata, Pipeline]:
@@ -283,6 +310,7 @@ def predict(db: Session, user_id: int, payload: PredictRequest) -> PredictionRes
     response = PredictionResponse(
         id=0, product=str(product.iloc[0]["product_name"]), product_key=payload.product_key,
         created_at=datetime.now(timezone.utc), recommended_platform=top.platform,
+        recommendation_label=recommendation_label(model),
         ranking=ranking, platform_results=results, score_difference=difference,
         key_factors=top.key_factors, model=model, warning=warning,
         data_provenance={"dataset_id": metadata["dataset_id"], "dataset_generated_at": metadata.get("generated_at"), "source_types": source_types, "model_source_types": model.source_types, "observations_used": len(product), "stale_after_days": STALE_AFTER_DAYS},

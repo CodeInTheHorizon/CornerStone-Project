@@ -16,6 +16,32 @@ class TrainRequest(BaseModel):
         default=None, min_length=1, max_length=2,
         description="Subset of random_forest, xgboost. Omit to try both.",
     )
+    #: Required and deliberate: the provenance classes this model may learn from.
+    source_types: list[Literal["demo", "imported", "live"]] = Field(
+        min_length=1, max_length=3,
+        description="Allowed: [demo], [imported], [live], [imported, live]. DEMO with anything else is rejected.",
+    )
+    #: Development-only escape hatch to mix DEMO with real data. Never above experimental.
+    development_override: bool = False
+
+
+class QualityReport(BaseModel):
+    """Phase 12 evaluation evidence for one model."""
+
+    quality_status: Literal["below_baseline", "experimental", "candidate", "validated"]
+    quality_reasons: list[str] = Field(default_factory=list)
+    calibration_status: str = "uncalibrated"
+    probability_quality: dict[str, Any] = Field(default_factory=dict)
+    #: All accuracies; never compare weighted F1 with these.
+    baselines: dict[str, Any] = Field(default_factory=dict)
+    split: dict[str, Any] = Field(default_factory=dict)
+    data_summary: dict[str, Any] = Field(default_factory=dict)
+    source_policy: dict[str, Any] = Field(default_factory=dict)
+    group_overlap: dict[str, Any] = Field(default_factory=dict)
+    unseen_product_accuracy: float | None = None
+    #: True for models trained before the Phase 12 leakage fix.
+    legacy: bool = False
+    leakage_safe_split: bool = True
 
 
 class ModelRunResult(BaseModel):
@@ -45,6 +71,7 @@ class TrainResponse(BaseModel):
     warnings: list[str] = Field(default_factory=list)
     #: Present whenever the training data was synthetic. Never suppressed.
     notice: str | None = None
+    quality: QualityReport | None = None
 
 
 class TrainingRunSummary(BaseModel):
@@ -58,6 +85,7 @@ class TrainingRunSummary(BaseModel):
     f1_weighted: float | None
     source_types: list[str] = Field(default_factory=list)
     is_active: bool
+    quality_status: str | None = None
 
 
 class ModelStatusResponse(BaseModel):
@@ -78,6 +106,7 @@ class ModelStatusResponse(BaseModel):
     available_models: list[str] = Field(default_factory=lambda: list(AVAILABLE_MODELS))
     history: list[TrainingRunSummary] = Field(default_factory=list)
     notice: str | None = None
+    quality: QualityReport | None = None
 
 
 class ModelMetricsResponse(BaseModel):
@@ -102,3 +131,4 @@ class ModelMetricsResponse(BaseModel):
     all_models: list[ModelRunResult] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     notice: str | None = None
+    quality: QualityReport | None = None

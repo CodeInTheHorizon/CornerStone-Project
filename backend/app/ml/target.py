@@ -35,6 +35,14 @@ pressure -- and no more than that.
 
 Rows with no following observation cannot be labelled and are excluded from
 training rather than assigned a default class.
+
+## Labelling happens inside a split partition (Phase 12)
+
+`add_target` only looks at the rows it is given. Training calls it separately
+on the training period and on the validation period (see `app.ml.validation`),
+so a training row's label can never come from a validation-period price. The
+last observation of each listing inside a partition has no successor there and
+stays unlabelled, even if a later observation exists in the next partition.
 """
 
 from __future__ import annotations
@@ -59,6 +67,9 @@ DEFAULT_THRESHOLD_PCT = 1.0
 TARGET_HELPER_COLUMNS = [
     "forward_price",
     "forward_price_change_pct",
+    # When the observation the label was derived from was taken. Used to prove
+    # labels never cross a split boundary.
+    "target_observed_at",
 ]
 
 #: Grouping that defines "the same listing over time".
@@ -81,10 +92,12 @@ def add_target(
             out[column] = pd.Series(dtype="object")
         return out
 
-    out = frame.sort_values([*GROUP_KEYS, "collection_timestamp"]).copy()
+    out = frame.drop(columns=[c for c in [*TARGET_HELPER_COLUMNS, TARGET_COLUMN] if c in frame.columns])
+    out = out.sort_values([*GROUP_KEYS, "collection_timestamp"]).copy()
     grouped = out.groupby(GROUP_KEYS, dropna=False, sort=False)
 
     out["forward_price"] = grouped["effective_price"].shift(-1)
+    out["target_observed_at"] = grouped["collection_timestamp"].shift(-1)
     out["forward_price_change_pct"] = (
         (out["forward_price"] - out["effective_price"])
         / out["effective_price"].replace(0, np.nan)
@@ -96,6 +109,8 @@ def add_target(
         bins=[-np.inf, -threshold_pct, threshold_pct, np.inf],
         labels=CLASSES,
     ).astype("object")
+    # A row whose successor has no usable price is unlabelled, not dated.
+    out.loc[out[TARGET_COLUMN].isna(), "target_observed_at"] = pd.NaT
 
     return out
 

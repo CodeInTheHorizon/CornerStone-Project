@@ -208,6 +208,59 @@ export interface ModelRunResult {
 export interface TrainRequest {
   dataset_id?: string
   models?: string[]
+  /** Required: the provenance classes this model may learn from. */
+  source_types: SourceType[]
+}
+
+export type QualityStatus = 'below_baseline' | 'experimental' | 'candidate' | 'validated'
+
+/** Phase 12 evaluation evidence for one model. Baselines are accuracies. */
+export interface QualityReport {
+  quality_status: QualityStatus
+  quality_reasons: string[]
+  calibration_status: string
+  probability_quality: {
+    available?: boolean
+    assessment?: string
+    log_loss?: number
+    class_prior_log_loss?: number
+    brier_score?: number
+    expected_calibration_error?: number
+    rows?: number
+    minimum_rows_for_interpretation?: number
+  }
+  baselines: {
+    majority_baseline?: number | null
+    training_majority_class?: string | null
+    training_majority_accuracy?: number | null
+    persistence_accuracy?: number | null
+    persistence_coverage_rows?: number
+    best_baseline_accuracy?: number | null
+  }
+  split: {
+    strategy?: string
+    description?: string | null
+    boundary?: string
+    training_range?: { start: string | null; end: string | null }
+    validation_range?: { start: string | null; end: string | null }
+    boundary_purged_rows?: number
+    leakage_safeguards?: string[]
+  }
+  data_summary: {
+    observation_rows?: number
+    labelled_rows?: number | null
+    training_rows?: number | null
+    validation_rows?: number | null
+    observation_dates?: number
+    validation_label_dates?: number
+    unique_products?: number
+    boundary_purged_rows?: number
+  }
+  source_policy: { selected_source_types?: SourceType[]; dataset_source_types?: SourceType[]; profile?: string; uses_demo?: boolean }
+  group_overlap: { validation_listings?: number; listings_also_in_training?: number; unseen_product_validation_rows?: number }
+  unseen_product_accuracy: number | null
+  legacy: boolean
+  leakage_safe_split: boolean
 }
 
 export interface TrainResponse {
@@ -227,6 +280,7 @@ export interface TrainResponse {
   split_strategy: string
   warnings: string[]
   notice: string | null
+  quality: QualityReport | null
 }
 
 export interface TrainingRunSummary {
@@ -238,6 +292,7 @@ export interface TrainingRunSummary {
   f1_weighted: number | null
   source_types: SourceType[]
   is_active: boolean
+  quality_status: QualityStatus | null
 }
 
 export interface ModelStatus {
@@ -258,6 +313,7 @@ export interface ModelStatus {
   available_models: string[]
   history: TrainingRunSummary[]
   notice: string | null
+  quality: QualityReport | null
 }
 
 export interface ModelMetrics {
@@ -282,4 +338,5 @@ export interface ModelMetrics {
   all_models: ModelRunResult[]
   warnings: string[]
   notice: string | null
+  quality: QualityReport | null
 }

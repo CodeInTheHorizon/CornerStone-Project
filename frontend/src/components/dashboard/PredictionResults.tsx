@@ -2,17 +2,37 @@ import { FormAlert } from '@/components/FormAlert'
 import { Link } from 'react-router-dom'
 import { Panel } from '@/components/Panel'
 import { SourceBadge } from '@/components/SourceBadge'
+import { StatusPill } from '@/components/StatusPill'
+import { BELOW_BASELINE_MESSAGE, qualityPresentation } from '@/lib/modelQuality'
+import type { QualityStatus } from '@/types/data'
 import type { ModelQuality, PredictionResult } from '@/types/prediction'
 import { percent, timestamp, title } from '@/lib/predictionFormat'
 
 export function QualityContext({ model }: { model: ModelQuality }) {
+  const status = model.quality_status && model.quality_status in qualityPresentation
+    ? qualityPresentation[model.quality_status as QualityStatus]
+    : null
   return (
     <div className="space-y-3">
+      {model.below_baseline && (
+        <p role="alert" className="rounded-card border border-signal-down/30 bg-signal-down/10 px-4 py-3 text-sm font-semibold text-signal-down">
+          {BELOW_BASELINE_MESSAGE}
+        </p>
+      )}
       <FormAlert tone="info">{model.warning}</FormAlert>
       <p className="text-sm leading-relaxed text-muted">
         {title(model.type ?? 'Unknown model')} {model.version} · Validation accuracy <strong>{percent(model.accuracy)}</strong>
-        {' '}vs majority baseline accuracy <strong>{percent(model.majority_baseline)}</strong> · Weighted F1 {percent(model.primary_metric_value)}
+        {' '}vs majority baseline accuracy <strong>{percent(model.majority_baseline)}</strong>
+        {model.baselines?.persistence_accuracy !== undefined && model.baselines?.persistence_accuracy !== null && (
+          <> · previous-direction baseline accuracy {percent(model.baselines.persistence_accuracy)}</>
+        )}
+        {' '}· Weighted F1 {percent(model.primary_metric_value)}
       </p>
+      <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
+        {status ? <StatusPill tone={status.tone}>{status.label}</StatusPill> : <span>Quality status not recorded</span>}
+        <span>Probabilities: {model.calibration_status ?? 'uncalibrated'}</span>
+        {model.legacy_model && <span className="text-signal-warn">Trained before the Phase 12 leakage fix</span>}
+      </div>
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
         Model training data: {model.source_types.map((source) => <SourceBadge key={source} kind={source} />)}
       </div>

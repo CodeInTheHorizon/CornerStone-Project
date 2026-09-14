@@ -39,6 +39,13 @@ class ModelMetadata(Base, TimestampMixin):
     f1_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     metrics: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
+    # --- Quality gate (Phase 12) ---
+    # below_baseline | experimental | candidate | validated. NULL on records
+    # trained before Phase 12; those are interpreted on read, never backfilled.
+    quality_status: Mapped[str | None] = mapped_column(String(24), index=True, nullable=True)
+    # Probabilities are never recalibrated: "uncalibrated" or "unavailable".
+    calibration_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+
     # --- Artifact ---
     artifact_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Exactly one row is expected to be active; enforced in the service layer.

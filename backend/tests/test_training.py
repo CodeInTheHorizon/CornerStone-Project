@@ -190,8 +190,10 @@ def test_split_is_time_aware_with_no_overlap():
     frame = target_module.labelled_rows(target_module.add_target(synthetic_frame()))
     train, validation, description = time_aware_split(frame)
 
-    assert "time-aware" in description
+    assert "temporal" in description and "boundary-first" in description
     assert train["collection_timestamp"].max() < validation["collection_timestamp"].min()
+    # No training label may come from the validation period.
+    assert train["target_observed_at"].max() < validation["collection_timestamp"].min()
     assert len(train) > 0 and len(validation) > 0
     # No row can appear on both sides.
     assert set(train["snapshot_id"]) & set(validation["snapshot_id"]) == set()
@@ -215,7 +217,7 @@ def test_a_leaked_feature_would_be_detected():
     near-perfect score -- which is exactly what the near-perfect warning is
     there to flag.
     """
-    frame = target_module.add_target(synthetic_frame(listings=60))
+    frame = target_module.add_target(synthetic_frame(listings=200))
     leaked = frame.copy()
     leaked["leaky_copy"] = leaked["forward_price_change_pct"]
 
@@ -288,7 +290,7 @@ def test_one_class_target_is_rejected():
 
 def test_missing_target_column_is_rejected():
     with pytest.raises(TrainingError) as exc:
-        train_models(synthetic_frame(listings=20))
+        train_models(synthetic_frame(listings=60).drop(columns=["effective_price"]))
     assert exc.value.status == "missing_target"
 
 
@@ -366,7 +368,7 @@ def test_train_without_a_dataset_reports_no_dataset(
     monkeypatch.setattr(dataset_service, "list_datasets", lambda: [])
     monkeypatch.setattr(dataset_service, "latest_dataset", lambda: None)
 
-    response = client.post("/ml/train", headers=auth_headers, json={})
+    response = client.post("/ml/train", headers=auth_headers, json={"source_types": ["demo"]})
 
     assert response.status_code == 422
     assert response.json()["detail"]["status"] == "no_dataset"
@@ -376,7 +378,7 @@ def test_full_training_run_via_api(client, auth_headers, clean_models, clean_sna
     build_dataset_via_api(client, auth_headers)
 
     response = client.post(
-        "/ml/train", headers=auth_headers, json={"dataset_id": "latest"}
+        "/ml/train", headers=auth_headers, json={"dataset_id": "latest", "source_types": ["demo"]}
     )
 
     assert response.status_code == 200, response.text
@@ -393,7 +395,7 @@ def test_full_training_run_via_api(client, auth_headers, clean_models, clean_sna
     # A demo-trained model must say so.
     assert body["notice"] == "Model trained on DEMO data for development/testing."
     assert body["selection_rule"]
-    assert "time-aware" in body["split_strategy"]
+    assert "boundary-first" in body["split_strategy"]
 
     # Metrics must be measured, not perfect: this data is close to noise.
     assert body["metrics"]["accuracy"] < 0.95, (
@@ -405,7 +407,7 @@ def test_artifact_and_metadata_are_persisted(
     client, auth_headers, clean_models, clean_snapshots, db_session
 ):
     build_dataset_via_api(client, auth_headers)
-    body = client.post("/ml/train", headers=auth_headers, json={}).json()
+    body = client.post("/ml/train", headers=auth_headers, json={"source_types": ["demo"]}).json()
 
     record = (
         db_session.query(ModelMetadata)
@@ -438,10 +440,10 @@ def test_retraining_versions_and_does_not_overwrite(
 ):
     build_dataset_via_api(client, auth_headers)
 
-    first = client.post("/ml/train", headers=auth_headers, json={}).json()
+    first = client.post("/ml/train", headers=auth_headers, json={"source_types": ["demo"]}).json()
     first_record = db_session.query(ModelMetadata).filter_by(model_version=first["model_version"]).one()
     original_bytes = Path(first_record.artifact_path).read_bytes()
-    second = client.post("/ml/train", headers=auth_headers, json={}).json()
+    second = client.post("/ml/train", headers=auth_headers, json={"source_types": ["demo"]}).json()
 
     assert first["model_version"] == "v1"
     assert second["model_version"] == "v2"
@@ -458,7 +460,7 @@ def test_retraining_versions_and_does_not_overwrite(
 
 def test_status_and_metrics_after_training(client, auth_headers, clean_models, clean_snapshots):
     build_dataset_via_api(client, auth_headers)
-    trained = client.post("/ml/train", headers=auth_headers, json={}).json()
+    trained = client.post("/ml/train", headers=auth_headers, json={"source_types": ["demo"]}).json()
 
     status_body = client.get("/ml/status", headers=auth_headers).json()
     assert status_body["trained"] is True
@@ -483,7 +485,7 @@ def test_selecting_only_random_forest(client, auth_headers, clean_models, clean_
     build_dataset_via_api(client, auth_headers)
 
     body = client.post(
-        "/ml/train", headers=auth_headers, json={"models": ["random_forest"]}
+        "/ml/train", headers=auth_headers, json={"models": ["random_forest"], "source_types": ["demo"]}
     ).json()
 
     assert body["selected_model"] == "random_forest"
