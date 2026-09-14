@@ -12,8 +12,15 @@ function normalizePhone(raw: string | undefined): string {
 
 const whatsappNumber = normalizePhone(import.meta.env.VITE_WHATSAPP_NUMBER)
 
+// The local backend default applies only to the dev server. A production bundle
+// built without VITE_API_BASE_URL must fail visibly, not call the visitor's own
+// machine. (Vercel builds are additionally rejected in vite.config.ts.)
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL?.trim() || (import.meta.env.DEV ? 'http://127.0.0.1:8000' : '')).replace(/\/+$/, '')
+
 export const env = {
-  apiBaseUrl: (import.meta.env.VITE_API_BASE_URL?.trim() || 'http://127.0.0.1:8000').replace(/\/+$/, ''),
+  apiBaseUrl,
+  /** False only in a production bundle built without VITE_API_BASE_URL. */
+  isApiConfigured: apiBaseUrl.length > 0,
   appName: import.meta.env.VITE_APP_NAME ?? 'MarketPulse AI',
   /** Digits only, no '+'. Empty when unconfigured. */
   whatsappNumber,

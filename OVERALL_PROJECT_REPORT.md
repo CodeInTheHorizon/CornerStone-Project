@@ -2,12 +2,27 @@
 
 **Report date:** September 13, 2026 (status addenda updated September 14, 2026)
 
-**Current stage:** Phases 1-9 complete. Phase 10 partially implemented: deployment configuration and durable-storage code are committed in the "checkpoint marketpulse through phase 10 prep" commit. Local automated checks pass; nothing has been deployed, and real PostgreSQL behavior is unverified. See [Durable storage](docs/DURABLE_STORAGE.md) and [Phase 10 report](docs/PHASE_10_REPORT.md).
+**Current stage:** Phases 1-9 complete. Phase 10 is **deployment-ready and locally production-verified, but not deployed**. No Render service, Vercel project, domain or managed database exists, so nothing has been verified live. See [Phase 10 report](docs/PHASE_10_REPORT.md), [Deployment](docs/DEPLOYMENT.md) and [Durable storage](docs/DURABLE_STORAGE.md).
 
-**Durable storage addendum:** Configuration requires PostgreSQL and database
-storage in production, and dataset/model bundles persist through the storage
-abstraction (migration `0005`). No Phase 10.5 report has been written; the work
-was interrupted and then stabilized, not signed off. Development data is preserved.
+**Phase 10 verification addendum (September 14):**
+- **PostgreSQL 17:** migrations `0001`-`0005`, the storage adapter contract and a
+  production-mode API journey with restart all pass. Checksum rejection,
+  no-overwrite and missing-object behavior are confirmed.
+- **Linux:** Render's build and start commands work in a Python 3.14.7 container
+  (all wheels, `pip check` clean, about 300 MiB peak RSS on the DEMO pipeline).
+- **Browser:** 60/60 Playwright checks across desktop, tablet and mobile, including
+  refresh on protected routes.
+- **Startup:** a failed migration stops startup, and concurrent startups are safe.
+- **Backups:** a PostgreSQL dump and restore was rehearsed with checksum and
+  model-load verification.
+- **Defects fixed during verification:** concurrent startup migrations crashed on
+  PostgreSQL (now an advisory lock), and production frontend bundles embedded a
+  localhost API fallback (now dev-only).
+
+**Durable storage addendum:** Production requires PostgreSQL and database
+storage; datasets and models persist as checksummed rows in `stored_objects`
+(migration `0005`). No separate Phase 10.5 report exists; its verification is
+recorded in the Phase 10 report. Development data is preserved.
 The historical inspection below does not describe the new production storage.
 
 **Development database addendum (read-only inspection, September 14):** the
@@ -66,7 +81,7 @@ and the active model performs below the majority-class baseline.
 | 7 - Predictions | Complete | Saved-Pipeline inference, explained Opportunity Scores, user-scoped prediction history and immutable result snapshots. |
 | 8 - Trend analytics | Complete | Stored price, discount, rating, review and availability histories; platform comparisons; charts and actual dashboard summaries. |
 | 9 - Stabilization | Implemented; automated checks pass | Security/configuration fixes, input validation, failure handling, persistence safeguards, API journey tests and UI/accessibility polish. Browser interaction remains unverified. |
-| 10 - Deployment | Partially implemented; not deployed | Render/Vercel configuration, production settings validation, readiness check and database-backed storage exist and pass local checks. Hosting, real PostgreSQL and deployment verification remain. |
+| 10 - Deployment | Deployment-ready, locally verified; **not deployed** | Render Blueprint and `app.start`, `/ready`, Vercel config with HTTPS API guard, production settings validation, PostgreSQL storage and migrations, concurrent-startup lock, backup plan. Verified on real PostgreSQL, a Linux container and three browser viewports. Live hosting, a managed database and hosted backups remain. |
 
 Phase completion describes the implemented software, not the fulfillment of live
 marketplace access or production-readiness requirements.
@@ -77,13 +92,14 @@ marketplace access or production-readiness requirements.
 | --- | --- |
 | Frontend | React, TypeScript, Vite, Tailwind CSS and React Router. |
 | Backend | FastAPI, Pydantic settings/validation and SQLAlchemy. |
-| Database | SQLite locally, managed through Alembic migrations. |
-| Database models | User, MarketplaceSnapshot, ModelMetadata and Prediction. |
+| Database | SQLite locally; PostgreSQL (psycopg) required in production. Alembic migrations run at startup. |
+| Database models | User, MarketplaceSnapshot, ModelMetadata, Prediction and StoredObject. |
 | ML | pandas, scikit-learn, Random Forest, XGBoost and saved preprocessing/model Pipelines. |
-| Storage | Local database, processed datasets and versioned model artifacts. |
+| Storage | Development: local processed datasets and versioned model files. Production: immutable, checksummed dataset and model bundles in PostgreSQL. |
 | Authentication | bcrypt passwords and expiring JWT access tokens. |
+| Deployment | Render web service (`render.yaml`, one instance) and Vercel static SPA (`frontend/vercel.json`); not yet deployed. |
 
-The existing architecture and scoring formulas have been preserved through Phase 9.
+The existing architecture and scoring formulas have been preserved through Phase 10.
 
 ## Working screens and APIs
 
@@ -272,16 +288,23 @@ No scraping bypasses or simulated live-success responses were added.
 
 ## Remaining work and deployment blockers
 
-1. Verify desktop, tablet and mobile layouts, keyboard behavior and the full browser journey.
-2. Prepare and verify Phase 10 hosting, HTTPS, API URL/CORS configuration and SPA routing.
-3. Provide durable database, dataset and artifact storage with backups.
+Resolved in Phase 10 (locally): browser journey at desktop, tablet and mobile;
+HTTPS API URL guard and CORS configuration; SPA routing configuration; durable
+PostgreSQL storage for data, datasets and models; a documented, rehearsed backup plan.
+
+1. Deploy: push to a Git remote, create the Render Blueprint and Vercel project,
+   set real domains in `VITE_API_BASE_URL` and `CORS_ORIGINS`, and run the live smoke checklist.
+2. Provision managed PostgreSQL with automated backups and complete a hosted restore drill.
+3. Measure training memory and time on the chosen Render plan.
 4. Obtain a supported, approved source of genuine marketplace observations.
 5. Evaluate on suitable real historical data before making reliability claims; address
    documented ML limitations, including boundary-crossing forward labels in the original split.
 6. Define authorization and abuse controls before public multi-user deployment:
    data/model operations currently share an authenticated operator workspace.
-7. Coordinate training across processes before enabling multiple backend workers.
+7. Coordinate training across processes before enabling multiple backend workers or instances.
 8. Revisit browser token storage, revocation and deployment request-size limits.
+9. Keyboard-only and assistive-technology testing, and Firefox/Safari coverage (browser
+   verification used Chromium only).
 
 The current JWT logout discards client tokens; it does not revoke a copied token
 on the server. Imported observation timestamps depend on the operator's data.
@@ -292,7 +315,9 @@ Local model artifacts are trusted files and must not come from untrusted uploads
 - Branch: `master`.
 - `de173ee` checkpoints Phases 1-9; the following "checkpoint marketpulse through
   phase 10 prep" commit adds the Phase 10 deployment and durable-storage work.
-- No deployment has been performed and no Git remote push is recorded here.
+- The Phase 10 verification changes (migration lock, frontend API fallback, tests and
+  documentation) follow as a separate commit.
+- No deployment has been performed. No Git remote is configured.
 
 ## How to interpret older documentation
 

@@ -21,7 +21,7 @@ from pathlib import Path
 from alembic import command
 from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
-from sqlalchemy import Engine, inspect
+from sqlalchemy import Connection, Engine, inspect, text
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,9 @@ ALEMBIC_INI = BACKEND_DIR / "alembic.ini"
 
 #: The revision whose tables create_all() would already have produced.
 BASELINE_REVISION = "0001"
+
+#: PostgreSQL advisory lock id for schema upgrades (any fixed bigint; "MPMIGRAT").
+MIGRATION_LOCK_KEY = 0x4D504D4947524154
 
 
 def _alembic_config(connection=None) -> Config:
@@ -42,22 +45,34 @@ def _alembic_config(connection=None) -> Config:
     return config
 
 
-def _current_revision(engine: Engine) -> str | None:
-    with engine.connect() as connection:
-        return MigrationContext.configure(connection).get_current_revision()
+def _current_revision(connection: Connection) -> str | None:
+    return MigrationContext.configure(connection).get_current_revision()
 
 
-def _has_application_tables(engine: Engine) -> bool:
-    return "users" in set(inspect(engine).get_table_names())
+def _has_application_tables(connection: Connection) -> bool:
+    return "users" in set(inspect(connection).get_table_names())
 
 
 def upgrade_to_head(engine: Engine) -> None:
-    """Bring the database up to the latest revision, preserving its data."""
-    needs_stamp = (
-        _current_revision(engine) is None and _has_application_tables(engine)
-    )
+    """Bring the database up to the latest revision, preserving its data.
 
+    Any failure propagates, so startup stops instead of serving an old schema.
+    """
     with engine.begin() as connection:
+        if connection.dialect.name == "postgresql":
+            # Two instances starting together (a deploy overlapping a restart)
+            # would otherwise both create the same tables and one would crash.
+            # The transaction-scoped lock serializes them; the waiter then sees
+            # the finished revision and has nothing to apply. Released on
+            # commit or rollback, so a failed migration never leaves it held.
+            connection.execute(
+                text("SELECT pg_advisory_xact_lock(:key)"), {"key": MIGRATION_LOCK_KEY}
+            )
+
+        # Read state inside the lock, or a waiter would act on a stale view.
+        needs_stamp = (
+            _current_revision(connection) is None and _has_application_tables(connection)
+        )
         config = _alembic_config(connection)
 
         if needs_stamp:

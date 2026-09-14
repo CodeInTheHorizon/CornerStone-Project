@@ -7,7 +7,10 @@ MarketPulse AI imports or loads stored marketplace observations, turns them into
 a structured dataset, trains models on it, and surfaces trend analytics and
 experimental opportunity scores. Live collection is currently unavailable.
 
-> **Status: Phase 10 deployment and durable-storage work in progress; live deployment and real PostgreSQL unverified.**
+> **Status: Phase 10 - deployment-ready and locally production-verified, not deployed.**
+> PostgreSQL storage, migrations, a Linux build and start of the Render
+> configuration, and desktop/tablet/mobile browser flows were verified locally.
+> No Render or Vercel service exists yet. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 > The landing page, accounts, the dashboard, the data layer, the dataset
 > builder, model training, experimental predictions, opportunity scores, and
 > user-scoped prediction history work. Stored trend charts, platform comparisons,
@@ -51,14 +54,14 @@ npm install
 
 Two processes, in two terminals. They run independently.
 
-**Backend** â€” http://127.0.0.1:8000 (docs at `/docs`):
+**Backend** — http://127.0.0.1:8000 (docs at `/docs`):
 
 ```bash
 cd backend
 .venv/Scripts/python -m uvicorn app.main:app --reload
 ```
 
-**Frontend** â€” http://localhost:5173:
+**Frontend** — http://localhost:5173:
 
 ```bash
 cd frontend
@@ -77,62 +80,76 @@ cd frontend && npm run lint                     # oxlint
 cd frontend && npm test                         # Request/error regression tests
 ```
 
+PostgreSQL integration tests (migrations, concurrent startup, storage, a
+production-mode API journey) are skipped unless `TEST_POSTGRES_URL` points at a
+disposable server; see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#local-development-unchanged).
+
 ## Environment variables
 
 All configuration is environment-driven; see [`.env.example`](.env.example).
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `DATABASE_URL` | SQLAlchemy URL. SQLite locally, PostgreSQL in production. Leave unset locally â€” a relative `sqlite:///` URL resolves against the working directory. | absolute `<repo-root>/data/marketpulse.db` |
-| `CORS_ORIGINS` | Exact HTTP(S) origins, comma-separated or JSON array; no wildcard. | `http://localhost:5173,http://127.0.0.1:5173` |
-| `DEBUG` | Boolean; legacy `release` maps to false, `debug` to true. Must be false outside development. | `false` |
+| `DATABASE_URL` | SQLAlchemy URL. SQLite locally; **PostgreSQL required in production** (`postgres://` / `postgresql://` normalize to psycopg). Leave unset locally — a relative `sqlite:///` URL resolves against the working directory. | absolute `<repo-root>/data/marketpulse.db` |
+| `STORAGE_BACKEND` | Where datasets and models live: `local` files or `database` bundles. `auto` = local in development, database otherwise; production rejects local. | `auto` |
+| `STORAGE_MAX_BYTES` | Size limit per stored dataset or model. | `134217728` (128 MiB) |
+| `CORS_ORIGINS` | Exact HTTP(S) origins, comma-separated or JSON array; no wildcard. Production needs at least one HTTPS origin. | `http://localhost:5173,http://127.0.0.1:5173` |
+| `DEBUG` / `SQL_ECHO` | Booleans; legacy `DEBUG=release` maps to false. Both must be false outside development. | `false` |
 | `ENVIRONMENT` | `development` / `production`. | `development` |
-| `API_PREFIX` | Prefix for feature endpoints. Empty matches the API outline in PROJECT_CONTEXT.md Â§15. `/health` is always unprefixed. | *(empty)* |
-| `JWT_SECRET_KEY` | Signs access tokens. **Must** be overridden outside development â€” startup refuses the default. | dev placeholder |
+| `HOST` / `PORT` / `LOG_LEVEL` / `ACCESS_LOG` | Used by `python -m app.start`. | `127.0.0.1` / `8000` / `INFO` / `false` |
+| `API_PREFIX` | Prefix for feature endpoints. Empty matches the API outline in PROJECT_CONTEXT.md §15. `/health` and `/ready` are always unprefixed. | *(empty)* |
+| `JWT_SECRET_KEY` | Signs access tokens. **Must** be at least 32 bytes and not the default outside development. | dev placeholder |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token lifetime. | `720` (12h) |
 | `AMAZON_PAAPI_ACCESS_KEY` / `_SECRET_KEY` / `_PARTNER_TAG` | Legacy PA-API configuration. Its deprecated adapter remains unavailable even with credentials. | *(empty)* |
-| `VITE_API_BASE_URL` | Backend base URL used by the browser. | `http://127.0.0.1:8000` |
+| `VITE_API_BASE_URL` | Backend base URL used by the browser, set at build time. The localhost default applies only to `npm run dev`; production builds must set it (Vercel builds require HTTPS). | dev server: `http://127.0.0.1:8000` |
 | `VITE_WHATSAPP_NUMBER` | Destination for the contact form, digits only (e.g. `919876543210`). Empty disables the form, which then says so. | *(empty)* |
 
 Only `VITE_`-prefixed variables reach the browser bundle. Never put a secret in one.
+The exact Render and Vercel variable lists are in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## Architecture
 
 ```
 backend/app/
-â”œâ”€â”€ config.py            environment-driven settings
-â”œâ”€â”€ main.py              application entrypoint, CORS, routers
-â”œâ”€â”€ api/                 HTTP layer (routes/ + aggregate router)
-â”œâ”€â”€ database/            engine, session factory, declarative Base
-â”œâ”€â”€ models/              User, MarketplaceSnapshot, Prediction, ModelMetadata
-â”œâ”€â”€ schemas/             pydantic request/response shapes
-â”œâ”€â”€ auth/                Phase 3
-â”œâ”€â”€ scrapers/            base, parsing, validation, registry + one module per platform
-â”œâ”€â”€ ml/                  Phases 5â€“7 â€” features, training, prediction
-â””â”€â”€ services/            business logic between API and database
+├── config.py            environment-driven settings and production validation
+├── main.py              application entrypoint, CORS, routers
+├── start.py             production entrypoint: python -m app.start (one worker)
+├── api/                 HTTP layer (routes/ + aggregate router)
+├── database/            engine, session factory, Alembic startup migrations
+├── models/              User, MarketplaceSnapshot, Prediction, ModelMetadata
+├── schemas/             pydantic request/response shapes
+├── auth/                password hashing, JWT
+├── scrapers/            base, parsing, validation, registry + one module per platform
+├── ml/                  features, dataset builder, target, training, opportunity score
+├── services/            business logic between API and database
+└── storage/             datasets and models as local files (dev) or PostgreSQL bundles (prod)
 
 frontend/src/
-â”œâ”€â”€ components/  reusable UI primitives (Button, Section, FlipCard, Navbar, Icon...)
-â”œâ”€â”€ sections/    landing page sections (Hero, WhyChoose, Developer, Features, Contact)
-â”œâ”€â”€ pages/       routed pages
-â”œâ”€â”€ theme/       light/dark theme context and provider
-â”œâ”€â”€ services/    typed API client
-â”œâ”€â”€ lib/         pure helpers (validation, WhatsApp link building)
-â””â”€â”€ hooks/  types/  config/
+├── components/  reusable UI primitives (Button, Section, FlipCard, Navbar, Icon...)
+├── sections/    landing page sections (Hero, WhyChoose, Developer, Features, Contact)
+├── pages/       routed pages
+├── theme/       light/dark theme context and provider
+├── services/    typed API client
+├── lib/         pure helpers (validation, WhatsApp link building)
+└── hooks/  types/  config/
 
-data/{raw,processed,demo}   dataset storage
-docs/                       design direction and notes
+data/demo                   bundled synthetic DEMO fixture
+data/processed              local development datasets (production uses the database)
+docs/                       phase reports, deployment and storage guides
+render.yaml                 Render backend Blueprint
+frontend/vercel.json        Vercel build settings and SPA rewrite
 ```
 
 ## Endpoints
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| `GET` | `/` | â€” | Service descriptor |
-| `GET` | `/health` | â€” | Liveness + database reachability |
-| `GET` | `/docs` | â€” | OpenAPI UI |
-| `POST` | `/auth/register` | â€” | Create an account, returns a token |
-| `POST` | `/auth/login` | â€” | Exchange credentials for a token |
+| `GET` | `/` | — | Service descriptor |
+| `GET` | `/health` | — | Liveness + database reachability (always HTTP 200) |
+| `GET` | `/ready` | — | Deployment readiness: HTTP 503 when the database is unreachable |
+| `GET` | `/docs` | — | OpenAPI UI |
+| `POST` | `/auth/register` | — | Create an account, returns a token |
+| `POST` | `/auth/login` | — | Exchange credentials for a token |
 | `GET` | `/auth/me` | Bearer | The authenticated user |
 | `POST` | `/data/collect` | Bearer | Collect fresh listings from a marketplace |
 | `POST` | `/data/import` | Bearer | Import a CSV/JSON dataset (stored as IMPORTED) |
@@ -146,8 +163,10 @@ docs/                       design direction and notes
 | `POST` | `/ml/train` | Bearer | Train, evaluate, compare and persist a model |
 | `GET` | `/ml/status` | Bearer | Active model, version and training history |
 | `GET` | `/ml/metrics` | Bearer | Measured evaluation results for the active model |
-
-Prediction and analytics endpoints arrive in Phases 7â€“8.
+| `GET` | `/ml/prediction-options` | Bearer | Stored products available for prediction |
+| `POST` | `/ml/predict` | Bearer | Experimental prediction and opportunity scores |
+| `GET` | `/ml/predictions`, `/ml/predictions/{id}` | Bearer | The user's saved prediction history |
+| `GET` | `/analytics/trends`, `/platform-comparison`, `/summary`, `/options` | Bearer | Stored-snapshot trends and comparisons |
 
 There is no `/auth/logout`: tokens are stateless JWTs, so signing out is a
 client-side discard. A no-op endpoint would imply a revocation that does not
@@ -157,11 +176,14 @@ happen. Server-side revocation is a real feature worth adding, not a stub.
 
 | Path | Auth | Page |
 |---|---|---|
-| `/` | â€” | Public landing page |
-| `/login`, `/register` | â€” | Authentication |
-| `/status` | â€” | Backend connectivity diagnostic |
+| `/` | — | Public landing page |
+| `/login`, `/register` | — | Authentication |
+| `/status` | — | Backend connectivity diagnostic |
 | `/dashboard` | Required | Dashboard overview |
-| `/dashboard/marketplace-data`, `/predictor`, `/train`, `/trends`, `/analytics` | Required | Section placeholders â€” routes exist, features arrive in Phases 4â€“8 |
+| `/dashboard/marketplace-data`, `/predictor`, `/train`, `/trends`, `/analytics` | Required | Marketplace data, ML Predictor, Train Model, Trend Analysis, Analytics |
+
+Protected routes survive a page refresh: the stored token is re-checked before any
+redirect. Hosting needs an SPA fallback (`frontend/vercel.json` rewrites to `index.html`).
 
 ## Theming
 
@@ -179,19 +201,23 @@ pairing in both themes was measured against WCAG AA (4.5:1). See
 | `users` | Accounts. Password **hashes** only. |
 | `marketplace_snapshots` | One observation of one listing at one time. Repeated snapshots form the time series behind every trend feature. |
 | `predictions` | Stored prediction requests and results, including per-marketplace opportunity scores and contributing factors. |
-| `model_metadata` | One row per training run: dataset size, feature names, measured metrics, artifact path. |
+| `model_metadata` | One row per training run: dataset size, feature names, measured metrics, artifact reference. |
+| `stored_objects` | Production dataset CSVs and model binaries with their metadata and SHA-256 checksums (immutable). |
 
 ## Limitations
 
-These are current and deliberate â€” please read before evaluating the project.
+These are current and deliberate — please read before evaluating the project.
 
-- **Nothing is collected or predicted yet.** The landing page describes what the
-  system will do; the data and ML layers behind it are still to be built.
+- **Not deployed.** Render and Vercel configuration is verified locally (PostgreSQL,
+  a Linux build and start, browser flows), but no hosted service, domain or managed
+  database exists yet. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+- **No live marketplace data.** Stored observations are synthetic DEMO or operator
+  IMPORTED rows; no live collector is currently usable.
 - **The contact form does not reach a server.** It validates locally and hands the
   message to WhatsApp. There is no contact endpoint, and nothing is stored.
 - **Dashboard figures are not invented.** Model accuracy reads "Not trained" and
-  data freshness reads "No data yet" because no model and no collection exist.
-  They stay that way until a real training run and a real collection fill them.
+  data freshness reads "No data yet" until a real training run and stored
+  observations fill them.
 - **The access token is kept in `localStorage`**, which any script on the origin
   can read. It trades some XSS exposure for a session that survives a refresh; a
   httpOnly refresh-token cookie is the stronger design and is worth revisiting.
@@ -205,9 +231,10 @@ These are current and deliberate â€” please read before evaluating the proj
 - **Metrics are measured, never asserted.** Model metric fields stay NULL until a
   real evaluation run fills them, and demo records are tagged `source="demo"` so
   they can never be displayed as live data.
-- **Only Amazon can be collected, and only with PA-API credentials.** Flipkart,
+- **No marketplace can currently be collected.** The retained Amazon PA-API 5.0
+  adapter is deprecated and stays unavailable even with credentials. Flipkart,
   Croma and Alibaba are blocked by anti-bot protection or robots rules; each
-  reports the verified reason instead of returning fabricated rows.
+  reports its reason instead of returning fabricated rows.
 - **PA-API 5.0 returns no ratings or review counts.** Those columns stay NULL for
   live Amazon rows, which limits the review/rating trend features planned later.
   Imported and demo rows can carry them.
@@ -224,8 +251,13 @@ These are current and deliberate â€” please read before evaluating the proj
   baseline -- worse than guessing. This demonstrates that the training pipeline
   works end to end and that its honesty guards fire correctly. It demonstrates
   nothing whatsoever about real marketplace behaviour.
-- **SQLite by default.** Render's filesystem is ephemeral, so production needs a
-  PostgreSQL `DATABASE_URL`.
+- **SQLite and local files are development-only.** Render's filesystem is
+  ephemeral, so production requires a PostgreSQL `DATABASE_URL` and stores datasets
+  and models in the database. Durability depends on that database's backups.
+- **One instance, synchronous training.** Training runs inside the request under a
+  process-local lock; do not scale the backend horizontally yet.
+- **No role-based authorization or rate limiting.** Any signed-in account can run
+  shared data and model operations; add controls before opening registration publicly.
 
 ## Marketplace collection
 
@@ -300,6 +332,13 @@ phase silently lacked fields added later.
 Migrations run automatically on startup. A pre-Alembic database is stamped at the
 baseline revision and upgraded in place, preserving existing rows.
 
+- A failed migration stops startup: the process exits and `/ready` never passes.
+- On PostgreSQL the upgrade is one transaction, so a failure rolls back.
+- Concurrent startups against PostgreSQL are serialized by an advisory lock, so an
+  overlapping deploy and restart cannot race.
+- Migrations `0001`-`0005` add or rename without dropping data. `0005` adds
+  `stored_objects`. Back up before any manual downgrade.
+
 ```bash
 cd backend
 .venv/Scripts/python -m alembic current       # where the database is
@@ -312,9 +351,12 @@ cd backend
 filter -> clean -> normalize -> deduplicate -> sort -> engineer features, and it
 is fully deterministic: the same rows in produce the same table out.
 
-Datasets are written to `data/processed/` as a CSV plus a JSON metadata sidecar.
-Filenames carry a timestamp and dataset id, so a build never overwrites an
-earlier one -- that earlier dataset may be what a model was trained on.
+In development, datasets are written to `data/processed/` as a CSV plus a JSON
+metadata sidecar; models go to `backend/app/ml/artifacts/`. In production both are
+immutable, checksummed rows in the PostgreSQL `stored_objects` table (see
+[docs/DURABLE_STORAGE.md](docs/DURABLE_STORAGE.md)). Names carry a timestamp and id
+or version, so a build never overwrites an earlier one -- that earlier dataset may
+be what a model was trained on.
 
 ### Cleaning rules
 
@@ -412,10 +454,14 @@ proportion to how often it occurs. Ties break toward the simpler model.
 
 ## Documentation
 
-- [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) â€” full specification and 10-day roadmap
-- [CLAUDE.md](CLAUDE.md) â€” working rules and current state
-- [docs/design-direction.md](docs/design-direction.md) â€” visual language
-- [docs/PHASE_7_REPORT.md](docs/PHASE_7_REPORT.md) â€” prediction contract, formula, verification and limitations
+- [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) — full specification and 10-day roadmap
+- [CLAUDE.md](CLAUDE.md) — working rules and current state
+- [docs/design-direction.md](docs/design-direction.md) — visual language
+- [docs/PHASE_7_REPORT.md](docs/PHASE_7_REPORT.md) — prediction contract, formula, verification and limitations
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Render/Vercel runbook, environment variables, backups, smoke test
+- [docs/DURABLE_STORAGE.md](docs/DURABLE_STORAGE.md) — production dataset/model storage and migration 0005
+- [docs/PHASE_10_REPORT.md](docs/PHASE_10_REPORT.md) — deployment verification evidence and remaining blockers
+- [OVERALL_PROJECT_REPORT.md](OVERALL_PROJECT_REPORT.md) — project-wide status
 
 ## Experimental prediction workflow
 
@@ -541,21 +587,29 @@ frontend request tests, build and lint provide the automated evidence.
 See [Phase 9 report](docs/PHASE_9_REPORT.md) for the file inventory, checks and
 remaining Phase 10 blockers. No deployment was attempted.
 
-## Phase 10 deployment foundation
+## Deployment (Phase 10)
 
-Deployment instructions and all environment variables are in
-[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Vercel configuration lives in
-`frontend/vercel.json`; Render configuration lives in `render.yaml`.
-The pre-deployment checkpoint is `de173ee`. No live deployment has been verified.
-SQLite, processed datasets and models remain local files; the supplied free
-Render configuration is for a disposable demo pending durable storage work.
-See [docs/PHASE_10_REPORT.md](docs/PHASE_10_REPORT.md) for validation and blockers.
+**Status: deployment-ready, not deployed.** No Render service, Vercel project,
+domain or managed database has been created, so no live URL has been tested.
 
-## Phase 10.5 durable storage
+| Piece | Configuration |
+| --- | --- |
+| Backend | Render Blueprint `render.yaml`: build `pip install -r backend/requirements.txt`, start `cd backend && python -m app.start`, health check `/ready`, one instance and worker |
+| Frontend | Vercel, Root Directory `frontend`, `frontend/vercel.json` (`npm ci`, `npm run build`, `dist`, SPA rewrite); `VITE_API_BASE_URL` must be the HTTPS backend URL |
+| Database and storage | PostgreSQL `DATABASE_URL` (required in production); datasets and models in `stored_objects` |
+| Backups | Provider backups or PITR plus `pg_dump -Fc` before each deploy; one database backup covers data, datasets and models |
 
-Production now requires PostgreSQL. Processed CSVs, metadata and model binaries
-are stored in the `stored_objects` table through the new storage adapters. Local
-development retains SQLite and the existing files. See
-[docs/DURABLE_STORAGE.md](docs/DURABLE_STORAGE.md). The earlier Phase 10
-free-service/local-storage notes describe the historical foundation and are
-superseded for production. No actual hosted database has been provisioned.
+Verified locally, not on the platforms:
+
+- migrations, storage and a production-mode API journey with restart against PostgreSQL 17
+- Render's build and start commands in a Linux Python 3.14.7 container (all wheels,
+  `pip check` clean, about 300 MiB peak RSS on the DEMO pipeline)
+- 60/60 Playwright checks in Chromium (not Firefox or Safari) at desktop, tablet
+  and mobile: login, every dashboard page, refresh on each protected route, a
+  prediction, logout
+- a PostgreSQL dump and restore with checksum verification
+
+Environment variables, the live smoke checklist, backup commands and limitations:
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Evidence and remaining blockers:
+[docs/PHASE_10_REPORT.md](docs/PHASE_10_REPORT.md). Storage design:
+[docs/DURABLE_STORAGE.md](docs/DURABLE_STORAGE.md).

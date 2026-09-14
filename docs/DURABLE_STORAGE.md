@@ -1,10 +1,20 @@
 # Durable storage - Phase 10.5
 
-> **Status (September 14, 2026):** implemented and passing local automated checks,
-> but not signed off. The original run was interrupted and then stabilized; no
-> Phase 10.5 report exists. Nothing has been verified against a real PostgreSQL
-> server or a hosted deployment. `DATABASE_URL` accepts only `sqlite` and
-> `postgresql+psycopg` drivers after normalization.
+> **Status (September 14, 2026):** implemented and verified against a real local
+> PostgreSQL 17 server, but not against a hosted provider. The PostgreSQL tests
+> cover:
+> - migrations `0001`-`0005` with data preservation
+> - concurrent startup migrations, now serialized by an advisory lock
+> - the adapter contract (round trip, no overwrite, invalid keys, corruption, size limit)
+> - a production-mode `python -m app.start` journey with a restart: dataset and
+>   model saved to and reloaded from PostgreSQL, a tampered model returning 503
+>   `corrupt_artifact`, a missing dataset reported rather than fabricated, and no
+>   local files written
+>
+> A dump and restore preserved checksums, and the restored model ran inference.
+> `DATABASE_URL` accepts only `sqlite` and `postgresql+psycopg` drivers after
+> normalization. Evidence: [PHASE_10_REPORT.md](PHASE_10_REPORT.md). Backup
+> procedure: [DEPLOYMENT.md](DEPLOYMENT.md#backups).
 
 ## Architecture
 
@@ -140,21 +150,23 @@ introduced. No features, scoring formulas, targets or ML selection rules changed
 
 Tests cover local/database adapters, immutable writes, missing objects, corruption,
 metadata binding, unavailable storage, configuration, migrations and both full API
-journeys. SQLite provides the isolated database-adapter test runtime. PostgreSQL
-DDL generation covers every revision, but it does not prove live PostgreSQL behavior.
+journeys. SQLite runs the database-adapter tests by default. Offline PostgreSQL DDL
+generation covers every revision.
 
-To run the opt-in real PostgreSQL test, set TEST_POSTGRES_URL privately to a test
-database URL whose user may create schemas, then run from backend:
+With `TEST_POSTGRES_URL` set to a disposable server, the following also run:
+
+- `tests/test_postgresql.py`: upgrade with data preservation and schema
+  comparison, four concurrent startup migrations, and the production-mode
+  `python -m app.start` journey with a restart and corruption/missing checks
+- the PostgreSQL parameter of the `tests/test_storage.py` adapter contract
 
 ```shell
-python -m pytest tests/test_postgresql.py -p no:cacheprovider -rs
+python -m pytest tests/test_postgresql.py tests/test_storage.py -p no:cacheprovider -rs
 ```
 
-The integration test creates a unique schema, applies migrations, preserves a
-preexisting user, compares model schema and checks persistence after reconnect.
-It drops only its generated schema afterward. No server/URL was available here;
-this test is skipped until configured. Managed backups, failover and hosted
-deployment have not been verified.
+Each test creates a unique schema and drops only that schema afterward. All of them
+passed against PostgreSQL 17.11 on September 14, 2026. Without the variable they
+are skipped. Managed backups, failover and hosted deployment have not been verified.
 
 References: [SQLAlchemy PostgreSQL types and psycopg](https://docs.sqlalchemy.org/en/20/dialects/postgresql.html),
 [Alembic offline SQL generation](https://alembic.sqlalchemy.org/en/latest/offline.html).

@@ -5,9 +5,10 @@ scope, architecture, the 10-day roadmap and the acceptance criteria.
 
 ## Current state
 
-**Phases 1-9 complete.** Phase 10 partially implemented: deployment-ready
-configuration and durable storage exist, but **nothing has been deployed or
-live-verified** (no Render/Vercel service, no real PostgreSQL server tested).
+**Phases 1-9 complete.** Phase 10 is deployment-ready and locally
+production-verified (real PostgreSQL 17, a Linux Render build and start, a
+Playwright browser pass), but **not deployed**: no Git remote, Render/Vercel
+service, domain or managed database exists. Never claim a live deployment.
 
 Phase 1: repository structure, FastAPI backend with config/CORS/`/health`,
 SQLAlchemy models for `User`, `MarketplaceSnapshot`, `Prediction`,
@@ -59,16 +60,22 @@ unavailable collector status, training collision protection and mobile focus pol
 Fresh-install API journey and frontend request regressions are in tests. See
 docs/PHASE_9_REPORT.md; browser interaction remains unverified (no available browser).
 
-Phase 10 (in progress): `render.yaml` + `python -m app.start` (one worker),
+Phase 10: `render.yaml` (one instance) + `python -m app.start` (one worker),
 `/ready` returning 503 when the DB is unreachable, `frontend/vercel.json` with SPA
 rewrite, Vercel builds requiring an HTTPS `VITE_API_BASE_URL`, and production
-settings validation. Durable storage: `app/storage/` (local and database
-adapters, checksummed immutable bundles), `STORAGE_BACKEND`/`STORAGE_MAX_BYTES`,
-and migration 0005 (`stored_objects`). Outside development, settings require a
-PostgreSQL `DATABASE_URL` (normalized to `postgresql+psycopg`) and database
-storage; development keeps SQLite and local files. The interrupted durable-storage
-run was stabilized, not signed off; no Phase 10.5 report exists. See
-docs/PHASE_10_REPORT.md, docs/DEPLOYMENT.md and docs/DURABLE_STORAGE.md.
+settings validation.
+- **Durable storage:** `app/storage/` (local and database adapters, checksummed
+  immutable bundles), `STORAGE_BACKEND`/`STORAGE_MAX_BYTES`, migration 0005
+  (`stored_objects`). Outside development, settings require a PostgreSQL
+  `DATABASE_URL` (normalized to `postgresql+psycopg`) and database storage;
+  development keeps SQLite and local files.
+- **Startup migrations** take a PostgreSQL advisory lock
+  (`app/database/migrate.py`) so concurrent startups cannot race, and any
+  migration failure stops startup.
+- **Frontend:** the `127.0.0.1:8000` API fallback is dev-server only; production
+  bundles without `VITE_API_BASE_URL` report "API address is not configured".
+- **Docs:** docs/DEPLOYMENT.md holds the env var lists, backup plan and live smoke
+  checklist; docs/PHASE_10_REPORT.md has the evidence and remaining blockers.
 
 No scheduled jobs have been implemented.
 See docs/PHASE_7_REPORT.md for the exact score formula. Preserve historical
@@ -174,6 +181,12 @@ npm run dev
 - In this sandbox pytest cannot write its default temp root; pass
   `--basetemp` pointing at a writable scratch directory if fixtures fail with
   `PermissionError`.
+- PostgreSQL tests (`tests/test_postgresql.py`, the `postgresql` storage fixture)
+  skip unless `TEST_POSTGRES_URL` is set. Docker Desktop is installed; a disposable
+  `postgres:17-alpine` bound to `127.0.0.1` works (see docs/DEPLOYMENT.md). Each
+  test uses its own schema. Never point it at a real database.
+- Importing the app (pandas/scikit-learn/scipy) takes 10-30 s when the machine is
+  busy. Subprocess startup tests allow 180-240 s; do not tighten them.
 
 - DEBUG defaults false; legacy DEBUG=release is false. Exact CORS origins accept
   comma-separated text or JSON. Non-development secrets need at least 32 bytes.

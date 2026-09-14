@@ -1,10 +1,15 @@
-# Phase 10.5: provide a durable PostgreSQL database; no local storage fallback.
-# Keep the repository root: backend also reads the bundled data/demo fixture.
+# MarketPulse AI backend. See docs/DEPLOYMENT.md before creating this Blueprint.
+# Requires an existing durable PostgreSQL DATABASE_URL; there is no local storage
+# fallback in production. Keep the repository root: the backend also reads the
+# bundled data/demo fixture.
+# One instance and one worker: the training lock is process-local. Startup
+# migrations are serialized by a PostgreSQL advisory lock regardless.
 services:
   - type: web
     name: marketpulse-api
     runtime: python
     plan: free
+    numInstances: 1
     autoDeployTrigger: off
     buildCommand: pip install -r backend/requirements.txt
     startCommand: cd backend && python -m app.start

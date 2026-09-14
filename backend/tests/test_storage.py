@@ -1,12 +1,15 @@
 """Persistence, corruption, immutability and service integration contracts."""
 import hashlib
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
 from pydantic import ValidationError
-from sqlalchemy import create_engine, update
+from sqlalchemy import create_engine, text, update
+from sqlalchemy.engine import make_url
 
 from app.config import Settings
 from app.database.migrate import upgrade_to_head
@@ -16,15 +19,33 @@ from app.storage.database import DatabaseStore, StoredObject
 from app.storage.artifact_store import ArtifactStore
 
 
-@pytest.fixture(params=['local', 'database'])
+@pytest.fixture(params=['local', 'database', 'postgresql'])
 def store(request, tmp_path):
     if request.param == 'local':
         yield LocalStore(tmp_path / 'objects', 1024 * 1024)
-    else:
+    elif request.param == 'database':
         engine = create_engine(f"sqlite:///{(tmp_path / 'store.db').as_posix()}")
         upgrade_to_head(engine)
         yield DatabaseStore(engine, 'artifacts', 1024 * 1024)
         engine.dispose()
+    else:
+        # Same contract against a real server, in a throwaway schema.
+        if not os.environ.get('TEST_POSTGRES_URL'):
+            pytest.skip('TEST_POSTGRES_URL not configured; no PostgreSQL server available')
+        url = make_url(os.environ['TEST_POSTGRES_URL']).set(drivername='postgresql+psycopg')
+        schema = 'mp_store_' + uuid4().hex
+        admin = create_engine(url)
+        with admin.begin() as connection:
+            connection.execute(text(f'CREATE SCHEMA "{schema}"'))
+        engine = create_engine(url, connect_args={'options': f'-csearch_path={schema}'})
+        try:
+            upgrade_to_head(engine)
+            yield DatabaseStore(engine, 'artifacts', 1024 * 1024)
+        finally:
+            engine.dispose()
+            with admin.begin() as connection:
+                connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
+            admin.dispose()
 
 
 def test_bundle_round_trip_and_no_overwrite(store):

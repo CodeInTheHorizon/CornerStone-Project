@@ -1,154 +1,289 @@
-# Phase 10 - Vercel and Render deployment
+# Deployment - Vercel frontend, Render backend, PostgreSQL
 
-Phase 10.5 adds durable PostgreSQL storage. Production now requires DATABASE_URL
-and uses database-backed dataset/model bundles; the old disposable SQLite
-production configuration is rejected. No live deployment has been performed.
-See [DURABLE_STORAGE.md](DURABLE_STORAGE.md) for architecture and migration details.
+> **Deployment status (September 14, 2026): deployment-ready and locally verified,
+> not deployed.** No Git remote, Render
+> or Vercel account access, deployment URLs or production database were available.
+> Everything below was verified locally against real PostgreSQL 17, a Linux
+> Python 3.14.7 container running Render's build and start commands, and a
+> Chromium browser. Nothing has been verified on Render or Vercel themselves.
+> [PHASE_10_REPORT.md](PHASE_10_REPORT.md) records the evidence.
 
-## Preserve the existing application
+Storage architecture and migration details: [DURABLE_STORAGE.md](DURABLE_STORAGE.md).
 
-Checkpoint `de173ee` contains Phases 1-9, including previously uncommitted work.
-Development database, processed files and model artifacts are ignored by Git and
-are not uploaded by a Git deployment. Keep them in place. Switching DATABASE_URL does not transfer them. Do not copy private
-development accounts or pickle files into a public repository.
+## Overview
 
-The new deployment starts empty. Load the existing bundled DEMO fixture explicitly
-through Marketplace Data, build a dataset and train explicitly if a demonstration
-needs a model. No startup seeding, automatic training or fake live collection runs.
-Changing a machine or directory does not automatically repair absolute paths in
-existing dataset metadata or model records; data transfer needs a separate plan.
+| Part | Platform | Source |
+| --- | --- | --- |
+| Frontend (static SPA) | Vercel | `frontend/`, configured by `frontend/vercel.json` |
+| Backend API | Render web service | Repository root, configured by `render.yaml` |
+| Database, datasets and models | PostgreSQL (operator-provided) | `DATABASE_URL`; datasets and models live in `stored_objects` |
 
-## 1. Publish the code checkpoint and deployment changes
+The browser calls the Render API directly with a bearer token. Vercel does not
+proxy API requests.
 
-Review `git diff` and the Phase 10 report, commit the deployment files, and push to
-the intended Git provider repository. No remote is configured in this workspace.
-Configure one only after choosing the repository; do not publish ignored files.
-Connect that repository to Render and Vercel using their account dashboards.
+## Before you start
 
-## 2. Render backend
+1. Push the repository to a Git provider. No remote is configured here. Ignored
+   files (`.env`, `*.db`, `*.pkl`, `data/processed/`) are never published.
+2. Provision a PostgreSQL database with backups enabled (see [Backups](#backups)).
+   `render.yaml` does not create or buy one.
+3. The development database, local datasets and local models stay on this machine.
+   A deployment starts empty; see [First data](#first-data-after-deployment).
 
-Create a Blueprint from the repository-root `render.yaml`. Choose a new service
-name if `marketpulse-api` is already used. The configuration declares:
+## 1. Render backend
+
+Create a Blueprint from the repository-root `render.yaml`.
 
 | Setting | Value |
 | --- | --- |
-| Root directory | Repository root; leave Render Root Directory empty |
-| Runtime | Python 3.14.7, matching the current development interpreter |
+| Root directory | Repository root (leave Render Root Directory empty) |
+| Runtime | Python `3.14.7` (`PYTHON_VERSION`) |
 | Build command | `pip install -r backend/requirements.txt` |
 | Start command | `cd backend && python -m app.start` |
-| Health check | `/ready` |
-| Workers | One; no reload or automatic scaling |
-| Plan | Free disposable demo; memory capacity for ML is not verified |
-| Automatic deployment | Off; deploy manually after review |
+| Health check path | `/ready` (HTTP 503 when the database is unreachable) |
+| Instances / workers | `numInstances: 1`, one Uvicorn worker, no reload |
+| Plan | `free` in the Blueprint; see [Capacity](#capacity) |
+| Auto deploy | Off; deploy manually after review |
 
-`app.start` calls Uvicorn with validated HOST/PORT and logging settings. Render
-injects PORT. Startup applies existing Alembic migrations before serving requests.
-Keeping the repository root includes `data/demo`, which is outside `backend`.
+`app.start` runs Uvicorn with the validated `HOST`, `PORT` and log settings.
+Render injects `PORT`. Startup applies Alembic migrations before serving traffic.
 
-Provision a durable PostgreSQL database with backups and enter its private connection
-URL for DATABASE_URL. The Blueprint does not provision or purchase that database.
-Use provider-required TLS settings (for an external TLS endpoint, append
-`?sslmode=require`, or use certificate validation as instructed by the provider).
-Enter the exact planned Vercel production origin when prompted for CORS_ORIGINS.
-Render generates JWT_SECRET_KEY; retain it across deploys. Never paste it into
-frontend settings, screenshots, source files or this report.
+### Render environment variables
 
-After deployment, open `https://YOUR-BACKEND.onrender.com/ready` and `/health`.
-Readiness must return HTTP 200 with `database: connected`. `/health` keeps the
-original HTTP 200 degraded-status contract, so Render probes `/ready` instead.
-A healthy response verifies process/database access, not model accuracy or storage durability.
+Required. The app refuses to start if any production rule is broken:
 
-## 3. Vercel frontend
+| Variable | Value | Source in `render.yaml` |
+| --- | --- | --- |
+| `ENVIRONMENT` | `production` | fixed |
+| `DATABASE_URL` | PostgreSQL URL, e.g. `postgresql://USER:PASSWORD@HOST:5432/DB?sslmode=require` | **prompted secret** |
+| `JWT_SECRET_KEY` | random, at least 32 bytes; never the development default | generated by Render |
+| `CORS_ORIGINS` | exact Vercel production origin, e.g. `https://marketpulse.vercel.app` | **prompted** |
+| `STORAGE_BACKEND` | `database` (`auto` also resolves to `database` outside development) | fixed |
+| `DEBUG` | `false` | fixed |
+| `SQL_ECHO` | `false` | fixed |
+| `HOST` | `0.0.0.0` | fixed |
+| `PORT` | injected by Render | platform |
+| `PYTHON_VERSION` | `3.14.7` | fixed |
 
-Import the same Git repository into Vercel:
+Recommended (already set in `render.yaml`):
+
+| Variable | Value |
+| --- | --- |
+| `PYTHONUNBUFFERED` | `1` |
+| `LOG_LEVEL` | `INFO` |
+| `ACCESS_LOG` | `false` (avoids logging URLs and query strings) |
+| `STORAGE_MAX_BYTES` | `134217728` (128 MiB per stored dataset or model; max 512 MiB) |
+
+Optional, with defaults: `API_PREFIX` (empty; `/health` and `/ready` are always
+unprefixed), `ACCESS_TOKEN_EXPIRE_MINUTES` (`720`), `JWT_ALGORITHM` (`HS256`),
+`APP_NAME`, `APP_VERSION`. Marketplace credentials are not needed; live
+collectors remain unavailable.
+
+Production validation rules (`backend/app/config.py`):
+
+- `DATABASE_URL` must be PostgreSQL. `postgres://` and `postgresql://` become
+  `postgresql+psycopg://`. SQLite, `psycopg2`, `asyncpg`, MySQL and malformed
+  URLs are rejected, and the error message never echoes the URL.
+- `STORAGE_BACKEND` must resolve to `database`.
+- `JWT_SECRET_KEY` must be at least 32 bytes and not the development placeholder.
+- `DEBUG` and `SQL_ECHO` must be false.
+- At least one HTTPS origin is required. Wildcards, paths, credentials and
+  non-local `http://` origins are rejected. Add each preview or custom domain
+  explicitly; never allow every `*.vercel.app` tenant.
+
+Use the provider's TLS settings. URL-encode reserved characters in the password.
+Never paste `JWT_SECRET_KEY` or `DATABASE_URL` into frontend settings, screenshots,
+source files or reports.
+
+After deploying, check `https://YOUR-BACKEND.onrender.com/ready` (HTTP 200,
+`"database": "connected"`) and `/health` (`"environment": "production"`).
+
+## 2. Vercel frontend
+
+Import the same repository into Vercel:
 
 | Setting | Value |
 | --- | --- |
 | Root Directory | `frontend` |
 | Framework | Vite |
-| Node.js | `24.x` (also declared in package.json) |
-| Install | `npm ci` |
-| Build | `npm run build` |
-| Output | `dist` |
-| Public API URL | `VITE_API_BASE_URL=https://YOUR-BACKEND.onrender.com` |
+| Node.js | `24.x` (declared in `package.json`) |
+| Install / Build / Output | `npm ci` / `npm run build` / `dist` (from `vercel.json`) |
+| SPA fallback | `rewrites: /(.*) -> /index.html`. Existing files such as `/assets/*` are served first |
 
-Set VITE_API_BASE_URL in the Production environment before building. Vercel builds
-reject missing, malformed, non-HTTPS or localhost API destinations. Ordinary local
-builds retain the existing localhost fallback. Environment values are compiled
-into the frontend bundle: changing the API URL requires a new deployment.
+### Vercel environment variables
 
-`frontend/vercel.json` rewrites SPA deep links to index.html. Verify direct visits
-and refreshes at `/login`, `/dashboard/predictor`, `/dashboard/trends` and
-`/dashboard/analytics`. Protected routes should show login when signed out.
-Check that JS/CSS assets still load successfully. The frontend calls Render
-directly; this rewrite does not proxy API requests.
-
-After Vercel assigns the actual production domain, set Render CORS_ORIGINS to
-that exact HTTPS origin and redeploy Render if it differs from the planned value.
-Preview URLs need their own explicit allowlist entries; do not allow every Vercel
-tenant. A custom domain must also be added explicitly.
-
-## Required and optional environment variables
-
-| Variable | Location | Required value / default |
+| Variable | Required | Value |
 | --- | --- | --- |
-| ENVIRONMENT | Render | `production` |
-| JWT_SECRET_KEY | Render secret | Random private value of at least 32 bytes; Blueprint generates it |
-| CORS_ORIGINS | Render | Exact HTTPS production frontend origin; CSV or JSON list |
-| DEBUG | Render | `false`; legacy `release` also resolves false |
-| SQL_ECHO | Render | `false`; true rejected outside development |
-| HOST | Render | `0.0.0.0` |
-| PORT | Render | Injected by Render, integer 1-65535 |
-| PYTHON_VERSION | Render build | `3.14.7` |
-| PYTHONUNBUFFERED | Render | `1` |
-| LOG_LEVEL | Render | `INFO`; DEBUG/INFO/WARNING/ERROR/CRITICAL accepted |
-| ACCESS_LOG | Render | `false`; avoids logging request URLs/query strings by default |
-| VITE_API_BASE_URL | Vercel build | Actual HTTPS backend URL; append API_PREFIX if configured |
-| API_PREFIX | Render, optional | Empty default; `/health` and `/ready` always unprefixed |
-| DATABASE_URL | Render, required | Durable PostgreSQL URL; local development still defaults to SQLite |
-| STORAGE_BACKEND | Render | `database`; `auto` selects database outside development |
-| STORAGE_MAX_BYTES | Backend, optional | `134217728` (128 MiB per binary object) |
-| DATA_DIR | Local development, optional | Existing repository `data` directory |
-| MODEL_ARTIFACT_DIR | Local development, optional | Existing `backend/app/ml/artifacts` directory |
-| JWT_ALGORITHM | Backend, optional | `HS256` |
-| ACCESS_TOKEN_EXPIRE_MINUTES | Backend, optional | `720` |
-| APP_NAME / APP_VERSION | Backend, optional | `MarketPulse AI API` / `0.1.0` |
-| VITE_APP_NAME | Vercel, optional | `MarketPulse AI` |
-| VITE_WHATSAPP_NUMBER | Vercel, optional | Public international digits; blank disables contact submission |
+| `VITE_API_BASE_URL` | **yes** | `https://YOUR-BACKEND.onrender.com` (append `API_PREFIX` if set). Must be set for the Production environment **before** building |
+| `VITE_APP_NAME` | no | `MarketPulse AI` |
+| `VITE_WHATSAPP_NUMBER` | no | public international digits; blank disables the contact form |
 
-Existing marketplace credentials are not required for this deployment: the current
-live integrations remain unavailable. No new connector is enabled.
+All `VITE_` values are public and compiled into the bundle. Changing one requires
+a redeploy. Never put secrets in them.
 
-Backend settings read repository `.env`, then `backend/.env`; process environment
-overrides both. Frontend Vite reads `frontend/.env*` with the configured project
-root. Root `.env` frontend values alone do not configure Vite. Examples are not
-loaded automatically. Never deploy `.env` files or use VITE_ for private values.
+API URL safeguards:
 
-For local development keep ENVIRONMENT=development, the SQLite defaults and
-`CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173`. Development commands
-remain `python -m uvicorn app.main:app --reload` from backend and `npm run dev`
-from frontend. In PowerShell use `npm.cmd` if npm.ps1 is blocked.
+- On Vercel (`VERCEL=1`), `vite.config.ts` fails the build if `VITE_API_BASE_URL`
+  is missing, malformed, not HTTPS, localhost, or contains credentials, a query
+  or a fragment.
+- The `http://127.0.0.1:8000` default exists only in the Vite dev server. A
+  production bundle built anywhere without `VITE_API_BASE_URL` contains no
+  localhost URL; its API calls fail with "The API address is not configured."
+  For a local production build, set the variable in `frontend/.env`.
 
-## Hosted verification still required
+Once Vercel assigns the real domain, set Render `CORS_ORIGINS` to exactly that
+origin, with no trailing slash, and redeploy the backend.
 
-1. Confirm Linux dependency installation succeeds with the existing pinned packages.
-2. Verify readiness, health and startup migration logs without exposing secrets.
-3. Verify allowed-origin preflight and rejection of an unrelated origin.
-4. Verify SPA links, auth/session handling and the complete DEMO pipeline in browser.
-5. Verify process memory/time limits during training; one worker is required by the
-   current training lock. No instance size has been benchmarked on Render.
-6. Verify the actual PostgreSQL service, backups and restore before retaining production data.
-7. Resolve public operator authorization/abuse controls before public multi-user use.
+## Migrations at startup
 
-The active local model is DEMO-trained and below baseline. Deployment does not
-make its predictions reliable or supply real-time marketplace data. No ML
-features, target definitions or scoring formulas were changed. Phase 10.5 adds migration 0005.
+- Startup runs `upgrade_to_head` before accepting requests. Any failure (unknown
+  revision, unreachable database, SQL error) exits the process with a non-zero
+  code, `/ready` never returns 200, and Render keeps the previous deploy serving.
+- On PostgreSQL the whole upgrade runs in one transaction with transactional DDL:
+  a failed migration rolls back and leaves the schema at its previous revision.
+- Concurrent startups (an overlapping deploy and restart, or several processes)
+  are serialized by a transaction-scoped PostgreSQL advisory lock. The waiting
+  process sees the finished revision and applies nothing. Verified with four
+  simultaneous processes on an empty schema; before the lock, three of four crashed.
+- Migrations `0001`-`0005` are additive or preserving; `0005` only creates
+  `stored_objects`. No downgrade runs automatically. Back up before any manual
+  `alembic downgrade`: downgrading `0005` drops stored datasets and models.
+- Manual alternative from `backend/`, with the target environment set:
+  `python -m alembic upgrade head`.
+
+## Storage in production
+
+- Processed datasets (CSV and metadata) and trained models (joblib pipeline and
+  metadata) are immutable rows in `stored_objects`, published in one transaction.
+  Nothing is written to the Render filesystem, which is ephemeral.
+- Each object carries a SHA-256 checksum and size, verified before parsing or
+  unpickling. Tampered or corrupt models return HTTP 503 `corrupt_artifact`.
+- Rewriting an existing key is refused (`StorageConflict`); new builds and
+  training runs get new keys and versions.
+- Missing objects are reported as missing, never replaced with fabricated data.
+- Model files are trusted server-generated pickles; there is no model upload route.
+  Restrict write access to the database accordingly.
+
+## Backups
+
+The database is the only durable state. Accounts, snapshots, predictions, model
+metadata **and** the stored datasets and model binaries are all inside it, so one
+consistent PostgreSQL backup covers everything. Never back up or restore
+`stored_objects` separately from `model_metadata` and `predictions`.
+
+1. **Provider backups (primary).** Use a plan with automated daily backups or
+   point-in-time recovery (Render paid PostgreSQL, Neon, Supabase and similar).
+   Render's free PostgreSQL has no backups and expires, so do not keep real data on it.
+2. **Logical dump before every deploy and weekly (secondary).** Run from a trusted
+   machine with PostgreSQL 17 client tools:
+   ```shell
+   pg_dump --format=custom --no-owner --dbname="$DATABASE_URL" \
+     --file="marketpulse-$(date -u +%Y%m%dT%H%M%SZ).dump"
+   ```
+   Keep at least 7 daily and 4 weekly dumps in private storage outside the
+   provider account. Dumps contain password hashes and must be treated as secrets.
+3. **Restore drill (monthly and after schema changes).** Restore into a scratch
+   database, never over production:
+   ```shell
+   createdb marketpulse_restore_check
+   pg_restore --no-owner --dbname=marketpulse_restore_check marketpulse-YYYYMMDDTHHMMSSZ.dump
+   psql -d marketpulse_restore_check -c "SELECT version_num FROM alembic_version"
+   psql -d marketpulse_restore_check -c "SELECT namespace, key, encode(sha256(payload),'hex') = sha256 AS checksum_ok FROM stored_objects"
+   ```
+   Every `checksum_ok` must be `true`. To use the restore, point a staging backend's
+   `DATABASE_URL` at it and confirm `/ready`, login, dataset status and model status.
+
+This procedure was rehearsed locally on PostgreSQL 17: dump, restore into a
+separate database, identical row counts and checksums, and the restored model
+loaded and ran inference on the restored dataset. It has not run against a hosted
+provider, and no schedule is automated in this repository.
+
+## First data after deployment
+
+The deployed database starts empty. There is no startup seeding, automatic
+training or simulated live collection. Register an operator account, load the
+bundled DEMO fixture on Marketplace Data, build a dataset and train on Train Model.
+Everything stays badged DEMO and the model's below-baseline quality is shown.
+Copying the development SQLite database or local pickle files is not supported:
+their absolute paths do not transfer and private accounts must not be published.
+
+## Live smoke test (run after the first deploy)
+
+Avoid training during the smoke test unless the demo pipeline itself is under test.
+
+Backend (`https://YOUR-BACKEND.onrender.com`):
+1. `GET /ready` returns 200; `GET /health` shows `environment: production`.
+2. `POST /auth/register` then `POST /auth/login` succeed; `GET /auth/me` returns the account.
+3. `GET /ml/dataset/status` and `GET /ml/status` return 200 with a token and 401 without.
+4. A preflight from the Vercel origin is allowed; one from another origin gets no
+   `Access-Control-Allow-Origin`.
+5. Logs show `Running upgrade ... 0005` once, `Application startup complete`, and
+   no secrets or connection strings.
+
+Frontend (`https://YOUR-FRONTEND.vercel.app`):
+1. Landing page loads with JS and CSS assets (no 404s in the network panel).
+2. `/dashboard/train` while signed out redirects to `/login`.
+3. Log in; the dashboard loads live API data without "Could not reach the API".
+4. Refresh `/dashboard/predictor`, `/dashboard/trends` and `/dashboard/analytics`:
+   each stays on the same route and stays signed in.
+5. Log out, then open `/dashboard/analytics` directly: it redirects to `/login`.
+
+## Capacity
+
+Measured in a Linux Python 3.14.7 container against PostgreSQL, using the 480-row
+DEMO fixture: peak resident memory of the API process was about **300 MiB** after
+loading demo data, building a dataset, training Random Forest and XGBoost (about
+7 s on a desktop CPU) and predicting. That leaves around 200 MiB headroom on a
+512 MiB instance for this dataset only. Render's free CPU share is much smaller,
+so training will be slower, and larger datasets need more memory. Real Render
+limits have not been measured.
+
+Startup cost is dominated by importing pandas, scikit-learn and scipy: about 10-30 s
+on a busy development machine before migrations even start. Expect the first
+deploy and every cold start on a small instance to take longer, and treat a slow
+first `/ready` as normal. A crash exits the process instead.
+
+## Known limitations
+
+- Not deployed or verified on Render or Vercel. Hosted TLS, domains and platform
+  health checks are unverified.
+- Training runs inside the request on one worker. Keep one instance: the
+  training lock is process-local.
+- The free plan sleeps when idle, so the first request after a pause is slow.
+- Data is synthetic DEMO; no live marketplace collector is usable. The model is
+  below its majority-class baseline and predicts a price-direction proxy, not sales demand.
+- Shared authenticated data and model operations have no role-based authorization
+  or abuse controls yet; do not open registration to the public without them.
+- Logout discards the client token; tokens are not revoked server-side.
+
+## Local development (unchanged)
+
+Keep `ENVIRONMENT=development`, the SQLite default and
+`CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173`. Run
+`python -m uvicorn app.main:app --reload` from `backend/` and `npm run dev` from
+`frontend/` (`npm.cmd` in PowerShell if `npm.ps1` is blocked). Backend settings read
+the repository `.env`, then `backend/.env`; process environment overrides both.
+Vite reads only `frontend/.env*`.
+
+To run the PostgreSQL integration tests, start a disposable server and set
+`TEST_POSTGRES_URL` to a database whose user may create schemas. For example:
+
+```shell
+docker run -d --name mp-pg -e POSTGRES_USER=mp -e POSTGRES_PASSWORD=mp-local-only \
+  -e POSTGRES_DB=marketpulse_test -p 127.0.0.1:55432:5432 postgres:17-alpine
+TEST_POSTGRES_URL=postgresql://mp:mp-local-only@127.0.0.1:55432/marketpulse_test \
+  .venv/Scripts/python -m pytest tests/test_postgresql.py tests/test_storage.py -rs
+```
+
+Each test works in its own throwaway schema and drops it afterwards.
 
 ## Platform references
 
 - [Render FastAPI deployment](https://render.com/docs/deploy-fastapi)
-- [Render Blueprint configuration](https://render.com/docs/blueprint-spec)
+- [Render Blueprint specification](https://render.com/docs/blueprint-spec)
 - [Render Python version selection](https://render.com/docs/python-version)
 - [Render health checks](https://render.com/docs/health-checks)
+- [Render PostgreSQL backups](https://render.com/docs/postgresql-backups)
 - [Vite on Vercel and SPA rewrites](https://vercel.com/docs/frameworks/frontend/vite)
 - [Vite environment loading](https://vite.dev/guide/env-and-mode)
+- [PostgreSQL pg_dump](https://www.postgresql.org/docs/17/app-pgdump.html)

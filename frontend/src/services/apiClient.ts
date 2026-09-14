@@ -78,6 +78,9 @@ export async function apiRequest<T>(
   path: string,
   { token, timeoutMs = 30_000, ...init }: RequestOptions = {},
 ): Promise<T> {
+  if (!env.isApiConfigured) {
+    throw new ApiRequestError('The API address is not configured. Rebuild the frontend with VITE_API_BASE_URL set to the backend URL.')
+  }
   const url = `${env.apiBaseUrl}${path}`
 
   const headers = new Headers(init.headers)

@@ -5,13 +5,19 @@ Only a unique schema created by this test is touched, never public/application t
 """
 from io import StringIO
 import os
+from pathlib import Path
+import socket
+import subprocess
+import sys
+import time
 from uuid import uuid4
 
 from alembic import command
 from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
+import httpx
 import pytest
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import create_engine, inspect, text, update
 from sqlalchemy.engine import make_url
 from sqlalchemy.schema import CreateTable
 from sqlalchemy.dialects import postgresql
@@ -19,7 +25,10 @@ from sqlalchemy.dialects import postgresql
 from app.config import settings
 from app.database import Base
 from app.database.migrate import _alembic_config, upgrade_to_head
-from app.storage.database import DatabaseStore
+from app.storage.base import StorageConflict
+from app.storage.database import DatabaseStore, StoredObject
+
+BACKEND = Path(__file__).resolve().parents[1]
 
 
 def test_complete_migration_chain_generates_postgresql_sql(monkeypatch):
@@ -75,3 +84,180 @@ def test_postgresql_upgrade_persistence_and_schema():
             with admin.begin() as connection:
                 connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
         admin.dispose()
+
+
+requires_postgres = pytest.mark.skipif(
+    not os.environ.get('TEST_POSTGRES_URL'),
+    reason='TEST_POSTGRES_URL not configured; no PostgreSQL server available',
+)
+
+
+@pytest.fixture
+def pg_schema():
+    """A unique throwaway schema; yields (psycopg URL, schema name)."""
+    url = make_url(os.environ['TEST_POSTGRES_URL']).set(drivername='postgresql+psycopg')
+    admin = create_engine(url, connect_args={'connect_timeout': 5})
+    schema = 'mp_test_' + uuid4().hex
+    with admin.begin() as connection:
+        connection.execute(text(f'CREATE SCHEMA "{schema}"'))
+    try:
+        yield url, schema
+    finally:
+        with admin.begin() as connection:
+            connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
+        admin.dispose()
+
+
+def _schema_url(url, schema) -> str:
+    # Percent-encoded options also exercise settings and Alembic interpolation.
+    return url.update_query_dict({'options': f'-csearch_path={schema}'}).render_as_string(hide_password=False)
+
+
+@requires_postgres
+def test_concurrent_startup_migrations_serialize(pg_schema):
+    """Instances starting together must not crash creating the same tables."""
+    url, schema = pg_schema
+    start_at = time.time() + 4
+    child = (
+        'import time\n'
+        'from sqlalchemy import create_engine\n'
+        'from app.database.migrate import upgrade_to_head\n'
+        f'engine = create_engine({_schema_url(url, schema)!r})\n'
+        f'time.sleep(max(0, {start_at} - time.time()))\n'
+        'upgrade_to_head(engine)\n'
+    )
+    env = dict(os.environ, ENVIRONMENT='development', STORAGE_BACKEND='local')
+    processes = [subprocess.Popen([sys.executable, '-B', '-c', child], cwd=BACKEND, env=env,
+                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                 for _ in range(4)]
+    outputs = [process.communicate(timeout=300)[0] for process in processes]
+    assert [process.returncode for process in processes] == [0, 0, 0, 0], outputs
+    engine = create_engine(_schema_url(url, schema))
+    try:
+        with engine.connect() as connection:
+            assert connection.execute(text('SELECT version_num FROM alembic_version')).scalars().all() == ['0005']
+    finally:
+        engine.dispose()
+
+
+@requires_postgres
+def test_production_journey_on_postgresql(pg_schema, tmp_path):
+    """Real `python -m app.start` in production mode against PostgreSQL storage.
+
+    Covers startup migration, auth, dataset save/load, artifact save/load after a
+    restart, checksum rejection, no-overwrite protection and missing objects.
+    Nothing may be written to the local data or artifact directories.
+    """
+    url, schema = pg_schema
+    with socket.socket() as sock:
+        sock.bind(('127.0.0.1', 0))
+        port = sock.getsockname()[1]
+    variables = dict(
+        os.environ, ENVIRONMENT='production', DEBUG='false', SQL_ECHO='false', STORAGE_BACKEND='database',
+        DATABASE_URL=_schema_url(url, schema), JWT_SECRET_KEY='postgres-journey-test-secret-' * 2,
+        CORS_ORIGINS='https://marketpulse-test.vercel.app', HOST='127.0.0.1', PORT=str(port),
+        DATA_DIR=str(tmp_path / 'data'), MODEL_ARTIFACT_DIR=str(tmp_path / 'models'),
+        LOG_LEVEL='INFO', ACCESS_LOG='false', API_PREFIX='',
+    )
+    base_url = f'http://127.0.0.1:{port}'
+
+    def start(name):
+        log = (tmp_path / name).open('w+', encoding='utf-8')
+        process = subprocess.Popen([sys.executable, '-B', '-m', 'app.start'], cwd=BACKEND, env=variables,
+                                   stdout=log, stderr=subprocess.STDOUT)
+        # Cold scientific-stack imports are slow on a loaded machine; a crash fails at once.
+        deadline = time.monotonic() + 180
+        with httpx.Client(base_url=base_url, timeout=2) as probe:
+            while True:
+                assert process.poll() is None, (tmp_path / name).read_text(encoding='utf-8')
+                try:
+                    if probe.get('/ready').status_code == 200:
+                        return process, log
+                except httpx.TransportError:
+                    pass
+                assert time.monotonic() < deadline, 'PostgreSQL production startup timed out'
+                time.sleep(0.25)
+
+    def stop(process, log):
+        process.terminate()
+        process.wait(timeout=20)
+        log.seek(0)
+        output = log.read()
+        log.close()
+        assert variables['JWT_SECRET_KEY'] not in output
+        assert not url.password or url.password not in output
+        return output
+
+    def ok(response, status=200):
+        assert response.status_code == status, (response.status_code, response.text)
+        return response.json()
+
+    def login(client):
+        token = ok(client.post('/auth/login', json={'email': 'pg@example.com', 'password': 'marketpulse1'}))['access_token']
+        return {'Authorization': 'Bearer ' + token}
+
+    process, log = start('first.log')
+    try:
+        with httpx.Client(base_url=base_url, timeout=180) as client:
+            assert ok(client.get('/health'))['environment'] == 'production'
+            ok(client.post('/auth/register', json={'email': 'pg@example.com', 'password': 'marketpulse1'}), 201)
+            headers = login(client)
+            assert ok(client.get('/ml/dataset/status', headers=headers))['has_dataset'] is False
+            assert ok(client.get('/ml/status', headers=headers))['trained'] is False
+            assert ok(client.post('/data/demo/load', headers=headers))['stored'] == 480
+            dataset = ok(client.post('/ml/dataset/build', headers=headers, json={'source_types': ['demo']}))
+            trained = ok(client.post('/ml/train', headers=headers, json={'dataset_id': dataset['dataset_id'], 'models': ['random_forest']}))
+            assert trained['model_version'] == 'v1'
+            key = ok(client.get('/ml/prediction-options', headers=headers, params={'q': 'acme 20000mah'}))['products'][0]['product_key']
+            request = {'product_key': key, 'dataset_id': dataset['dataset_id']}
+            first = ok(client.post('/ml/predict', headers=headers, json=request))
+        stop(process, log)
+
+        # Restart: dataset and model must come back from PostgreSQL, not memory.
+        process, log = start('second.log')
+        with httpx.Client(base_url=base_url, timeout=180) as client:
+            headers = login(client)
+            status = ok(client.get('/ml/dataset/status', headers=headers))
+            assert status['stored_datasets'] == 1
+            assert status['latest']['csv_path'].startswith('dbstore://datasets/')
+            preview = ok(client.get('/ml/dataset/preview', headers=headers, params={'dataset_id': dataset['dataset_id'], 'limit': 3}))
+            assert len(preview['rows']) == 3
+            assert ok(client.get('/ml/status', headers=headers))['version'] == 'v1'
+            again = ok(client.post('/ml/predict', headers=headers, json=request))
+            assert [row['platform'] for row in again['ranking']] == [row['platform'] for row in first['ranking']]
+            assert ok(client.get('/analytics/summary', headers=headers))['latest_dataset']['file_available'] is True
+
+            engine = create_engine(_schema_url(url, schema))
+            try:
+                with engine.connect() as connection:
+                    rows = connection.execute(text(
+                        "SELECT namespace, key, size_bytes, octet_length(payload), sha256, "
+                        "encode(sha256(payload), 'hex') FROM stored_objects ORDER BY namespace")).all()
+                assert [row[0] for row in rows] == ['artifacts', 'datasets']
+                assert rows[0][1] == 'model_v1.pkl' and rows[1][1].endswith('.csv')
+                assert all(row[2] == row[3] and row[4] == row[5] for row in rows)
+
+                # Immutable bundles: a second write under the same key is refused.
+                with pytest.raises(StorageConflict):
+                    DatabaseStore(engine, 'artifacts', 1024 * 1024).put('model_v1.pkl', b'replacement', {})
+
+                # Checksum mismatch is refused before unpickling.
+                with engine.begin() as connection:
+                    connection.execute(update(StoredObject).where(StoredObject.namespace == 'artifacts').values(payload=b'tampered'))
+                corrupt = client.post('/ml/predict', headers=headers, json=request)
+                assert corrupt.status_code == 503, corrupt.text
+                assert corrupt.json()['detail']['status'] == 'corrupt_artifact'
+
+                # A missing dataset object is reported, never fabricated.
+                with engine.begin() as connection:
+                    connection.execute(text("DELETE FROM stored_objects WHERE namespace = 'datasets'"))
+                assert ok(client.get('/ml/dataset/status', headers=headers))['has_dataset'] is False
+                assert client.get('/ml/dataset/preview', headers=headers).status_code == 404
+            finally:
+                engine.dispose()
+        assert 'Application startup complete' in stop(process, log)
+    finally:
+        if process.poll() is None:
+            process.kill()
+    assert not (tmp_path / 'data' / 'processed').exists()
+    assert not (tmp_path / 'models').exists()

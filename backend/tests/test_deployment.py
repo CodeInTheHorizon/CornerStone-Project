@@ -46,6 +46,57 @@ def test_readiness_reports_database_failure(client):
         app.dependency_overrides.pop(get_db, None)
 
 
+def _run_start_until_exit(variables, timeout=240):
+    process = subprocess.run(
+        [sys.executable, '-B', '-m', 'app.start'], cwd=Path(__file__).resolve().parents[1],
+        env=variables, capture_output=True, text=True, timeout=timeout,
+    )
+    return process.returncode, process.stdout + process.stderr
+
+
+def _isolated_variables(tmp_path, **overrides):
+    variables = os.environ.copy()
+    variables.update(
+        ENVIRONMENT='development', STORAGE_BACKEND='local', DEBUG='false', SQL_ECHO='false',
+        JWT_SECRET_KEY='isolated-startup-failure-secret-' * 2,
+        DATABASE_URL=f"sqlite:///{(tmp_path / 'startup.db').as_posix()}",
+        DATA_DIR=str(tmp_path / 'data'), MODEL_ARTIFACT_DIR=str(tmp_path / 'models'),
+        HOST='127.0.0.1', PORT='1', LOG_LEVEL='INFO', ACCESS_LOG='false',
+    )
+    variables.update(overrides)
+    return variables
+
+
+def test_failed_migration_stops_startup_without_touching_data(tmp_path):
+    import sqlite3
+    database = tmp_path / 'startup.db'
+    with sqlite3.connect(database) as connection:
+        connection.execute('CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)')
+        connection.execute("INSERT INTO alembic_version VALUES ('9999_unknown')")
+        connection.execute('CREATE TABLE keep_me (value TEXT)')
+        connection.execute("INSERT INTO keep_me VALUES ('preserved')")
+    code, output = _run_start_until_exit(_isolated_variables(tmp_path))
+    assert code != 0, output
+    assert 'Application startup complete' not in output
+    assert "Can't locate revision" in output or '9999_unknown' in output
+    with sqlite3.connect(database) as connection:
+        assert connection.execute('SELECT value FROM keep_me').fetchall() == [('preserved',)]
+        assert connection.execute('SELECT version_num FROM alembic_version').fetchall() == [('9999_unknown',)]
+
+
+def test_production_startup_stops_when_database_unreachable(tmp_path):
+    variables = _isolated_variables(
+        tmp_path, ENVIRONMENT='production', STORAGE_BACKEND='database',
+        CORS_ORIGINS='https://marketpulse-test.vercel.app',
+        # Port 9 (discard) on loopback is not a PostgreSQL server.
+        DATABASE_URL='postgresql://unreachable:not-a-real-password@127.0.0.1:9/marketpulse',
+    )
+    code, output = _run_start_until_exit(variables)
+    assert code != 0, output
+    assert 'Application startup complete' not in output
+    assert 'not-a-real-password' not in output
+
+
 def test_startup_and_exact_cors_with_local_database(tmp_path):
     with socket.socket() as sock:
         sock.bind(('127.0.0.1', 0))
@@ -67,7 +118,9 @@ def test_startup_and_exact_cors_with_local_database(tmp_path):
         )
         try:
             with httpx.Client(base_url=f'http://127.0.0.1:{port}', timeout=2) as client:
-                deadline = time.monotonic() + 40
+                # A cold import of pandas/scikit-learn/scipy can take tens of
+                # seconds on a loaded machine; a crash still fails immediately.
+                deadline = time.monotonic() + 180
                 while True:
                     assert process.poll() is None, 'Production startup exited early'
                     try:
