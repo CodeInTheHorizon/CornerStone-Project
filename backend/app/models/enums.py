@@ -54,6 +54,42 @@ class IngestionMode(str, Enum):
     UNAVAILABLE = "UNAVAILABLE"
 
 
+class CollectorState(str, Enum):
+    """Why a collector can or cannot run right now.
+
+    Deliberately finer than available/unavailable, so a missing key, a missing
+    data-use approval, a throttled provider and a failing provider each stay
+    distinguishable instead of all reading "unavailable".
+    """
+
+    #: Configured and approved; a LIVE fetch may be attempted.
+    LIVE = "live"
+    #: An official API exists but its credentials are not configured.
+    CREDENTIALS_MISSING = "credentials_missing"
+    #: Credentials are present, but the operator has not confirmed that the
+    #: provider permits this application's storage/analytics use of its data.
+    APPROVAL_REQUIRED = "approval_required"
+    #: The provider rejected the configured credentials (HTTP 401/403).
+    CREDENTIALS_REJECTED = "credentials_rejected"
+    #: The provider throttled the last request; wait before retrying.
+    RATE_LIMITED = "rate_limited"
+    #: The last request failed on the provider side (timeout, 5xx, bad payload).
+    PROVIDER_ERROR = "provider_error"
+    #: No permitted route exists (anti-bot block, robots rules, retired API).
+    UNAVAILABLE = "unavailable"
+
+
+class AttemptOutcome(str, Enum):
+    """Result of one outbound LIVE fetch, recorded in collection_attempts."""
+
+    SUCCESS = "success"
+    #: The provider answered correctly but returned nothing usable.
+    EMPTY = "empty"
+    RATE_LIMITED = "rate_limited"
+    CREDENTIALS_REJECTED = "credentials_rejected"
+    PROVIDER_ERROR = "provider_error"
+
+
 class TrainingStatus(str, Enum):
     """Lifecycle of a model-training run."""
 

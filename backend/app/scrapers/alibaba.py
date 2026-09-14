@@ -3,14 +3,14 @@
 Verified 2026-09-10: https://www.alibaba.com/robots.txt contains
 `Disallow: /trade/`, and product search lives at /trade/search. The search
 endpoint does respond to requests, but responding is not permission -- the
-robots rules disallow it, so this collector does not use it.
+robots rules disallow it, so this collector does not use it. The paths robots
+allows (/catalog/, /product-detail/, /showroom/) are browse and detail pages,
+not keyword search.
 
-The paths robots does allow (/catalog/, /product-detail/, /showroom/) are
-browse and detail pages, not keyword search, so they cannot satisfy the
-keyword-driven collection this system needs.
-
-Alibaba's Open Platform API would be the permitted route and requires an
-approved developer app key.
+Rechecked 2026-09-14: the Alibaba.com Open API is a seller/ERP API for
+synchronising a paid seller's *own* products and orders. It offers no
+marketplace-wide keyword search, so an app key would not unblock this
+collector and none is requested.
 """
 
 from app.models.enums import Platform
@@ -23,13 +23,9 @@ class AlibabaCollector(UnavailableCollector):
             platform=Platform.ALIBABA,
             access_method="None available",
             reason=(
-                "Alibaba's robots.txt disallows /trade/, which is where "
-                "keyword search lives. The allowed paths (/catalog/, "
-                "/product-detail/) do not support keyword search. The Open "
-                "Platform API requires an approved developer app key."
+                "Alibaba's robots.txt disallows /trade/, which is where keyword "
+                "search lives, and the allowed paths do not support keyword search. "
+                "The Alibaba.com Open API only manages a seller's own products and "
+                "orders; it has no marketplace search, so no credential would help."
             ),
-            requires_credentials=True,
-            # Listed for completeness: supplying a key would still not
-            # unblock keyword search, which robots disallows.
-            required_configuration=("ALIBABA_APP_KEY", "ALIBABA_APP_SECRET"),
         )

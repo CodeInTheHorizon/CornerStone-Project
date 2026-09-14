@@ -5,7 +5,15 @@ scope, architecture, the 10-day roadmap and the acceptance criteria.
 
 ## Current state
 
-**Phases 1-9 complete.** Phase 10 is deployment-ready and locally
+**Phases 1-11 implemented.** Phase 11 status, verbatim for reports:
+- Flipkart Affiliate API LIVE connector implemented and tested with mocked responses.
+- Connector is gated: credentials **and** Flipkart's written data-use approval are required.
+- Flipkart credentials are missing (state `credentials_missing`).
+- Written approval is required and not held (`FLIPKART_DATA_USE_APPROVED` stays false).
+- **0 LIVE records**: no request has reached Flipkart and no real marketplace data was collected.
+- ML is unchanged: no features, targets, training or scoring changed; the model is still DEMO-trained.
+
+Never claim LIVE data or LIVE success. Phase 10 is deployment-ready and locally
 production-verified (real PostgreSQL 17, a Linux Render build and start, a
 Playwright browser pass), but **not deployed**: no Git remote, Render/Vercel
 service, domain or managed database exists. Never claim a live deployment.
@@ -77,6 +85,34 @@ settings validation.
 - **Docs:** docs/DEPLOYMENT.md holds the env var lists, backup plan and live smoke
   checklist; docs/PHASE_10_REPORT.md has the evidence and remaining blockers.
 
+Phase 11 (LIVE marketplace data; details in docs/MARKETPLACE_SOURCES.md):
+- **Connector:** `app/scrapers/flipkart.py` is `FlipkartCollector`, the official
+  Affiliate API 1.0 search endpoint with bounded retries, `Retry-After` handling,
+  credential redaction and affiliate-id stripping from URLs. It runs only with
+  `FLIPKART_AFFILIATE_ID`, `FLIPKART_AFFILIATE_TOKEN` (SecretStr) **and**
+  `FLIPKART_DATA_USE_APPROVED=true`, which records Flipkart's written approval;
+  its terms limit use to its own platform. Never default that flag to true or
+  bypass the gate.
+- **Other platforms:** Amazon PA-API 5 was retired on 15 May 2026, and the
+  Creators API terms forbid aggregation, seller tools and ML training without
+  approval, so the registry policy keeps Amazon `unavailable`. Croma has no API.
+  Alibaba's Open API is seller-only.
+- **Collector states** (`CollectorState`): live, credentials_missing,
+  approval_required, credentials_rejected, rate_limited, provider_error,
+  unavailable. `collection_service.platform_statuses` overlays the latest
+  attempt on each collector's static status.
+- **Provenance:** `collection_attempts` (migration 0006) logs every outbound fetch,
+  failures included; LIVE snapshots link to it via `collection_run_id`. A 429
+  sets `retry_after_at`, and `/data/collect` then returns 429 without calling the
+  provider.
+- **History** is append-only. `ingest.recent_live_duplicate` skips only a LIVE
+  observation identical to one stored for the same listing within 10 minutes.
+- **Flipkart gives no product rating or review count;** those stay NULL (never
+  seller ratings). One refresh returns at most 10 results. No scheduler.
+- **Tests** use `httpx.MockTransport` (`tests/test_flipkart.py`,
+  `tests/test_live_collection.py`). `tests/test_flipkart_live.py` is opt-in via
+  `RUN_FLIPKART_LIVE_TEST=1` plus credentials and approval.
+
 No scheduled jobs have been implemented.
 See docs/PHASE_7_REPORT.md for the exact score formula. Preserve historical
 model quality with every saved prediction.
@@ -93,7 +129,8 @@ backend/app/
   models/         ORM models
   schemas/        pydantic request/response shapes
   auth/           security.py (hashing, JWT), dependencies.py (get_current_user)
-  scrapers/       base, parsing, validation, registry + one module per platform
+  scrapers/       base (collector contract, states, errors), parsing, validation,
+                  registry + one module per platform (flipkart = Affiliate API)
   ml/             normalization, features, dataset_builder, target, training, opportunity
   services/       ingest, collection, import, demo, dataset, training, prediction, analytics, user
   storage/        dataset/artifact stores over local files or DB bundles
@@ -171,9 +208,10 @@ npm run dev
   them untouched and rejects incompatible metadata/pipelines.
 - Development database (inspected read-only 2026-09-14): active model is **v5**
   (XGBoost, trained 2026-09-13 during the interrupted Phase 10 run; v1-v4 are
-  inactive), 24 users, 2 saved predictions, 480 DEMO snapshots. Alembic is still
-  at **0004**; the next normal backend startup applies 0005 (adds `stored_objects`
-  only). Do not delete or retrain over these files without being asked.
+  inactive), 24 users, 2 saved predictions, 480 DEMO snapshots, 0 LIVE. Alembic is
+  still at **0004**; the next normal backend startup applies 0005 and 0006 (adds
+  `stored_objects` and `collection_attempts` only). Do not delete or retrain over
+  these files without being asked.
 - Prediction is a DEMO pipeline demonstration: v5 (like v4) scores accuracy 33.3%
   vs majority baseline accuracy 40.6%, weighted F1 31.9%. Never equate class
   probability or the heuristic opportunity score with reliable marketplace advice

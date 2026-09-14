@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-from app.models.enums import IngestionMode, Platform
+from app.models.enums import AttemptOutcome, CollectorState, IngestionMode, Platform
 
 
 class CollectorError(Exception):
@@ -32,7 +32,43 @@ class CollectorUnavailableError(CollectorError):
 
 
 class CollectorRequestError(CollectorError):
-    """The upstream request failed (network, timeout, or an error response)."""
+    """The upstream request failed (network, timeout, or an error response).
+
+    `code` is a short machine-readable reason ("timeout", "http_503",
+    "malformed_response"). Messages must never contain credentials or raw
+    provider bodies.
+    """
+
+    outcome: AttemptOutcome = AttemptOutcome.PROVIDER_ERROR
+
+    def __init__(self, message: str, *, code: str = "provider_error", http_status: int | None = None) -> None:
+        super().__init__(message)
+        self.code = code
+        self.http_status = http_status
+
+
+class CollectorProviderError(CollectorRequestError):
+    """The provider failed: timeout, network error, 5xx, other 4xx or a bad payload."""
+
+
+class CollectorCredentialsRejectedError(CollectorRequestError):
+    """The provider refused the configured credentials (HTTP 401/403)."""
+
+    outcome = AttemptOutcome.CREDENTIALS_REJECTED
+
+
+class CollectorRateLimitedError(CollectorRequestError):
+    """The provider throttled the request (HTTP 429).
+
+    `retry_after_seconds` is how long the provider asked callers to wait, when
+    it said; collection is refused until then rather than retried in a loop.
+    """
+
+    outcome = AttemptOutcome.RATE_LIMITED
+
+    def __init__(self, message: str, *, retry_after_seconds: float | None = None, code: str = "http_429", http_status: int | None = 429) -> None:
+        super().__init__(message, code=code, http_status=http_status)
+        self.retry_after_seconds = retry_after_seconds
 
 
 @dataclass(frozen=True)
@@ -116,6 +152,17 @@ class CollectorStatus:
     #: Environment variables an operator must set to make this collector work.
     #: Empty when no configuration would help (a hard block, not a missing key).
     required_configuration: tuple[str, ...] = ()
+    #: Finer-grained reason than `available`. Defaults from `available` so
+    #: existing collectors need not set it.
+    state: CollectorState | None = None
+    #: Stable provider identifier recorded with every LIVE fetch.
+    provider: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.state is None:
+            object.__setattr__(
+                self, "state", CollectorState.LIVE if self.available else CollectorState.UNAVAILABLE
+            )
 
 
 @dataclass

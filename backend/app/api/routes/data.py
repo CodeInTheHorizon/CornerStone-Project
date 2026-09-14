@@ -34,10 +34,10 @@ from app.schemas.data import (
     StatusResponse,
 )
 from app.scrapers import (
+    CollectorRateLimitedError,
     CollectorRequestError,
     CollectorUnavailableError,
     UnknownPlatformError,
-    all_statuses,
 )
 from app.services import collection_service, demo_service, import_service
 from app.services.ingest import IngestResult
@@ -89,8 +89,17 @@ def collect(
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED, detail=str(exc)
         ) from None
+    except CollectorRateLimitedError as exc:
+        # 429: pass the provider's throttle through instead of hammering it.
+        retry_after = max(1, int(exc.retry_after_seconds or 60))
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+            headers={"Retry-After": str(retry_after)},
+        ) from None
     except CollectorRequestError as exc:
-        # 502: we are the gateway and the upstream source failed.
+        # 502: we are the gateway and the upstream source failed or refused
+        # our credentials. The message says which; secrets are never included.
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)
         ) from None
@@ -99,6 +108,9 @@ def collect(
         status="success" if result.items_collected else "empty",
         platform=result.platform,
         keyword=result.keyword,
+        source_type=SourceType(result.source_type),
+        provider=result.provider,
+        items_received=result.items_received,
         items_collected=result.items_collected,
         items_rejected=result.items_rejected,
         duplicates_skipped=result.duplicates_skipped,
@@ -249,21 +261,32 @@ def collector_status(
     platforms: dict[str, PlatformStatus] = {}
     last_overall: datetime | None = None
 
-    for name, state in all_statuses().items():
+    for name, state in collection_service.platform_statuses(db).items():
         last = collection_service.last_collection_at(db, name)
         if last and (last_overall is None or last > last_overall):
             last_overall = last
+        fetches = collection_service.fetch_history(db, name)
 
         platforms[name] = PlatformStatus(
             available=state.available,
+            state=state.state,
             ingestion_mode=state.ingestion_mode,
             access_method=state.access_method,
+            provider=state.provider,
             reason=state.reason,
             requires_credentials=state.requires_credentials,
+            # Variable names only; values are never exposed.
             required_configuration=list(state.required_configuration),
             last_collection=last,
             stored_records=counts.get(name, 0),
             source_types_available=by_source.get(name, []),
+            live_records=fetches.live_records,
+            last_live_observation=fetches.last_live_observation,
+            last_successful_fetch=fetches.last_successful_fetch,
+            last_failed_fetch=fetches.last_failed_fetch,
+            last_failure_state=fetches.last_failure_outcome,
+            last_failure_reason=fetches.last_failure_reason,
+            retry_after=fetches.retry_after,
         )
 
     source_totals = {

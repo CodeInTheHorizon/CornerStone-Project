@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import MarketplaceSnapshot
@@ -37,6 +38,47 @@ class IngestResult:
 
 
 MAX_REPORTED_REJECTIONS = 25
+
+#: A LIVE observation identical to one stored for the same listing within this
+#: window is a repeated fetch (e.g. a double-clicked refresh), not a new data
+#: point. Anything that changed, or anything older, is appended as history.
+LIVE_DUPLICATE_WINDOW = timedelta(minutes=10)
+
+#: Observed values compared to decide whether a LIVE fetch repeated itself.
+_OBSERVED_FIELDS = (
+    "product_name", "price", "original_price", "discount_percentage", "currency",
+    "rating", "review_count", "availability", "seller_name",
+)
+
+
+def _utc(value: datetime) -> datetime:
+    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
+
+
+def recent_live_duplicate(db: Session, record: NormalizedRecord) -> bool:
+    """True when this LIVE record repeats a very recent stored observation.
+
+    Historical LIVE rows are never updated or removed: this only decides
+    whether to skip appending a copy that carries no new information.
+    """
+    if not record.external_id and not record.listing_url:
+        return False  # no stable identity; never risk dropping a real observation
+    observed_at = _utc(record.collection_timestamp)
+    stmt = select(MarketplaceSnapshot).where(
+        MarketplaceSnapshot.source_type == SourceType.LIVE.value,
+        MarketplaceSnapshot.platform == record.platform,
+        MarketplaceSnapshot.collection_timestamp >= observed_at - LIVE_DUPLICATE_WINDOW,
+        MarketplaceSnapshot.collection_timestamp <= observed_at,
+    )
+    stmt = stmt.where(
+        MarketplaceSnapshot.external_id == record.external_id
+        if record.external_id
+        else MarketplaceSnapshot.listing_url == record.listing_url
+    )
+    for stored in db.execute(stmt.order_by(MarketplaceSnapshot.collection_timestamp.desc()).limit(5)).scalars():
+        if all(getattr(stored, name) == getattr(record, name) for name in _OBSERVED_FIELDS):
+            return True
+    return False
 
 
 def deduplicate(
@@ -157,6 +199,10 @@ def ingest(
                 )
             continue
 
+        if source_type is SourceType.LIVE and recent_live_duplicate(db, validation.record):
+            result.duplicates += 1
+            continue
+
         platforms.add(validation.record.platform)
         snapshots.append(
             to_snapshot(
@@ -178,6 +224,12 @@ def ingest(
     if duplicates:
         result.warnings.append(
             f"Skipped {duplicates} duplicate record(s) within this batch."
+        )
+    repeated = result.duplicates - duplicates
+    if repeated:
+        result.warnings.append(
+            f"Skipped {repeated} LIVE observation(s) identical to one stored for the same "
+            f"listing in the last {int(LIVE_DUPLICATE_WINDOW.total_seconds() // 60)} minutes."
         )
     if result.rejected > len(result.rejected_rows):
         result.warnings.append(

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from app.models.enums import Platform, IngestionMode
+from app.models.enums import CollectorState, IngestionMode, Platform
 from app.scrapers.alibaba import AlibabaCollector
 from app.scrapers.amazon import AmazonCollector
 from app.scrapers.base import CollectorStatus, MarketplaceCollector
@@ -47,11 +47,25 @@ def get_collector(platform: str | Platform) -> MarketplaceCollector:
     return _BUILDERS[resolved]()
 
 
+#: Verified 2026-09-14 against Amazon's Creators API documentation and
+#: Associates Program Policies. See docs/MARKETPLACE_SOURCES.md.
+AMAZON_POLICY_REASON = (
+    "The existing Amazon collector uses PA-API 5, which Amazon deprecated and retired on "
+    "15 May 2026. Its replacement, the Creators API, needs new OAuth credentials and 10 "
+    "qualified referral sales in the trailing 30 days, and Amazon's policies forbid using it to aggregate or analyse "
+    "product data, in tools for Amazon sellers, or to train machine-learning models without "
+    "Amazon's express written approval. No LIVE Amazon collection is enabled."
+)
+
+
 def effective_status(state: CollectorStatus) -> CollectorStatus:
     """One availability policy for the API and analytics refresh controls."""
     if "Product Advertising API 5.0" in state.access_method:
+        # No configuration can enable it: the endpoint is retired and the
+        # replacement's terms exclude this application's use.
         return replace(state, available=False, ingestion_mode=IngestionMode.UNAVAILABLE,
-                       reason="The existing Amazon collector uses deprecated PA-API 5. A supported replacement and approved API access with credentials are required.")
+                       state=CollectorState.UNAVAILABLE, reason=AMAZON_POLICY_REASON,
+                       required_configuration=())
     return state
 
 

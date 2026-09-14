@@ -317,12 +317,24 @@ def test_status_reports_ingestion_mode_and_required_configuration(
     amazon = body["platforms"]["amazon"]
     assert amazon["ingestion_mode"] == IngestionMode.UNAVAILABLE.value
     assert "deprecated" in amazon["reason"]
-    assert amazon["available"] is False  # no credentials in tests
-    assert "AMAZON_PAAPI_ACCESS_KEY" in amazon["required_configuration"]
+    assert amazon["available"] is False
+    assert amazon["state"] == "unavailable"
+    # PA-API is retired and the Creators API terms exclude this use, so no
+    # variable is advertised as if setting it would help.
+    assert amazon["required_configuration"] == []
 
-    for name in ("flipkart", "croma"):
+    flipkart = body["platforms"]["flipkart"]
+    assert flipkart["ingestion_mode"] == IngestionMode.LIVE_API.value
+    assert flipkart["available"] is False  # no credentials in tests
+    assert flipkart["state"] == "credentials_missing"
+    assert flipkart["required_configuration"] == [
+        "FLIPKART_AFFILIATE_ID", "FLIPKART_AFFILIATE_TOKEN", "FLIPKART_DATA_USE_APPROVED",
+    ]
+
+    for name in ("croma", "alibaba"):
         entry = body["platforms"][name]
         assert entry["ingestion_mode"] == IngestionMode.UNAVAILABLE.value
+        assert entry["state"] == "unavailable"
         assert entry["reason"]
         # A hard block: no configuration would unblock it.
         assert entry["required_configuration"] == []

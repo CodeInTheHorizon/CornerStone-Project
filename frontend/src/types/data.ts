@@ -61,6 +61,9 @@ export interface CollectResponse {
   status: string
   platform: string
   keyword: string
+  source_type: SourceType
+  provider: string | null
+  items_received: number
   items_collected: number
   items_rejected: number
   duplicates_skipped: number
@@ -69,17 +72,38 @@ export interface CollectResponse {
   warnings: string[]
 }
 
+/** Why a collector can or cannot fetch LIVE data right now. */
+export type CollectorState =
+  | 'live'
+  | 'credentials_missing'
+  | 'approval_required'
+  | 'credentials_rejected'
+  | 'rate_limited'
+  | 'provider_error'
+  | 'unavailable'
+
 export interface PlatformStatus {
   available: boolean
+  state: CollectorState
   ingestion_mode: IngestionMode
   access_method: string
+  provider: string | null
   reason: string | null
   requires_credentials: boolean
+  /** Environment variable names only; never values. */
   required_configuration: string[]
+  /** Newest stored observation of any provenance, LIVE or not. */
   last_collection: string | null
   stored_records: number
   /** Provenance types actually stored for this platform. */
   source_types_available: SourceType[]
+  live_records: number
+  last_live_observation: string | null
+  last_successful_fetch: string | null
+  last_failed_fetch: string | null
+  last_failure_state: string | null
+  last_failure_reason: string | null
+  retry_after: string | null
 }
 
 export interface DemoDatasetInfo {

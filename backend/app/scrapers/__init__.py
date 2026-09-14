@@ -8,7 +8,10 @@ instead of returning fabricated or empty-looking results.
 
 from app.scrapers.base import (
     CollectionOutcome,
+    CollectorCredentialsRejectedError,
     CollectorError,
+    CollectorProviderError,
+    CollectorRateLimitedError,
     CollectorRequestError,
     CollectorStatus,
     CollectorUnavailableError,
@@ -25,7 +28,10 @@ from app.scrapers.registry import (
 
 __all__ = [
     "CollectionOutcome",
+    "CollectorCredentialsRejectedError",
     "CollectorError",
+    "CollectorProviderError",
+    "CollectorRateLimitedError",
     "CollectorRequestError",
     "CollectorStatus",
     "CollectorUnavailableError",

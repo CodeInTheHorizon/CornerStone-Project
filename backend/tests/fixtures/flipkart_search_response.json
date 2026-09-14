@@ -1,0 +1,50 @@
+{
+  "_comment": "Synthetic test fixture shaped after the documented Flipkart Affiliate API 1.0 search response (affiliate.flipkart.com/api-docs/af_prod_ref.html). Not real Flipkart data; values are invented for tests.",
+  "products": [
+    {
+      "productBaseInfoV1": {
+        "productId": "ACCFIXTURE0001",
+        "title": "Fixture Buds Pro Bluetooth Headset",
+        "productBrand": "Fixture",
+        "categoryPath": "Audio & Video>Headphones>True Wireless",
+        "maximumRetailPrice": {"amount": 4999.0, "currency": "INR"},
+        "flipkartSellingPrice": {"amount": 2199.0, "currency": "INR"},
+        "flipkartSpecialPrice": {"amount": 1999.0, "currency": "INR"},
+        "inStock": true,
+        "codAvailable": true,
+        "discountPercentage": 56.0,
+        "productUrl": "https://dl.flipkart.com/dl/fixture-buds-pro/p/itm0001?pid=ACCFIXTURE0001&affid=fixtureaffiliate&affExtParam1=x",
+        "imageUrls": {"400x400": "https://rukminim1.flixcart.com/image/400/400/fixture.jpeg"}
+      },
+      "productShippingInfoV1": {
+        "sellerName": "Fixture Retail",
+        "sellerAverageRating": 4.4,
+        "sellerNoOfRatings": 12045
+      },
+      "categorySpecificInfoV1": {
+        "keySpecs": ["Bluetooth 5.3", "40 hour battery"],
+        "specificationList": []
+      }
+    },
+    {
+      "productBaseInfoV1": {
+        "title": "Fixture Minimal Charger"
+      }
+    },
+    {
+      "productBaseInfoV1": {
+        "productId": "ACCFIXTURE0003",
+        "title": "Fixture 65W GaN Charger",
+        "categoryPaths": {"categoryPath": [[{"title": "Mobiles & Accessories"}, {"title": "Chargers"}, {"title": "Wall Chargers"}]]},
+        "maximumRetailPrice": {"amount": 2999, "currency": "INR"},
+        "flipkartSellingPrice": {"amount": 1499, "currency": "INR"},
+        "inStock": false,
+        "productUrl": "https://www.flipkart.com/fixture-65w/p/itm0003?pid=ACCFIXTURE0003&affid=fixtureaffiliate"
+      }
+    },
+    {
+      "productBaseInfoV1": {"productId": "ACCFIXTURE0004", "title": "   "}
+    },
+    "not-an-object"
+  ]
+}

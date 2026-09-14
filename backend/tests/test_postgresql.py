@@ -42,7 +42,8 @@ def test_complete_migration_chain_generates_postgresql_sql(monkeypatch):
     assert 'CREATE TABLE stored_objects' in sql
     assert 'BYTEA' in sql
     assert 'RENAME source TO source_type' in sql
-    assert "'0005'" in sql
+    assert "'0006'" in sql
+    assert 'CREATE TABLE collection_attempts' in sql
     assert '_alembic_tmp' not in sql
     for table in Base.metadata.sorted_tables:
         assert str(CreateTable(table).compile(dialect=postgresql.dialect()))
@@ -69,7 +70,7 @@ def test_postgresql_upgrade_persistence_and_schema():
         upgrade_to_head(engine)
         with engine.connect() as connection:
             assert connection.execute(text('SELECT count(*) FROM users')).scalar_one() == 1
-            assert connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one() == '0005'
+            assert connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one() == '0006'
             assert not compare_metadata(MigrationContext.configure(connection), Base.metadata)
         store = DatabaseStore(engine, 'artifacts', 1024)
         meta = store.put('model_v1.pkl', b'persisted', {'model_version': 'v1'})
@@ -135,7 +136,7 @@ def test_concurrent_startup_migrations_serialize(pg_schema):
     engine = create_engine(_schema_url(url, schema))
     try:
         with engine.connect() as connection:
-            assert connection.execute(text('SELECT version_num FROM alembic_version')).scalars().all() == ['0005']
+            assert connection.execute(text('SELECT version_num FROM alembic_version')).scalars().all() == ['0006']
     finally:
         engine.dispose()
 

@@ -11,7 +11,7 @@ from urllib.parse import urlsplit
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import ArgumentError
@@ -73,6 +73,18 @@ class Settings(BaseSettings):
     AMAZON_PAAPI_HOST: str = "webservices.amazon.in"
     AMAZON_PAAPI_REGION: str = "eu-west-1"
     AMAZON_PAAPI_MARKETPLACE: str = "www.amazon.in"
+
+    # --- Flipkart Affiliate API (Phase 11) ---
+    # Credentials from an approved Flipkart Affiliate account (API > API Token).
+    # Backend environment only; never VITE_-prefixed, logged or stored.
+    FLIPKART_AFFILIATE_ID: str = ""
+    FLIPKART_AFFILIATE_TOKEN: SecretStr = SecretStr("")
+    # Flipkart's API terms limit use to "in conjunction with Flipkart's
+    # platform" and are silent on storing history, analytics and ML. The
+    # collector stays disabled until the operator sets this to true, which
+    # records that Flipkart has confirmed this application's use in writing.
+    FLIPKART_DATA_USE_APPROVED: bool = False
+    FLIPKART_TIMEOUT_SECONDS: float = Field(default=15.0, ge=1.0, le=60.0)
 
     # --- CORS ---
     # Comma-separated list of allowed frontend origins.

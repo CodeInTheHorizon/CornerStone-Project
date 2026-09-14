@@ -1,4 +1,4 @@
-import type { SourceType } from '@/types/data'
+import type { CollectorState, SourceType } from '@/types/data'
 import type { ModelQuality } from '@/types/prediction'
 
 export interface AnalyticsFilters {
@@ -103,7 +103,7 @@ export interface AnalyticsOptions {
   categories: string[]
   total: number
 }
-export interface RefreshSource { platform: string; available: boolean; reason: string | null; access_method: string }
+export interface RefreshSource { platform: string; available: boolean; state: CollectorState; reason: string | null; access_method: string; required_configuration: string[] }
 export interface AnalyticsSummary {
   total_predictions: number
   stored_records: number

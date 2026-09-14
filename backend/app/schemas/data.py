@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.models.enums import IngestionMode, Platform, SourceType
+from app.models.enums import CollectorState, IngestionMode, Platform, SourceType
 
 MAX_ITEMS = 100
 
@@ -39,6 +39,12 @@ class CollectResponse(BaseModel):
     status: str = "success"
     platform: str
     keyword: str
+    #: Always LIVE: only a real provider fetch produces this response.
+    source_type: SourceType = SourceType.LIVE
+    #: Provider/API identifier recorded with the fetch, e.g. flipkart-affiliate-api-1.0.
+    provider: str | None = None
+    #: Records the provider returned before validation and deduplication.
+    items_received: int = 0
     items_collected: int
     items_rejected: int
     duplicates_skipped: int
@@ -94,15 +100,32 @@ class SnapshotListResponse(BaseModel):
 
 class PlatformStatus(BaseModel):
     available: bool
+    #: live | credentials_missing | approval_required | credentials_rejected |
+    #: rate_limited | provider_error | unavailable
+    state: CollectorState = CollectorState.UNAVAILABLE
     ingestion_mode: IngestionMode
     access_method: str
+    provider: str | None = None
     reason: str | None = None
     requires_credentials: bool = False
+    #: Environment variable NAMES an operator must set. Never values.
     required_configuration: list[str] = Field(default_factory=list)
+    #: Newest stored observation of any provenance (LIVE, IMPORTED or DEMO).
     last_collection: datetime | None = None
     stored_records: int = 0
     #: Provenance types actually present in the database for this platform.
     source_types_available: list[str] = Field(default_factory=list)
+    live_records: int = 0
+    #: Newest stored LIVE observation time.
+    last_live_observation: datetime | None = None
+    #: Last provider fetch that completed (with or without results).
+    last_successful_fetch: datetime | None = None
+    #: Last provider fetch that failed, and how.
+    last_failed_fetch: datetime | None = None
+    last_failure_state: str | None = None
+    last_failure_reason: str | None = None
+    #: While a rate-limit window is open, when collection may resume.
+    retry_after: datetime | None = None
 
 
 class DemoDatasetInfo(BaseModel):

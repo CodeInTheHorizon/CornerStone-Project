@@ -5,16 +5,20 @@ sellers.
 
 MarketPulse AI imports or loads stored marketplace observations, turns them into
 a structured dataset, trains models on it, and surfaces trend analytics and
-experimental opportunity scores. Live collection is currently unavailable.
+experimental opportunity scores. A Flipkart Affiliate API connector exists for
+LIVE collection but is disabled until credentials and Flipkart's data-use
+approval are configured; no LIVE data is stored.
 
-> **Status: Phase 10 - deployment-ready and locally production-verified, not deployed.**
+> **Status: Phase 11 - LIVE connector implemented and gated; 0 LIVE records.** Phase 10:
+> deployment-ready and locally production-verified, not deployed.
 > PostgreSQL storage, migrations, a Linux build and start of the Render
 > configuration, and desktop/tablet/mobile browser flows were verified locally.
 > No Render or Vercel service exists yet. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 > The landing page, accounts, the dashboard, the data layer, the dataset
 > builder, model training, experimental predictions, opportunity scores, and
 > user-scoped prediction history work. Stored trend charts, platform comparisons,
-> and source-aware dashboard summaries are available. Live refresh is unavailable.
+> and source-aware dashboard summaries are available. LIVE refresh works only once
+> the Flipkart connector is configured and approved (see [docs/MARKETPLACE_SOURCES.md](docs/MARKETPLACE_SOURCES.md)).
 > The active model is DEMO-trained and below the majority baseline. Results
 > demonstrate the pipeline; they are not reliable marketplace recommendations.
 > See [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
@@ -100,7 +104,10 @@ All configuration is environment-driven; see [`.env.example`](.env.example).
 | `API_PREFIX` | Prefix for feature endpoints. Empty matches the API outline in PROJECT_CONTEXT.md §15. `/health` and `/ready` are always unprefixed. | *(empty)* |
 | `JWT_SECRET_KEY` | Signs access tokens. **Must** be at least 32 bytes and not the default outside development. | dev placeholder |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token lifetime. | `720` (12h) |
-| `AMAZON_PAAPI_ACCESS_KEY` / `_SECRET_KEY` / `_PARTNER_TAG` | Legacy PA-API configuration. Its deprecated adapter remains unavailable even with credentials. | *(empty)* |
+| `FLIPKART_AFFILIATE_ID` / `FLIPKART_AFFILIATE_TOKEN` | Flipkart Affiliate API credentials, backend only. The token is a secret. | *(empty)* |
+| `FLIPKART_DATA_USE_APPROVED` | Set `true` only after Flipkart confirms in writing that storing history, analytics and ML use are permitted. Credentials alone never enable collection. | `false` |
+| `FLIPKART_TIMEOUT_SECONDS` | Flipkart request timeout (1-60). | `15` |
+| `AMAZON_PAAPI_ACCESS_KEY` / `_SECRET_KEY` / `_PARTNER_TAG` | Legacy PA-API configuration. PA-API was retired on 15 May 2026; nothing is enabled by these. | *(empty)* |
 | `VITE_API_BASE_URL` | Backend base URL used by the browser, set at build time. The localhost default applies only to `npm run dev`; production builds must set it (Vercel builds require HTTPS). | dev server: `http://127.0.0.1:8000` |
 | `VITE_WHATSAPP_NUMBER` | Destination for the contact form, digits only (e.g. `919876543210`). Empty disables the form, which then says so. | *(empty)* |
 
@@ -151,12 +158,12 @@ frontend/vercel.json        Vercel build settings and SPA rewrite
 | `POST` | `/auth/register` | — | Create an account, returns a token |
 | `POST` | `/auth/login` | — | Exchange credentials for a token |
 | `GET` | `/auth/me` | Bearer | The authenticated user |
-| `POST` | `/data/collect` | Bearer | Collect fresh listings from a marketplace |
+| `POST` | `/data/collect` | Bearer | Fetch LIVE listings through an official API and append them (501 blocked, 429 rate limited, 502 provider failure) |
 | `POST` | `/data/import` | Bearer | Import a CSV/JSON dataset (stored as IMPORTED) |
 | `POST` | `/data/demo/load` | Bearer | Load the synthetic demo fixture (stored as DEMO) |
 | `GET` | `/data/latest` | Bearer | Recent snapshots (filter by platform/keyword/category) |
 | `GET` | `/data/history` | Bearer | Snapshots over a time window, oldest first |
-| `GET` | `/data/status` | Bearer | Ingestion mode, availability and stored provenance per platform |
+| `GET` | `/data/status` | Bearer | Collector state, required configuration names, LIVE record count, last successful/failed fetch and stored provenance per platform |
 | `POST` | `/ml/dataset/build` | Bearer | Build an ML-ready dataset from stored snapshots |
 | `GET` | `/ml/dataset/status` | Bearer | Metadata for the most recent dataset |
 | `GET` | `/ml/dataset/preview` | Bearer | First N rows of a stored dataset |
@@ -202,6 +209,7 @@ pairing in both themes was measured against WCAG AA (4.5:1). See
 | `marketplace_snapshots` | One observation of one listing at one time. Repeated snapshots form the time series behind every trend feature. |
 | `predictions` | Stored prediction requests and results, including per-marketplace opportunity scores and contributing factors. |
 | `model_metadata` | One row per training run: dataset size, feature names, measured metrics, artifact reference. |
+| `collection_attempts` | One row per outbound LIVE fetch, including failures: provider, query, outcome, error code, retry-after, counts. Provenance for LIVE snapshots via `collection_run_id`. Never holds credentials. |
 | `stored_objects` | Production dataset CSVs and model binaries with their metadata and SHA-256 checksums (immutable). |
 
 ## Limitations
@@ -212,7 +220,8 @@ These are current and deliberate — please read before evaluating the project.
   a Linux build and start, browser flows), but no hosted service, domain or managed
   database exists yet. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 - **No live marketplace data.** Stored observations are synthetic DEMO or operator
-  IMPORTED rows; no live collector is currently usable.
+  IMPORTED rows. The Flipkart connector is implemented but disabled until an
+  operator supplies affiliate credentials and records Flipkart's data-use approval.
 - **The contact form does not reach a server.** It validates locally and hands the
   message to WhatsApp. There is no contact endpoint, and nothing is stored.
 - **Dashboard figures are not invented.** Model accuracy reads "Not trained" and
@@ -231,13 +240,15 @@ These are current and deliberate — please read before evaluating the project.
 - **Metrics are measured, never asserted.** Model metric fields stay NULL until a
   real evaluation run fills them, and demo records are tagged `source="demo"` so
   they can never be displayed as live data.
-- **No marketplace can currently be collected.** The retained Amazon PA-API 5.0
-  adapter is deprecated and stays unavailable even with credentials. Flipkart,
-  Croma and Alibaba are blocked by anti-bot protection or robots rules; each
-  reports its reason instead of returning fabricated rows.
-- **PA-API 5.0 returns no ratings or review counts.** Those columns stay NULL for
-  live Amazon rows, which limits the review/rating trend features planned later.
-  Imported and demo rows can carry them.
+- **Only Flipkart has a LIVE path, and it is gated.** Amazon's PA-API was retired
+  and its Creators API terms forbid aggregation, seller tools and ML training
+  without written approval. Croma has no public API. Alibaba's Open API is
+  seller-only. See [docs/MARKETPLACE_SOURCES.md](docs/MARKETPLACE_SOURCES.md).
+- **Flipkart's API returns no product ratings or review counts.** Those columns
+  stay NULL for LIVE Flipkart rows (seller ratings are not substituted), which
+  limits review/rating trend features. Imported and demo rows can carry them.
+- **One fetch is not a trend.** A refresh returns at most 10 listings; useful LIVE
+  history needs repeated refreshes over days. There is no scheduler.
 - **The demo dataset is synthetic.** It exists to make the pipeline testable, not
   to describe any real market. No model trained only on demo data says anything
   about reality, and metrics from such a run must be read that way.
@@ -261,22 +272,29 @@ These are current and deliberate — please read before evaluating the project.
 
 ## Marketplace collection
 
-Collection is on demand: choose a platform and keyword on **Marketplace Data**
-and press Collect. Records are normalized, validated, deduplicated within the
-run, and stored as snapshots. Repeated runs over time build the time-series
-dataset the ML phases need.
+Collection is on demand: choose a platform and product keyword on **Marketplace
+Data** (or a product on Trends/Analytics) and press **Refresh Market Data**.
+LIVE records are fetched through an official API, validated, normalized,
+deduplicated and **appended** as snapshots. Earlier observations are never
+overwritten, and refreshing never retrains a model. Every fetch, including
+failures, is logged in `collection_attempts` for provenance.
 
-Access was verified on 2026-09-10, not assumed:
+Provider access was rechecked on 2026-09-14 (details and sources:
+[docs/MARKETPLACE_SOURCES.md](docs/MARKETPLACE_SOURCES.md)):
 
-| Platform | Status | Verified reason |
+| Platform | Collector state here | Route and blocker |
 |---|---|---|
-| **Amazon** | Implemented | Official **PA-API 5.0**. `amazon.in/s` returns **503** to programmatic requests and the Conditions of Use prohibit data mining, so the API is the only permitted route. Needs approved Associate credentials. |
-| Flipkart | Unavailable | `robots.txt` itself returns a **reCAPTCHA** interstitial. Collecting would mean evading a CAPTCHA. The Affiliate API is closed to new registrations. |
-| Croma | Unavailable | Returns **HTTP 403** (Akamai "Access Denied"), including for `robots.txt`. No public product API. |
-| Alibaba | Unavailable | `robots.txt` sets `Disallow: /trade/`, where keyword search lives. The allowed paths do not support keyword search. |
+| **Flipkart** | `credentials_missing` | **Official Affiliate API 1.0** connector, implemented. Needs `FLIPKART_AFFILIATE_ID`, `FLIPKART_AFFILIATE_TOKEN` and `FLIPKART_DATA_USE_APPROVED=true`, the last only with Flipkart's written approval, because its API terms limit use to its own platform. 20 calls/s per affiliate. The website's reCAPTCHA is never touched. |
+| Amazon | `unavailable` | PA-API 5.0 **retired 15 May 2026**. The Creators API needs 10 qualified sales per 30 days, and Amazon's policies forbid aggregation/analysis, seller tools and ML training without written approval. |
+| Croma | `unavailable` | **HTTP 403** (Akamai) to programmatic requests; no public API. |
+| Alibaba | `unavailable` | `robots.txt` disallows `/trade/` search; the Open API only manages a seller's own catalogue. |
 
-No CAPTCHA, authentication, anti-bot protection or robots rule is bypassed
-anywhere. A blocked platform returns HTTP 501 with the reason above.
+Collector states are `live`, `credentials_missing`, `approval_required`,
+`credentials_rejected`, `rate_limited`, `provider_error` and `unavailable`. A
+blocked platform returns HTTP 501 with its reason. A provider rate limit
+returns 429 with `Retry-After` and pauses further requests until the window
+passes. A provider failure or rejected credentials return 502. No CAPTCHA,
+authentication, anti-bot protection or robots rule is bypassed anywhere.
 
 ### Source types
 
@@ -336,8 +354,8 @@ baseline revision and upgraded in place, preserving existing rows.
 - On PostgreSQL the upgrade is one transaction, so a failure rolls back.
 - Concurrent startups against PostgreSQL are serialized by an advisory lock, so an
   overlapping deploy and restart cannot race.
-- Migrations `0001`-`0005` add or rename without dropping data. `0005` adds
-  `stored_objects`. Back up before any manual downgrade.
+- Migrations `0001`-`0006` add or rename without dropping data. `0005` adds
+  `stored_objects`; `0006` adds `collection_attempts`. Back up before any manual downgrade.
 
 ```bash
 cd backend
@@ -460,6 +478,7 @@ proportion to how often it occurs. Ties break toward the simpler model.
 - [docs/PHASE_7_REPORT.md](docs/PHASE_7_REPORT.md) — prediction contract, formula, verification and limitations
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Render/Vercel runbook, environment variables, backups, smoke test
 - [docs/DURABLE_STORAGE.md](docs/DURABLE_STORAGE.md) — production dataset/model storage and migration 0005
+- [docs/MARKETPLACE_SOURCES.md](docs/MARKETPLACE_SOURCES.md) — provider findings, the Flipkart LIVE connector, fields and constraints
 - [docs/PHASE_10_REPORT.md](docs/PHASE_10_REPORT.md) — deployment verification evidence and remaining blockers
 - [OVERALL_PROJECT_REPORT.md](OVERALL_PROJECT_REPORT.md) — project-wide status
 

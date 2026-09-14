@@ -33,16 +33,20 @@ def auth_headers(client):
 
 
 def record(**overrides) -> NormalizedRecord:
+    # A unique listing per call: the database is shared across tests, and an
+    # identical LIVE observation of the same listing minutes apart is (rightly)
+    # skipped as a repeated fetch.
+    listing = f"B0{uuid.uuid4().hex[:8].upper()}"
     defaults = dict(
         platform=Platform.AMAZON.value,
         product_name="Acme Earbuds",
         brand="Acme",
-        external_id="B0AAA",
+        external_id=listing,
         price=1999.0,
         original_price=2999.0,
         discount_percentage=33.34,
         availability="In Stock",
-        listing_url="https://www.amazon.in/dp/B0AAA",
+        listing_url=f"https://www.amazon.in/dp/{listing}",
         collection_timestamp=datetime.now(timezone.utc),
     )
     return NormalizedRecord(**{**defaults, **overrides})

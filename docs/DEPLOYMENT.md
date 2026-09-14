@@ -76,8 +76,15 @@ Recommended (already set in `render.yaml`):
 
 Optional, with defaults: `API_PREFIX` (empty; `/health` and `/ready` are always
 unprefixed), `ACCESS_TOKEN_EXPIRE_MINUTES` (`720`), `JWT_ALGORITHM` (`HS256`),
-`APP_NAME`, `APP_VERSION`. Marketplace credentials are not needed; live
-collectors remain unavailable.
+`APP_NAME`, `APP_VERSION`.
+
+Optional LIVE marketplace collection (Phase 11, see
+[MARKETPLACE_SOURCES.md](MARKETPLACE_SOURCES.md)): `FLIPKART_AFFILIATE_ID` and
+`FLIPKART_AFFILIATE_TOKEN` (secret; add as private Render variables, never in
+Vercel), `FLIPKART_DATA_USE_APPROVED` (`false` unless Flipkart has approved this
+application's storage/analytics use in writing) and `FLIPKART_TIMEOUT_SECONDS`
+(`15`). Without all three required values the Flipkart collector reports its
+missing configuration and makes no request. No other marketplace can be enabled.
 
 Production validation rules (`backend/app/config.py`):
 
@@ -145,8 +152,8 @@ origin, with no trailing slash, and redeploy the backend.
   are serialized by a transaction-scoped PostgreSQL advisory lock. The waiting
   process sees the finished revision and applies nothing. Verified with four
   simultaneous processes on an empty schema; before the lock, three of four crashed.
-- Migrations `0001`-`0005` are additive or preserving; `0005` only creates
-  `stored_objects`. No downgrade runs automatically. Back up before any manual
+- Migrations `0001`-`0006` are additive or preserving; `0005` only creates
+  `stored_objects` and `0006` only creates `collection_attempts`. No downgrade runs automatically. Back up before any manual
   `alembic downgrade`: downgrading `0005` drops stored datasets and models.
 - Manual alternative from `backend/`, with the target environment set:
   `python -m alembic upgrade head`.
@@ -217,7 +224,7 @@ Backend (`https://YOUR-BACKEND.onrender.com`):
 3. `GET /ml/dataset/status` and `GET /ml/status` return 200 with a token and 401 without.
 4. A preflight from the Vercel origin is allowed; one from another origin gets no
    `Access-Control-Allow-Origin`.
-5. Logs show `Running upgrade ... 0005` once, `Application startup complete`, and
+5. Logs show `Running upgrade ... 0006` once on a fresh database, `Application startup complete`, and
    no secrets or connection strings.
 
 Frontend (`https://YOUR-FRONTEND.vercel.app`):

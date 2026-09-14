@@ -1,10 +1,12 @@
 /**
- * Marketplace Data (Phases 4 + 4.5).
+ * Marketplace Data (Phases 4, 4.5 and 11).
  *
  * Three ways data reaches the system, all converging on the same normalized
- * store: live collection, CSV/JSON import, and the bundled demo fixture. Every
- * row and every platform card is labelled with its provenance, so an IMPORTED
- * or DEMO record can never be mistaken for a live observation.
+ * store: LIVE collection through official APIs, CSV/JSON import, and the
+ * bundled demo fixture. Every row is labelled with its provenance, and every
+ * platform card shows its collector state (LIVE ready, credentials missing,
+ * approval required, rate limited, provider error, unavailable), so an
+ * IMPORTED or DEMO record can never be mistaken for a live observation.
  *
  * Uses the existing visual system throughout. No charts: those are Phase 8.
  */
@@ -16,7 +18,9 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { Field } from '@/components/Field'
 import { FormAlert } from '@/components/FormAlert'
 import { Icon } from '@/components/Icon'
-import { SourceBadge, type BadgeKind } from '@/components/SourceBadge'
+import { CollectorStateBadge } from '@/components/CollectorStateBadge'
+import { collectorStateLabel } from '@/lib/collectorState'
+import { SourceBadge } from '@/components/SourceBadge'
 import { supportedPlatforms } from '@/config/dashboard'
 import { useAuth } from '@/hooks/useAuth'
 import { ApiRequestError } from '@/services/apiClient'
@@ -59,10 +63,11 @@ export function MarketplaceDataPage() {
   const [sourceFilter, setSourceFilter] = useState<SourceType | ''>('')
 
   // Collection
-  const [platform, setPlatform] = useState('amazon')
+  // Flipkart is the only platform with a LIVE API integration.
+  const [platform, setPlatform] = useState('flipkart')
   const [keyword, setKeyword] = useState('')
   const [category, setCategory] = useState('')
-  const [maxItems, setMaxItems] = useState('20')
+  const [maxItems, setMaxItems] = useState('10')
   const [collecting, setCollecting] = useState(false)
   const [result, setResult] = useState<CollectResponse | null>(null)
   const [collectError, setCollectError] = useState<string | null>(null)
@@ -133,7 +138,7 @@ export function MarketplaceDataPage() {
           platform,
           keyword: trimmed,
           category: category.trim() || undefined,
-          max_items: Number(maxItems) || 20,
+          max_items: Number(maxItems) || 10,
         }),
       )
       await load()
@@ -143,6 +148,9 @@ export function MarketplaceDataPage() {
           ? error.message
           : 'Collection failed. Please try again.',
       )
+      // A failed fetch changes the collector's state (rate limited, provider
+      // error, rejected credentials); show it without a manual reload.
+      await load()
     } finally {
       setCollecting(false)
     }
@@ -205,7 +213,7 @@ export function MarketplaceDataPage() {
 
   return (
     <DashboardLayout title="MarketPulse AI — Marketplace Data">
-      {loading && <p role="status" className="mb-4 text-sm text-muted">Loading stored marketplace data?</p>}
+      {loading && <p role="status" className="mb-4 text-sm text-muted">Loading stored marketplace data…</p>}
       {loadError && (
         <div className="mb-6">
           <FormAlert>{loadError}</FormAlert>
@@ -216,24 +224,24 @@ export function MarketplaceDataPage() {
       <section aria-label="Platform status">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {platforms.map(([name, state]) => {
-            // The header badge is the platform's collection STATUS. What data
-            // happens to be stored is a separate line below, so an unavailable
-            // platform holding demo rows cannot read as available.
-            const badge: BadgeKind = state?.available ? 'live' : 'unavailable'
+            // The header shows the collector's runtime STATE. What data is
+            // stored is a separate line below, so a blocked platform holding
+            // demo rows cannot read as live.
+            const configurable = state && ['credentials_missing', 'approval_required', 'credentials_rejected'].includes(state.state)
 
             return (
               <div
                 key={name}
                 className="flex flex-col rounded-panel border border-border-hair bg-surface p-5"
               >
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold capitalize">{name}</p>
-                  <SourceBadge kind={badge} />
+                  {state ? <CollectorStateBadge state={state.state} /> : <SourceBadge kind="unavailable" />}
                 </div>
 
                 <p className="mt-3 text-xs text-subtle">
                   {state
-                    ? `Mode: ${state.ingestion_mode.replace(/_/g, ' ')}`
+                    ? `${state.access_method} · ${state.ingestion_mode.replace(/_/g, ' ')}`
                     : 'Loading…'}
                 </p>
 
@@ -243,10 +251,11 @@ export function MarketplaceDataPage() {
                   </p>
                 )}
 
-                {state && state.required_configuration.length > 0 && (
-                  <p className="mt-2 font-mono text-[10px] leading-relaxed text-subtle">
-                    {state.required_configuration.join(', ')}
-                  </p>
+                {configurable && state.required_configuration.length > 0 && (
+                  <div className="mt-2 text-[11px] leading-relaxed text-subtle">
+                    <p>Backend environment variables (names only):</p>
+                    <p className="mt-0.5 break-words font-mono">{state.required_configuration.join(', ')}</p>
+                  </div>
                 )}
 
                 <div className="flex-1" />
@@ -259,7 +268,45 @@ export function MarketplaceDataPage() {
                     </dd>
                   </div>
                   <div className="mt-1.5 flex justify-between gap-3">
-                    <dt className="text-subtle">Last update</dt>
+                    <dt className="flex items-center gap-1.5 text-subtle">
+                      <SourceBadge kind="live" /> records
+                    </dt>
+                    <dd className="font-mono tabular-nums">
+                      {state?.live_records ?? '—'}
+                    </dd>
+                  </div>
+                  <div className="mt-1.5 flex justify-between gap-3">
+                    <dt className="text-subtle">Last successful LIVE fetch</dt>
+                    <dd className="truncate font-mono">
+                      {formatTimestamp(state?.last_successful_fetch ?? null)}
+                    </dd>
+                  </div>
+                  {state?.last_failed_fetch && (
+                    <div className="mt-1.5 flex justify-between gap-3">
+                      <dt className="text-subtle">Last failed fetch</dt>
+                      <dd className="truncate font-mono">
+                        {formatTimestamp(state.last_failed_fetch)}
+                      </dd>
+                    </div>
+                  )}
+                  {state?.last_failed_fetch && state.last_failure_reason && (
+                    <div className="mt-1">
+                      <dt className="sr-only">Last failure reason</dt>
+                      <dd className="leading-relaxed text-muted">
+                        {state.last_failure_reason}
+                      </dd>
+                    </div>
+                  )}
+                  {state?.retry_after && (
+                    <div className="mt-1.5 flex justify-between gap-3">
+                      <dt className="text-subtle">Retry after</dt>
+                      <dd className="truncate font-mono">
+                        {formatTimestamp(state.retry_after)}
+                      </dd>
+                    </div>
+                  )}
+                  <div className="mt-1.5 flex justify-between gap-3">
+                    <dt className="text-subtle">Newest stored observation</dt>
                     <dd className="truncate font-mono">
                       {formatTimestamp(state?.last_collection ?? null)}
                     </dd>
@@ -290,11 +337,12 @@ export function MarketplaceDataPage() {
           onSubmit={handleCollect}
           className="rounded-panel border border-border-hair bg-surface p-7"
         >
-          <h2 className="text-lg font-semibold">Collect live data</h2>
+          <h2 className="text-lg font-semibold">Refresh LIVE market data</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted">
-            Runs on demand against officially permitted sources only. A platform
-            that cannot be collected reports why, rather than returning invented
-            rows.
+            Fetches new observations on demand through officially permitted APIs
+            only, and appends them to the stored history. A platform that cannot be
+            collected reports why, rather than returning invented rows. Refreshing
+            never retrains a model.
           </p>
 
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -314,7 +362,7 @@ export function MarketplaceDataPage() {
                 {platforms.map(([name, state]) => (
                   <option key={name} value={name}>
                     {name}
-                    {state && !state.available ? ' (unavailable)' : ''}
+                    {state ? ` (${collectorStateLabel(state.state).toLowerCase()})` : ''}
                   </option>
                 ))}
               </select>
@@ -362,27 +410,40 @@ export function MarketplaceDataPage() {
           {result && (
             <div
               role="status"
-              className="mt-6 rounded-card border border-signal-ok/30 bg-signal-ok/10 px-4 py-3 text-sm text-signal-ok"
+              className={
+                result.items_collected > 0
+                  ? 'mt-6 rounded-card border border-signal-ok/30 bg-signal-ok/10 px-4 py-3 text-sm text-signal-ok'
+                  : 'mt-6 rounded-card border border-border-hair bg-background-alt px-4 py-3 text-sm text-muted'
+              }
             >
-              <p className="font-medium">
-                {result.items_collected} item
-                {result.items_collected === 1 ? '' : 's'} collected from{' '}
-                {result.platform} at{' '}
-                {formatTimestamp(result.collection_timestamp)}.
+              <p className="flex flex-wrap items-center gap-2 font-medium">
+                <SourceBadge kind={result.source_type} />
+                <span>
+                  {result.items_collected} new observation
+                  {result.items_collected === 1 ? '' : 's'} stored from{' '}
+                  {result.platform} at {formatTimestamp(result.collection_timestamp)}
+                  {result.provider ? ` via ${result.provider}` : ''}.
+                </span>
               </p>
-              {(result.items_rejected > 0 || result.duplicates_skipped > 0) && (
-                <p className="mt-1 text-xs">
-                  {result.items_rejected} rejected, {result.duplicates_skipped}{' '}
-                  duplicate(s) skipped.
-                </p>
+              <p className="mt-1 text-xs">
+                {result.items_received} received, {result.items_rejected} rejected,{' '}
+                {result.duplicates_skipped} duplicate(s) skipped.
+                {result.items_collected === 0 && ' No new data was stored.'}
+              </p>
+              {result.warnings.length > 0 && (
+                <ul className="mt-2 list-disc space-y-0.5 pl-5 text-xs">
+                  {result.warnings.slice(0, 5).map((warning) => (
+                    <li key={warning}>{warning}</li>
+                  ))}
+                </ul>
               )}
             </div>
           )}
 
           <div className="mt-7 flex flex-wrap items-center gap-4">
-            <Button type="submit" size="lg" disabled={collecting}>
+            <Button type="submit" size="lg" disabled={collecting || (selected !== null && !selected.available)}>
               <Icon name="refresh" className="size-4" />
-              {collecting ? 'Collecting…' : 'Collect data'}
+              {collecting ? 'Fetching…' : 'Refresh Market Data'}
             </Button>
             {collecting && (
               <p className="text-sm text-muted" role="status">

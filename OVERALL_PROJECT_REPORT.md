@@ -2,7 +2,48 @@
 
 **Report date:** September 13, 2026 (status addenda updated September 14, 2026)
 
-**Current stage:** Phases 1-9 complete. Phase 10 is **deployment-ready and locally production-verified, but not deployed**. No Render service, Vercel project, domain or managed database exists, so nothing has been verified live. See [Phase 10 report](docs/PHASE_10_REPORT.md), [Deployment](docs/DEPLOYMENT.md) and [Durable storage](docs/DURABLE_STORAGE.md).
+**Current stage:** Phases 1-10 complete to their verifiable limit. Phase 11 added a gated Flipkart Affiliate API LIVE connector; **0 LIVE records exist** because no Flipkart credentials or data-use approval are available. Phase 10 is **deployment-ready and locally production-verified, but not deployed**. No Render service, Vercel project, domain or managed database exists, so nothing has been verified live. See [Phase 10 report](docs/PHASE_10_REPORT.md), [Deployment](docs/DEPLOYMENT.md) and [Durable storage](docs/DURABLE_STORAGE.md).
+
+**Phase 11 status (checkpointed September 14):**
+
+| Item | Status |
+| --- | --- |
+| Connector | Flipkart Affiliate API LIVE connector **implemented** and tested with mocked provider responses |
+| Gating | **Gated**: requires credentials **and** Flipkart's written data-use approval |
+| Credentials | **Missing**; collector state `credentials_missing` |
+| Written approval | **Required and not held**; `FLIPKART_DATA_USE_APPROVED=false` |
+| LIVE records | **0**. No request has reached Flipkart, and Phase 11 collected no real marketplace data |
+| ML | **Unchanged**: no feature, target, training or scoring change; model still DEMO-trained and below baseline |
+
+**Phase 11 addendum (September 14): LIVE marketplace integration.**
+- **Provider review** (sources in [Marketplace sources](docs/MARKETPLACE_SOURCES.md)):
+  - Amazon PA-API 5 was retired on 15 May 2026. The Creators API that replaces it
+    requires 10 qualified sales per 30 days, and Amazon's policies forbid
+    aggregating or analysing its data, seller tools and ML training without
+    written approval.
+  - Croma has no public API; Alibaba's Open API is seller-only.
+  - The Flipkart Affiliate API is the only technically suitable official route,
+    but its terms limit use to Flipkart's own platform and are silent on history,
+    analytics and ML.
+- **Implemented:**
+  - `FlipkartCollector`: official search endpoint, bounded retries, `Retry-After`
+    handling, distinct credential/rate-limit/provider errors, and redaction.
+  - Finer collector states: `live`, `credentials_missing`, `approval_required`,
+    `credentials_rejected`, `rate_limited`, `provider_error`, `unavailable`.
+  - A `collection_attempts` provenance log (migration `0006`) and enforced
+    rate-limit cooldowns.
+  - Append-only LIVE history that skips only true repeat fetches (identical
+    values within 10 minutes).
+  - A richer `/data/status` and Marketplace Data page, and Refresh Market Data
+    prefilled from the selected product.
+- **Gating:** collection needs `FLIPKART_AFFILIATE_ID`, `FLIPKART_AFFILIATE_TOKEN`
+  **and** `FLIPKART_DATA_USE_APPROVED=true` (Flipkart's written approval).
+  None are configured, so the Flipkart state is `credentials_missing` and no
+  request has reached Flipkart.
+- **Unchanged:** no ML logic changed, no model is retrained by a refresh, and
+  DEMO/IMPORTED rows are never relabelled.
+- **Tests:** all new tests run against mocked provider responses; an optional
+  real-API test is skipped by default.
 
 **Phase 10 verification addendum (September 14):**
 - **PostgreSQL 17:** migrations `0001`-`0005`, the storage adapter contract and a
@@ -30,7 +71,8 @@ active model is now **XGBoost v5**, trained September 13 during the interrupted
 Phase 10 run on the same DEMO data; its accuracy 33.33%, weighted F1 31.87% and
 majority baseline 40.62% match v4. The database holds 24 users, 2 saved
 predictions, 5 model records and 480 DEMO snapshots. Alembic is still at `0004`;
-the next normal backend startup applies `0005`, which only adds `stored_objects`.
+the next normal backend startup applies `0005` and `0006`, which only add the
+`stored_objects` and `collection_attempts` tables.
 
 **Phase 10 addendum:** The report below preserves the Phase 1-9 inspection.
 Checkpoint `de173ee` now preserves that work in Git. Deployment configuration,
@@ -82,6 +124,7 @@ and the active model performs below the majority-class baseline.
 | 8 - Trend analytics | Complete | Stored price, discount, rating, review and availability histories; platform comparisons; charts and actual dashboard summaries. |
 | 9 - Stabilization | Implemented; automated checks pass | Security/configuration fixes, input validation, failure handling, persistence safeguards, API journey tests and UI/accessibility polish. Browser interaction remains unverified. |
 | 10 - Deployment | Deployment-ready, locally verified; **not deployed** | Render Blueprint and `app.start`, `/ready`, Vercel config with HTTPS API guard, production settings validation, PostgreSQL storage and migrations, concurrent-startup lock, backup plan. Verified on real PostgreSQL, a Linux container and three browser viewports. Live hosting, a managed database and hosted backups remain. |
+| 11 - LIVE marketplace data | Connector implemented and tested; **gated, 0 LIVE records** | Flipkart Affiliate API collector, collector states, fetch provenance log (`0006`), rate-limit cooldowns, append-only LIVE history, status/UI updates. Needs Flipkart credentials and written data-use approval before any LIVE fetch. |
 
 Phase completion describes the implemented software, not the fulfillment of live
 marketplace access or production-readiness requirements.
@@ -276,11 +319,14 @@ on a temporary database copy; development data was not modified for testing.
 
 ## Why the current implementation does not fetch real-time data
 
-- The repository marks its retained Amazon PA-API 5 adapter deprecated and disables it
-  through the shared collector policy. A supported replacement and approved access
-  are needed. This report does not independently recheck provider policies.
-- Flipkart, Croma and Alibaba adapters report their existing access restrictions
-  or unavailable integration status.
+- Amazon's PA-API 5 was retired on 15 May 2026. Its Creators API replacement
+  requires sales-based eligibility, and Amazon's policies forbid this application's
+  aggregation, seller-tool and ML use without written approval (rechecked
+  September 14, Phase 11).
+- The Flipkart Affiliate API connector is implemented but stays disabled without
+  affiliate credentials and Flipkart's written approval for storing history and
+  analytics. Neither is available.
+- Croma offers no public API; Alibaba's Open API cannot search the marketplace.
 - Importing a file produces IMPORTED records; loading the fixture produces DEMO records.
 - Reloading analytics rereads stored observations and does not fetch fresh market data.
 
@@ -296,7 +342,10 @@ PostgreSQL storage for data, datasets and models; a documented, rehearsed backup
    set real domains in `VITE_API_BASE_URL` and `CORS_ORIGINS`, and run the live smoke checklist.
 2. Provision managed PostgreSQL with automated backups and complete a hosted restore drill.
 3. Measure training memory and time on the chosen Render plan.
-4. Obtain a supported, approved source of genuine marketplace observations.
+4. Enable a genuine LIVE source: obtain Flipkart affiliate credentials **and** Flipkart's
+   written approval for storing history, analytics and ML use, then refresh repeatedly over
+   days to build history (see docs/MARKETPLACE_SOURCES.md). Alternatively, license data
+   from a provider whose terms permit this use.
 5. Evaluate on suitable real historical data before making reliability claims; address
    documented ML limitations, including boundary-crossing forward labels in the original split.
 6. Define authorization and abuse controls before public multi-user deployment:
@@ -348,4 +397,6 @@ Reference reports:
 - [Phase 7 report](docs/PHASE_7_REPORT.md)
 - [Phase 8 report](docs/PHASE_8_REPORT.md)
 - [Phase 9 report](docs/PHASE_9_REPORT.md)
+- [Phase 10 report](docs/PHASE_10_REPORT.md)
+- [Marketplace sources (Phase 11)](docs/MARKETPLACE_SOURCES.md)
 - [Setup and usage](README.md)

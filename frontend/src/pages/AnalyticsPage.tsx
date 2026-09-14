@@ -90,6 +90,10 @@ export function AnalyticsPage({ mode }: { mode: 'trends' | 'comparison' }) {
   }, [token, filters, mode, offset, revision])
   const response = mode === 'trends' ? trends : comparison
   const selectedInOptions = options?.products.some((item) => item.product_key === filters.product_key)
+  // The selected product becomes the default LIVE refresh keyword.
+  const selectedProductName = filters.product_key
+    ? options?.products.find((item) => item.product_key === filters.product_key)?.product_name ?? filters.product_key.split('|')[0]
+    : undefined
 
   return <DashboardLayout title={`MarketPulse AI — ${mode === 'trends' ? 'Trend Analysis' : 'Analytics'}`}>
     <div className="space-y-6">
@@ -155,7 +159,7 @@ export function AnalyticsPage({ mode }: { mode: 'trends' | 'comparison' }) {
         </div>)}</div>
       </Panel>)}
 
-      <Panel><h3 className="mb-4 font-semibold">Data refresh</h3>{summaryError && <div className="mb-3"><FormAlert>{summaryError}</FormAlert></div>}<MarketDataRefresh sources={summary?.refresh_sources ?? null} onRefresh={() => setRevision((value) => value + 1)} /></Panel>
+      <Panel><h3 className="mb-4 font-semibold">Data refresh</h3>{summaryError && <div className="mb-3"><FormAlert>{summaryError}</FormAlert></div>}<MarketDataRefresh key={filters.product_key ?? ''} sources={summary?.refresh_sources ?? null} selectedProduct={selectedProductName} onRefresh={() => setRevision((value) => value + 1)} /></Panel>
     </div>
   </DashboardLayout>
 }

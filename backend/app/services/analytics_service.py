@@ -302,12 +302,22 @@ def comparison(db: Session, user_id: int, filters: AnalyticsFilters) -> dict:
     return {"status": "available" if available else "insufficient_data", "reason": None if available else "Insufficient comparable platform data.", "groups": result, "provenance": provenance(rows, duplicates)}
 
 
-def refresh_sources() -> list[dict]:
-    result = []
-    for platform, status in all_statuses().items():
-        status = effective_status(status)
-        result.append({"platform": platform, "available": status.available, "reason": status.reason, "access_method": status.access_method})
-    return result
+def refresh_sources(db: Session | None = None) -> list[dict]:
+    """Collectors the Refresh Market Data action may use, with runtime state."""
+    statuses = all_statuses()
+    if db is not None:
+        from app.services import collection_service
+        statuses = collection_service.platform_statuses(db, statuses)
+    else:
+        statuses = {name: effective_status(state) for name, state in statuses.items()}
+    return [
+        {
+            "platform": platform, "available": status.available, "state": status.state.value,
+            "reason": status.reason, "access_method": status.access_method,
+            "required_configuration": list(status.required_configuration),
+        }
+        for platform, status in statuses.items()
+    ]
 
 
 def summary(db: Session, user_id: int) -> dict:
@@ -317,7 +327,7 @@ def summary(db: Session, user_id: int) -> dict:
     platforms = list(db.scalars(select(MarketplaceSnapshot.platform).distinct().order_by(MarketplaceSnapshot.platform)))
     model = db.scalar(select(ModelMetadata).where(ModelMetadata.is_active.is_(True)))
     dataset = dataset_service.latest_dataset()
-    sources = refresh_sources()
+    sources = refresh_sources(db)
     return {
         "total_predictions": db.scalar(select(func.count()).select_from(Prediction).where(Prediction.user_id == user_id)) or 0,
         "stored_records": sum(by_source.values()), "records_by_source_type": dict(sorted(by_source.items())),
