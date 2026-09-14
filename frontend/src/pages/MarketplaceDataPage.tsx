@@ -1,3 +1,5 @@
+import { PermissionGate } from '@/components/PermissionGate'
+import { can } from '@/auth/permissions'
 /**
  * Marketplace Data (Phases 4, 4.5 and 11).
  *
@@ -53,7 +55,7 @@ function formatMoney(value: number | null, currency: string): string {
 }
 
 export function MarketplaceDataPage() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
 
   const [status, setStatus] = useState<CollectorStatus | null>(null)
   const [snapshots, setSnapshots] = useState<Snapshot[]>([])
@@ -121,6 +123,7 @@ export function MarketplaceDataPage() {
 
   const handleCollect = async (event: React.FormEvent) => {
     event.preventDefault()
+    if (!can(user, "data:collect")) return
     setCollectError(null)
     setResult(null)
 
@@ -158,6 +161,7 @@ export function MarketplaceDataPage() {
 
   const handleImport = async (event: React.FormEvent) => {
     event.preventDefault()
+    if (!can(user, "data:import")) return
     setImportError(null)
     setImportResult(null)
 
@@ -185,6 +189,7 @@ export function MarketplaceDataPage() {
   }
 
   const handleDemoLoad = async () => {
+    if (!can(user, "data:demo")) return
     setImportError(null)
     setImportResult(null)
     setLoadingDemo(true)
@@ -332,7 +337,7 @@ export function MarketplaceDataPage() {
 
       {/* Live collection */}
       <section aria-label="Collect data" className="mt-6">
-        <form
+        <PermissionGate permission="data:collect"><form
           noValidate
           onSubmit={handleCollect}
           className="rounded-panel border border-border-hair bg-surface p-7"
@@ -357,7 +362,7 @@ export function MarketplaceDataPage() {
                 id="platform"
                 value={platform}
                 onChange={(e) => setPlatform(e.target.value)}
-                className="mt-2 w-full rounded-card border border-border-hair bg-background px-3.5 py-2.5 text-sm text-foreground focus:border-accent focus:outline-none"
+                className="mt-2 w-full rounded-card border border-border-hair bg-background px-3.5 py-2.5 text-sm text-foreground focus:border-accent"
               >
                 {platforms.map(([name, state]) => (
                   <option key={name} value={name}>
@@ -451,13 +456,13 @@ export function MarketplaceDataPage() {
               </p>
             )}
           </div>
-        </form>
+        </form></PermissionGate>
       </section>
 
       {/* Import + demo */}
       <section aria-label="Import data" className="mt-6">
         <div className="grid gap-5 lg:grid-cols-2">
-          <form
+          <PermissionGate permission="data:import"><form
             noValidate
             onSubmit={handleImport}
             className="rounded-panel border border-border-hair bg-surface p-7"
@@ -490,7 +495,7 @@ export function MarketplaceDataPage() {
                 }}
                 className="mt-2 w-full rounded-card border border-border-hair bg-background px-3.5 py-2.5 text-sm text-foreground
                            file:mr-3 file:rounded-card file:border-0 file:bg-accent-soft file:px-3 file:py-1.5
-                           file:text-xs file:font-medium file:text-accent-text focus:border-accent focus:outline-none"
+                           file:text-xs file:font-medium file:text-accent-text focus:border-accent"
               />
               <p className="mt-2 text-xs leading-relaxed text-subtle">
                 Needs at least <code className="font-mono">platform</code> and{' '}
@@ -506,7 +511,7 @@ export function MarketplaceDataPage() {
                 {importing ? 'Importing…' : 'Import file'}
               </Button>
             </div>
-          </form>
+          </form></PermissionGate>
 
           <div className="rounded-panel border border-border-hair bg-surface p-7">
             <div className="flex items-center gap-3">
@@ -534,7 +539,7 @@ export function MarketplaceDataPage() {
             )}
 
             <div className="mt-6">
-              <Button
+              <PermissionGate permission="data:demo"><Button
                 type="button"
                 variant="secondary"
                 onClick={() => void handleDemoLoad()}
@@ -542,7 +547,7 @@ export function MarketplaceDataPage() {
               >
                 <Icon name="layers" className="size-4" />
                 {loadingDemo ? 'Loading…' : 'Load demo dataset'}
-              </Button>
+              </Button></PermissionGate>
             </div>
 
             {demo && !demo.available && (
@@ -641,7 +646,7 @@ export function MarketplaceDataPage() {
                   setSourceFilter(next)
                   void load(next)
                 }}
-                className="rounded-card border border-border-hair bg-background px-3 py-1.5 text-xs text-foreground focus:border-accent focus:outline-none"
+                className="rounded-card border border-border-hair bg-background px-3 py-1.5 text-xs text-foreground focus:border-accent"
               >
                 <option value="">All sources</option>
                 <option value="live">Live only</option>
@@ -666,7 +671,7 @@ export function MarketplaceDataPage() {
               or load the demo dataset above to populate this table.
             </p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" role="region" aria-label="Latest stored records table, scroll horizontally on small screens" tabIndex={0}>
               <table className="w-full min-w-[940px] text-left text-sm">
                 <thead className="border-b border-border-hair text-xs tracking-wider text-subtle uppercase">
                   <tr>

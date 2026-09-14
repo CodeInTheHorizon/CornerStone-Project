@@ -34,6 +34,8 @@ with TestClient(app) as client:
     assert ok(client.get('/health'))['database']=='connected'
     credentials={'email':'flow@example.com','password':'marketpulse1','full_name':'Flow Test'}
     registration=ok(client.post('/auth/register',json=credentials),201)
+    from tests.accounts import grant_role
+    grant_role(registration['user']['id'])
     login=ok(client.post('/auth/login',json={k:credentials[k] for k in ('email','password')}))
     headers={'Authorization':'Bearer '+login['access_token']}
     ok(client.get('/auth/me',headers=headers))

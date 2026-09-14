@@ -14,6 +14,7 @@ def main() -> None:
         host=settings.HOST,
         port=settings.PORT,
         workers=1,
+        proxy_headers=False,  # Never accept spoofed X-Forwarded-For for rate limits.
         reload=False,
         log_level=settings.LOG_LEVEL.lower(),
         access_log=settings.ACCESS_LOG,

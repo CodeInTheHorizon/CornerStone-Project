@@ -1,3 +1,5 @@
+import { can } from '@/auth/permissions'
+import { PermissionGate } from '@/components/PermissionGate'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/Button'
@@ -24,7 +26,7 @@ export function MarketDataRefresh({
   /** Name of the product currently selected by the page, used as the default keyword. */
   selectedProduct?: string
 }) {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const [platform, setPlatform] = useState('')
   const [typedKeyword, setTypedKeyword] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -35,7 +37,7 @@ export function MarketDataRefresh({
   const chosen = platform || (available.length === 1 ? available[0].platform : '')
 
   async function refresh() {
-    if (!token || keyword.trim().length < 2 || !available.some((item) => item.platform === chosen)) return
+    if (!can(user, "data:collect") || !token || keyword.trim().length < 2 || !available.some((item) => item.platform === chosen)) return
     setBusy(true); setError(''); setMessage('')
     try {
       const result = await collect(token, { platform: chosen, keyword: keyword.trim(), max_items: 10 })
@@ -51,12 +53,12 @@ export function MarketDataRefresh({
 
   return (
     <div className="space-y-3">
-      {available.length > 0 && <div className="grid gap-3 sm:grid-cols-2">
+      {can(user, "data:collect") && available.length > 0 && <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-sm text-muted">LIVE collector<select aria-label="LIVE collector" className="mt-2 block w-full rounded-card border border-border-hair bg-background p-2.5" value={chosen} onChange={(event) => setPlatform(event.target.value)}><option value="">Select platform</option>{available.map((item) => <option key={item.platform} value={item.platform}>{title(item.platform)}</option>)}</select></label>
         <Field label="Product keyword to fetch" name="refresh-keyword" value={keyword} onChange={setTypedKeyword} />
       </div>}
       <div className="flex flex-wrap gap-3">
-        <Button variant="secondary" disabled={busy || keyword.trim().length < 2 || !available.some((item) => item.platform === chosen)} onClick={() => void refresh()}>{busy ? 'Fetching…' : 'Refresh Market Data'}</Button>
+        <PermissionGate permission="data:collect"><Button variant="secondary" disabled={busy || keyword.trim().length < 2 || !available.some((item) => item.platform === chosen)} onClick={() => void refresh()}>{busy ? 'Fetching…' : 'Refresh Market Data'}</Button></PermissionGate>
         <Button variant="ghost" disabled={busy} onClick={onRefresh}>Reload stored analytics</Button>
         <Link to="/dashboard/marketplace-data" className="self-center text-sm text-accent-text">Collector status / import data</Link>
       </div>

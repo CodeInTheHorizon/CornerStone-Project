@@ -2,6 +2,7 @@
 
 import { Link, NavLink } from 'react-router-dom'
 
+import { can, roleLabel } from '@/auth/permissions'
 import { Icon } from '@/components/Icon'
 import { Logo } from '@/components/Logo'
 import { dashboardNav } from '@/config/dashboard'
@@ -42,7 +43,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                 }
               >
                 <Icon name={item.icon} className="size-[18px] shrink-0" />
-                <span className="flex-1 truncate">{item.label}</span>
+                <span className="flex-1 truncate">{item.to === '/dashboard/train' && !can(user, 'model:train') ? 'Datasets / Model Status' : item.label}</span>
                 {!item.available && (
                   <span
                     className="rounded-full border border-border-hair px-1.5 py-0.5 text-[10px] text-subtle"
@@ -70,14 +71,14 @@ export function Sidebar({ onNavigate }: SidebarProps) {
               {user?.full_name ?? 'Signed in'}
             </span>
             <span className="block truncate text-xs text-subtle">
-              {user?.email}
+              {user?.email} · {roleLabel(user?.role)}
             </span>
           </span>
         </div>
 
         <button
           type="button"
-          onClick={logout}
+          onClick={() => void logout()}
           className="mt-1 flex w-full items-center gap-3 rounded-card px-3 py-2.5 text-sm text-muted transition-colors hover:bg-signal-down/10 hover:text-signal-down"
         >
           <Icon name="logout" className="size-[18px]" />

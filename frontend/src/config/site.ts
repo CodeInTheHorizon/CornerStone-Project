@@ -118,7 +118,7 @@ export const developer = {
   role: 'Full-Stack & Machine Learning Developer',
   // Keep this factual — it appears publicly.
   intro:
-    'I build end-to-end data products: collecting real marketplace data, turning it into a usable dataset, training models on it, and presenting the result in an interface people can actually act on. MarketPulse AI is that full loop in one project.',
+    'I build end-to-end data products: collecting marketplace data through permitted sources, turning it into a usable dataset, training models on it, and presenting the result in an interface people can actually act on. MarketPulse AI demonstrates that full loop in one project, currently on synthetic DEMO data.',
   focus: [
     'React & TypeScript',
     'FastAPI & Python',

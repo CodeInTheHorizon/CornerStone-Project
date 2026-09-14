@@ -4,6 +4,10 @@ Phase 6 only: train, evaluate, compare, persist, report. Prediction and the
 opportunity score are Phase 7.
 """
 
+from app.auth.permissions import Permission
+from app.auth.rate_limits import operation
+
+
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -66,7 +70,7 @@ def _summary(record: ModelMetadata) -> TrainingRunSummary:
 def train(
     payload: TrainRequest,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(operation(Permission.TRAIN, "train")),
 ) -> TrainResponse:
     try:
         record = training_service.train(

@@ -4,6 +4,10 @@ All of these require authentication: collection performs outbound requests on
 the operator's credentials, and the stored data is the project's own dataset.
 """
 
+from app.auth.permissions import Permission
+from app.auth.rate_limits import operation
+
+
 import logging
 from datetime import datetime, timezone
 
@@ -70,7 +74,7 @@ def _summary(result: IngestResult) -> IngestSummary:
 def collect(
     payload: CollectRequest,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(operation(Permission.COLLECT, "collect")),
 ) -> CollectResponse:
     try:
         result = collection_service.run_collection(
@@ -128,7 +132,7 @@ def collect(
 def import_dataset(
     file: UploadFile = File(description="CSV or JSON file of marketplace records."),
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(operation(Permission.IMPORT, "import")),
 ) -> IngestSummary:
     """Store an operator-supplied dataset as IMPORTED records.
 
@@ -137,6 +141,8 @@ def import_dataset(
     this system did not observe them and cannot attest to how they were taken.
     """
     content = file.file.read(import_service.MAX_IMPORT_BYTES + 1)
+    if len(content) > import_service.MAX_IMPORT_BYTES:
+        raise HTTPException(413, detail="Uploaded file exceeds the 5 MiB limit.")
 
     try:
         result = import_service.import_dataset(
@@ -162,7 +168,7 @@ def load_demo(
         description="Clear previously loaded demo rows first. Live and imported data is never touched.",
     ),
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(operation(Permission.DEMO, "demo")),
 ) -> IngestSummary:
     """Load the development fixture as DEMO records.
 

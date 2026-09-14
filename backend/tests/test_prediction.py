@@ -62,6 +62,8 @@ def ready(prepared, monkeypatch, db_session, client):
     metadata = {"dataset_id": "fixture-data", "source_types": ["demo"], "generated_at": "2026-09-10T00:00:00+00:00", "csv_path": str(directory / "input.csv")}
     monkeypatch.setattr(dataset_service, "list_datasets", lambda: [metadata])
     token = client.post("/auth/register", json={"email": f"predict-{uuid.uuid4().hex}@example.com", "password": "marketpulse1"}).json()
+    from tests.accounts import grant_role
+    grant_role(token["user"]["id"], "analyst")
     headers = {"Authorization": f"Bearer {token['access_token']}"}
     user_id = token["user"]["id"]
     yield SimpleNamespace(model=model, key=key, headers=headers, user_id=user_id, frame=frame, metadata=metadata)

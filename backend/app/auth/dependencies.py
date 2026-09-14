@@ -50,6 +50,9 @@ def get_current_user(
     if user is None:
         raise _UNAUTHORIZED
 
+    if payload["token_version"] != user.token_version:
+        raise _UNAUTHORIZED
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -57,3 +60,15 @@ def get_current_user(
         )
 
     return user
+
+
+def require_permission(permission):
+    """Resolve current database permissions on every request."""
+    import logging
+    from app.auth.permissions import permissions_for
+    def check(user: User = Depends(get_current_user)) -> User:
+        if permission not in permissions_for(user.role):
+            logging.getLogger(__name__).warning("Permission denied user_id=%s permission=%s", user.id, permission)
+            raise HTTPException(403, detail="You do not have permission to perform this action.")
+        return user
+    return check

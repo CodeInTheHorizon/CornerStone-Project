@@ -1,9 +1,6 @@
 """Authentication endpoints.
 
-Logout is intentionally not a server endpoint: these are stateless JWTs, so
-the client discards the token. A server-side revocation list would be a
-meaningful feature, but pretending a no-op endpoint revokes anything would be
-worse than not having one.
+Logout revokes all account sessions using a persisted token version.
 """
 
 import logging
@@ -26,7 +23,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 def _issue_token(user: User) -> Token:
     return Token(
-        access_token=create_access_token(user.id),
+        access_token=create_access_token(user.id, token_version=user.token_version),
         expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         user=UserRead.model_validate(user),
     )
@@ -89,3 +86,12 @@ def login(payload: UserLogin, db: Session = Depends(get_db)) -> Token:
 )
 def read_current_user(current_user: User = Depends(get_current_user)) -> User:
     return current_user
+
+
+@router.post("/logout", status_code=204)
+@router.post("/revoke-sessions", status_code=204)
+def revoke_sessions(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from sqlalchemy import update
+    db.execute(update(User).where(User.id == user.id).values(token_version=User.token_version + 1))
+    db.commit()
+    logger.info("Sessions revoked user_id=%s actor_id=%s", user.id, user.id)

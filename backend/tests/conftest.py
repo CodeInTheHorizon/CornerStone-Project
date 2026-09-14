@@ -74,3 +74,13 @@ def db_session():
     finally:
         session.rollback()
         session.close()
+
+
+@pytest.fixture(autouse=True)
+def isolated_rate_limits(monkeypatch):
+    # Every test starts a new window. Dedicated abuse tests exercise real low limits.
+    from app.auth import rate_limits
+    from app.config import settings
+    monkeypatch.setattr(rate_limits, "store", rate_limits.MemoryStore())
+    for category in ("LOGIN", "REGISTER", "PREDICT", "COLLECT", "BUILD", "IMPORT", "DEMO", "TRAIN"):
+        monkeypatch.setattr(settings, "RATE_LIMIT_" + category, 1000)

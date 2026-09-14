@@ -11,6 +11,7 @@ MAX_PASSWORD_LENGTH = 64
 
 
 class UserRegister(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     email: EmailStr
     password: str = Field(
         min_length=MIN_PASSWORD_LENGTH,
@@ -50,6 +51,8 @@ class UserRead(BaseModel):
     id: int
     email: EmailStr
     full_name: str | None
+    role: str
+    permissions: list[str]
     is_active: bool
     created_at: datetime
 

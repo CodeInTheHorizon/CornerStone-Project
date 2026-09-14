@@ -185,7 +185,7 @@ export function TrainingResults({ metrics }: { metrics: ModelMetrics }) {
       {metrics.all_models.length > 0 && (
         <div className="mt-7 border-t border-border-hair pt-6">
           <h3 className="text-xs font-medium text-muted">Models compared</h3>
-          <div className="mt-3 overflow-x-auto">
+          <div className="mt-3 overflow-x-auto" role="region" aria-label="Models compared table, scroll horizontally on small screens" tabIndex={0}>
             <table className="w-full min-w-[420px] text-left text-sm">
               <thead className="text-xs tracking-wider text-subtle uppercase">
                 <tr>
@@ -236,11 +236,13 @@ export function TrainingResults({ metrics }: { metrics: ModelMetrics }) {
               (rows = actual, columns = predicted)
             </span>
           </h3>
-          <div className="mt-3 overflow-x-auto">
+          <div className="mt-3 overflow-x-auto" role="region" aria-label="Confusion matrix table, scroll horizontally on small screens" tabIndex={0}>
             <table className="text-left text-sm">
               <thead className="text-xs tracking-wider text-subtle uppercase">
                 <tr>
-                  <th scope="col" className="py-2 pr-4 font-medium" />
+                  <th scope="col" className="py-2 pr-4 font-medium">
+                    <span className="sr-only">Actual class</span>
+                  </th>
                   {metrics.confusion_labels.map((label) => (
                     <th key={label} scope="col" className="px-3 py-2 text-right font-medium">
                       {label}

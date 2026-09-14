@@ -5,6 +5,48 @@ scope, architecture, the 10-day roadmap and the acceptance criteria.
 
 ## Current state
 
+**Phase 15 final audit complete (2026-09-15).** `FINAL_PROJECT_REPORT.md` is the
+objective-by-objective status for evaluation and handoff; keep it truthful when anything
+changes. Fresh results: backend 496 passed + 1 opt-in LIVE skip (16 PostgreSQL tests), frontend
+38/38, smoke 3/3, journeys 39/39, verification 54/54. Deployment-ready, **not deployed**.
+- Public copy must never imply real, fresh or LIVE data while stored data is DEMO; the target is a
+  price-direction opportunity proxy, never "demand forecasting".
+- External blockers, not coding tasks: Flipkart credentials + written approval, hosting accounts,
+  managed PostgreSQL/backups, real historical data.
+
+**Phase 14 complete, locally (not hosted).** Playwright Chromium/Firefox/WebKit against a
+production-mode backend on disposable PostgreSQL: smoke passed per engine, journeys 39/39,
+verification 54/54 (6 viewports × light/dark, axe WCAG 2.1 A/AA); backend 496 passed +
+1 opt-in LIVE skip; frontend 38 tests. See docs/PHASE_14_REPORT.md. Rules from it:
+- E2E: `frontend/e2e/{smoke,journeys,verification}.spec.ts`, `diagnostics.ts`, `serve.py`.
+  Needs `PHASE14_POSTGRES_URL` (loopback DB named `phase14*`) and a `.e2e-dist` build with
+  `VITE_API_BASE_URL=http://127.0.0.1:8184`. Run smoke per engine first, then one large spec
+  at a time. Container `marketpulse-phase14-tests` (127.0.0.1:55434) is disposable; never use
+  `land-digitigation-*` containers. Keep the machine awake: standby stalled a 2.9 h run.
+- Never assert fixture counts (e.g. 480) in browser journeys; wait on the page's own API
+  responses or visible state, not `networkidle` or sleeps; select by role/label.
+- Browser-noise filters are measured and narrow (204 after-response abort, navigation
+  cancels, WebKit "access control checks" page errors after test navigation). Do not widen.
+- Permissions UI fails closed: `normalizeUser` at the API boundary; `can()` needs the server
+  permission AND the mirrored `ROLE_PERMISSIONS` (drift test vs backend permissions.py).
+- Login returns to the validated same-app `from` path. Keep `:focus-visible` rings (no
+  `outline-none`); scrollable tables need a named `role="region"` with `tabIndex={0}`.
+- Not verified: hosted URLs, real Safari (WebKit on Windows skips links on Tab), screen readers.
+
+**Phase 13 implemented and automated checks passed (496 backend passed, 1 opt-in LIVE skip; 15 frontend tests at the time):** centralized viewer/analyst/operator/administrator permissions,
+admin account APIs, additive migration 0008 (viewer default + token_version), versioned
+JWT revocation, process-local operation rate limits, and pre-parser request limits.
+See docs/PHASE_13_REPORT.md. No admin UI. Browser-verified in Phase 14.
+- Never restore public registration to operational privileges; reject supplied role/version fields.
+- Pipeline regression fixtures explicitly provision operators in disposable databases.
+- Logout revokes all sessions; role/status changes revoke existing tokens. Old versionless JWTs fail.
+- Preserve 401 vs 403; ordinary permission denial must not sign out the frontend.
+- One worker/instance only; do not trust arbitrary forwarded IP headers for rate limits.
+- Last active admin invariant is serialized; bootstrap is an explicit operator command, never startup.
+- Development DB was upgraded to 0008 on 2026-09-14 at the owner's request (0004 backup in
+  `data/backups/`, git-ignored); its 24 users are viewers. Still never use it for tests.
+
+
 **Phases 1-12 complete.** Phase 12 complete. Active model still **v5** (XGBoost), **DEMO-trained**, quality status **`below_baseline`**. Forward-label boundary leak fixed. **0 LIVE observations**; no model is real-data trained. Phase 12 details, verbatim for reports:
 - Active model is still **v5** (XGBoost), DEMO-trained, quality status **`below_baseline`**, flagged as trained before the leakage fix. Not retrained or modified.
 - Forward-label boundary leakage fixed: boundary-first temporal split, labels generated per partition (the old method let 96/288 DEMO training labels cross).
@@ -240,9 +282,9 @@ npm run dev
 - Development database (inspected read-only 2026-09-14): active model is **v5**
   (XGBoost, trained 2026-09-13 during the interrupted Phase 10 run; v1-v4 are
   inactive), 24 users, 2 saved predictions, 480 DEMO snapshots, 0 LIVE. Alembic is
-  still at **0004**; the next normal backend startup applies 0005-0007 (adds
-  `stored_objects`, `collection_attempts` and two nullable model-quality columns). Do not delete or retrain over
-  these files without being asked.
+  at **0008** since 2026-09-14 (owner-requested run; rows preserved, all users viewer;
+  0004 backup `data/backups/marketpulse-pre-0008-20260914-174616.db`). Do not delete or
+  retrain over these files without being asked.
 - Prediction is a DEMO pipeline demonstration: v5 (like v4) scores accuracy 33.3%
   vs majority baseline accuracy 40.6%, weighted F1 31.9%. Never equate class
   probability or the heuristic opportunity score with reliable marketplace advice

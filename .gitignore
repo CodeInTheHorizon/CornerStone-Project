@@ -20,6 +20,8 @@ venv/
 *.db
 *.sqlite
 *.sqlite3
+# Local development database backups and dev-server logs
+data/backups/
 
 # Node
 node_modules/
@@ -43,3 +45,15 @@ data/processed/*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local Phase 13 verification output
+.phase13-preservation.json
+backend/.pytest-phase13*
+
+# Isolated Phase 14 browser verification output
+.phase14-preservation.json
+frontend/.e2e-*
+frontend/e2e-results*.json
+frontend/playwright-report/
+frontend/test-results/
+backend/.pytest-phase14*

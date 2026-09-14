@@ -1,9 +1,17 @@
 /** Authentication shapes returned by the backend. */
 
+import type { Permission, Role } from '@/auth/permissions'
+
+/**
+ * A normalized account (see auth/normalizeUser.ts). `role` is null when the
+ * server sent no recognised role; `permissions` holds only known permissions.
+ */
 export interface User {
   id: number
   email: string
   full_name: string | null
+  role: Role | null
+  permissions: Permission[]
   is_active: boolean
   created_at: string
 }

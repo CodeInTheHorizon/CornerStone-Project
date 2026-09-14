@@ -1,7 +1,8 @@
 # MarketPulse AI
 
-AI/ML-driven demand forecasting and marketplace intelligence for electronics
-sellers.
+AI/ML marketplace intelligence for electronics sellers: provenance-labelled
+marketplace observations, trend analytics and experimental opportunity scores. The
+model predicts a price-direction opportunity proxy, not sales demand.
 
 MarketPulse AI imports or loads stored marketplace observations, turns them into
 a structured dataset, trains models on it, and surfaces trend analytics and
@@ -9,7 +10,7 @@ experimental opportunity scores. A Flipkart Affiliate API connector exists for
 LIVE collection but is disabled until credentials and Flipkart's data-use
 approval are configured; no LIVE data is stored.
 
-> **Status: Phase 12 complete - ML validation hardened; forward-label boundary leak fixed. Active model v5 is DEMO-trained and below baseline; 0 LIVE observations; no model is real-data trained.**
+> **Status: final audit complete (Phase 15) - see [FINAL_PROJECT_REPORT.md](FINAL_PROJECT_REPORT.md). Deployment-ready but not deployed. Stored data is 480 DEMO / 0 IMPORTED / 0 LIVE; the Flipkart LIVE connector is gated (no credentials, no written approval, no provider request made). Active model v5 is DEMO-trained, below baseline and uncalibrated; no model is real-data trained. Browser-verified locally in Chromium, Firefox and WebKit (not real Safari).**
 > Phase 11: LIVE connector implemented and gated; 0 LIVE records. Phase 10:
 > deployment-ready and locally production-verified, not deployed.
 > PostgreSQL storage, migrations, a Linux build and start of the Render
@@ -82,12 +83,26 @@ npm run dev
 cd backend  && .venv/Scripts/python -m pytest   # Full backend regression suite
 cd frontend && npm run build                    # tsc -b && vite build
 cd frontend && npm run lint                     # oxlint
-cd frontend && npm test                         # Request/error regression tests
+cd frontend && npm test                         # Request/error and permission regression tests
 ```
 
 PostgreSQL integration tests (migrations, concurrent startup, storage, a
 production-mode API journey) are skipped unless `TEST_POSTGRES_URL` points at a
 disposable server; see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#local-development-unchanged).
+
+Browser end-to-end tests (Playwright; Chromium, Firefox and WebKit) run against an
+isolated production-mode backend and the production bundle. They need a disposable
+loopback PostgreSQL database whose name starts with `phase14`, and never open the
+development database:
+
+```bash
+cd frontend
+VITE_API_BASE_URL=http://127.0.0.1:8184 npx vite build --outDir .e2e-dist --emptyOutDir
+PHASE14_POSTGRES_URL=postgresql://USER:PASSWORD@127.0.0.1:PORT/phase14 npm run test:e2e
+```
+
+Run `e2e/smoke.spec.ts` per browser first (`npx playwright test e2e/smoke.spec.ts --project=firefox`).
+Details, coverage and limitations: [docs/PHASE_14_REPORT.md](docs/PHASE_14_REPORT.md).
 
 ## Environment variables
 
@@ -178,9 +193,10 @@ frontend/vercel.json        Vercel build settings and SPA rewrite
 | `GET` | `/ml/predictions`, `/ml/predictions/{id}` | Bearer | The user's saved prediction history |
 | `GET` | `/analytics/trends`, `/platform-comparison`, `/summary`, `/options` | Bearer | Stored-snapshot trends and comparisons |
 
-There is no `/auth/logout`: tokens are stateless JWTs, so signing out is a
-client-side discard. A no-op endpoint would imply a revocation that does not
-happen. Server-side revocation is a real feature worth adding, not a stub.
+POST `/auth/logout` and `/auth/revoke-sessions` invalidate all account tokens through
+a persisted token version. Ordinary 403 responses preserve the frontend session.
+Public registration creates viewers only. Operational endpoints now require specific
+permissions; see the Phase 13 role matrix below.
 
 ## Frontend routes
 
@@ -234,8 +250,9 @@ These are current and deliberate — please read before evaluating the project.
   can read. It trades some XSS exposure for a session that survives a refresh; a
   httpOnly refresh-token cookie is the stronger design and is worth revisiting.
 - **Marketplace pages do not expose true unit sales.** MarketPulse AI therefore
-  predicts a marketplace *opportunity / demand proxy* built from observable
-  signals, and does not claim to forecast real-world sales volume.
+  predicts a *price-direction opportunity proxy* (the direction of a listing's next
+  observed price) built from observable signals, and does not claim to forecast
+  sales demand or real-world sales volume.
 - **Data collection respects platform restrictions.** Collectors use officially
   permitted access paths only. CAPTCHAs, authentication and anti-bot protections
   are never bypassed. A source that cannot be collected reliably reports an
@@ -493,7 +510,8 @@ proportion to how often it occurs. Ties break toward the simpler model.
 
 ## Documentation
 
-- [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) — full specification and 10-day roadmap
+- [FINAL_PROJECT_REPORT.md](FINAL_PROJECT_REPORT.md) — final audit: objective-by-objective status, test results, blockers
+- [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) — full specification and 10-day roadmap (intended scope, not proof of implementation)
 - [CLAUDE.md](CLAUDE.md) — working rules and current state
 - [docs/design-direction.md](docs/design-direction.md) — visual language
 - [docs/PHASE_7_REPORT.md](docs/PHASE_7_REPORT.md) — prediction contract, formula, verification and limitations
@@ -502,7 +520,9 @@ proportion to how often it occurs. Ties break toward the simpler model.
 - [docs/DURABLE_STORAGE.md](docs/DURABLE_STORAGE.md) — production dataset/model storage and migration 0005
 - [docs/MARKETPLACE_SOURCES.md](docs/MARKETPLACE_SOURCES.md) — provider findings, the Flipkart LIVE connector, fields and constraints
 - [docs/PHASE_10_REPORT.md](docs/PHASE_10_REPORT.md) — deployment verification evidence and remaining blockers
-- [OVERALL_PROJECT_REPORT.md](OVERALL_PROJECT_REPORT.md) — project-wide status
+- [docs/PHASE_13_REPORT.md](docs/PHASE_13_REPORT.md) — authorization, session revocation, rate and request limits
+- [docs/PHASE_14_REPORT.md](docs/PHASE_14_REPORT.md) — cross-browser, responsive, keyboard and accessibility verification
+- [OVERALL_PROJECT_REPORT.md](OVERALL_PROJECT_REPORT.md) — project-wide status and phase history
 
 ## Experimental prediction workflow
 
@@ -645,7 +665,7 @@ Verified locally, not on the platforms:
 - migrations, storage and a production-mode API journey with restart against PostgreSQL 17
 - Render's build and start commands in a Linux Python 3.14.7 container (all wheels,
   `pip check` clean, about 300 MiB peak RSS on the DEMO pipeline)
-- 60/60 Playwright checks in Chromium (not Firefox or Safari) at desktop, tablet
+- 60/60 Playwright checks in Chromium during Phase 10 (Firefox and WebKit were added in Phase 14; real Safari remains untested) at desktop, tablet
   and mobile: login, every dashboard page, refresh on each protected route, a
   prediction, logout
 - a PostgreSQL dump and restore with checksum verification
@@ -654,3 +674,54 @@ Environment variables, the live smoke checklist, backup commands and limitations
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Evidence and remaining blockers:
 [docs/PHASE_10_REPORT.md](docs/PHASE_10_REPORT.md). Storage design:
 [docs/DURABLE_STORAGE.md](docs/DURABLE_STORAGE.md).
+
+
+## Phase 13 authorization and abuse controls
+
+| Role | Access (cumulative) |
+|---|---|
+| viewer | Shared dashboard/data/analytics/model reads; own prediction history |
+| analyst | Build datasets and run predictions |
+| operator | Import, load DEMO, collect approved LIVE data, train models |
+| administrator | Manage users, roles, active status and revoke sessions through admin APIs |
+
+New and migrated accounts default to viewer. Migration `0008` adds `role` and
+`token_version` without removing users. Register the intended administrator, then on
+the intended migrated database explicitly run `python -m app.bootstrap_admin --email
+existing@example.com` from backend (as a single command). No automatic admin exists.
+The v1–v5 artifacts were preserved. The local development DB was upgraded to `0008`
+on September 14, 2026 when the project was run at the owner's request (a `0004` backup
+is in `data/backups/`); its 24 accounts are viewers until promoted. Old JWTs require a fresh login.
+
+POST `/auth/logout` revokes all account sessions. Role/status changes and administrator
+revocation do the same. Admin APIs: GET `/admin/users`, PATCH `/admin/users/{id}/role`,
+PATCH `/admin/users/{id}/status`, POST `/admin/users/{id}/revoke-sessions`. The last
+active admin cannot be disabled/demoted. There is no admin UI.
+
+Default per-minute limits: login 5, registration 3, prediction 30, collection 5,
+dataset build 5, import 5, DEMO load 5; training 2 per hour. Settings use `RATE_LIMIT_*`.
+Limits are process-local and reset at restart: retain one worker/instance. Forwarded
+IP headers are not trusted; behind a proxy, auth quotas may be shared across visitors.
+Configure trusted edge client-IP/rate controls before public rollout.
+
+Inbound bodies are limited before parsing: 1 MiB normally, 6 MiB for multipart import
+requests; CSV/JSON files remain limited to 5 MiB and 5,000 rows. Oversized bodies/files
+return 413; throttling returns 429 with Retry-After. Storage-object limits are separate.
+UI controls are enabled only when the server-reported permissions and the frontend's
+mirrored role matrix both allow the action; missing, unknown or malformed role state
+fails closed (Phase 14). Controls explain denial; backend checks remain authoritative.
+localStorage/XSS exposure, shared-workspace reads and in-flight operation limitations
+remain. Phase 14 verified these controls in browsers (see below).
+
+## Phase 14 cross-browser and accessibility verification
+
+Verified locally with Playwright against a production-mode backend on disposable
+PostgreSQL and the production bundle: Chromium, Firefox and WebKit; six viewports
+(1440×900 to 360×800) in light and dark themes; axe WCAG 2.1 A/AA audits; keyboard
+and focus behaviour; viewer/analyst/operator/administrator permissions; sessions,
+deep links, network failures and CORS. No hosted Vercel/Render URL exists, WebKit on
+Windows is not Safari, and no manual screen-reader testing was performed. See
+[Phase 14 report](docs/PHASE_14_REPORT.md).
+
+See [Phase 13 report](docs/PHASE_13_REPORT.md) for endpoint permissions, bootstrap,
+settings, migration, test evidence, session behavior and security limitations.

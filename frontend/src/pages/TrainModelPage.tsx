@@ -1,3 +1,5 @@
+import { PermissionGate } from '@/components/PermissionGate'
+import { can } from '@/auth/permissions'
 /**
  * Train Model — dataset preparation (Phase 5) and training (Phase 6).
  *
@@ -61,7 +63,7 @@ function formatCell(value: unknown): string {
 }
 
 export function TrainModelPage() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
 
   const [status, setStatus] = useState<DatasetStatus | null>(null)
   const [preview, setPreview] = useState<DatasetPreview | null>(null)
@@ -126,6 +128,7 @@ export function TrainModelPage() {
 
   const handleBuild = async (event: React.FormEvent) => {
     event.preventDefault()
+    if (!can(user, "dataset:build")) return
     setBuildError(null)
     setResult(null)
     setBuilding(true)
@@ -153,6 +156,7 @@ export function TrainModelPage() {
   }
 
   const handleTrain = async () => {
+    if (!can(user, "model:train")) return
     setTrainError(null)
     if (!trainingSources.length) {
       setTrainError('Select the source types this model may be trained on.')
@@ -189,7 +193,7 @@ export function TrainModelPage() {
 
   return (
     <DashboardLayout title="MarketPulse AI — Train Model">
-      {loadingStatus && <p role="status" className="mb-4 text-sm text-muted">Loading dataset and model status?</p>}
+      {loadingStatus && <p role="status" className="mb-4 text-sm text-muted">Loading dataset and model status…</p>}
       {loadError && (
         <div className="mb-6">
           <FormAlert>{loadError}</FormAlert>
@@ -198,7 +202,7 @@ export function TrainModelPage() {
 
       {/* Build form */}
       <section aria-label="Dataset preparation">
-        <form
+        <PermissionGate permission="dataset:build"><form
           noValidate
           onSubmit={handleBuild}
           className="rounded-panel border border-border-hair bg-surface p-7"
@@ -295,7 +299,7 @@ export function TrainModelPage() {
               </p>
             )}
           </div>
-        </form>
+        </form></PermissionGate>
       </section>
 
       {/* Demo warning — required whenever synthetic rows are present */}
@@ -413,7 +417,7 @@ export function TrainModelPage() {
               </h2>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" role="region" aria-label="Dataset preview table, scroll horizontally on small screens" tabIndex={0}>
               <table className="w-full min-w-[980px] text-left text-sm">
                 <thead className="border-b border-border-hair text-xs tracking-wider text-subtle uppercase">
                   <tr>
@@ -463,7 +467,7 @@ export function TrainModelPage() {
 
       {/* Training */}
       <section aria-label="Model training" className="mt-6">
-        <div className="rounded-panel border border-border-hair bg-surface p-7">
+        <PermissionGate permission="model:train"><div className="rounded-panel border border-border-hair bg-surface p-7">
           <h2 className="text-lg font-semibold">Model training</h2>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">
             Trains on the dataset above and reports measured validation
@@ -573,7 +577,7 @@ export function TrainModelPage() {
             </p>
           )}
         </div>
-      </section>
+      </PermissionGate></section>
 
       {metrics && (
         <section aria-label="Evaluation" className="mt-6">
@@ -587,7 +591,7 @@ export function TrainModelPage() {
             <div className="border-b border-border-hair px-6 py-4">
               <h2 className="text-sm font-semibold">Training history</h2>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" role="region" aria-label="Training history table, scroll horizontally on small screens" tabIndex={0}>
               <table className="w-full min-w-[680px] text-left text-sm">
                 <thead className="border-b border-border-hair text-xs tracking-wider text-subtle uppercase">
                   <tr>

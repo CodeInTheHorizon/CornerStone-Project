@@ -1,3 +1,5 @@
+import { PermissionGate } from '@/components/PermissionGate'
+import { can } from '@/auth/permissions'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -17,7 +19,7 @@ import type { PlatformPrediction, PredictionHistory, PredictionOptions, Predicti
 const errorMessage = (error: unknown) => error instanceof Error ? error.message : 'The request could not be completed.'
 
 export function PredictorPage() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const [query, setQuery] = useState('')
   const [offset, setOffset] = useState(0)
   const [options, setOptions] = useState<PredictionOptions | null>(null)
@@ -61,7 +63,7 @@ export function PredictorPage() {
   }, [token])
 
   async function predict() {
-    if (!token || !options || !selected || busy) return
+    if (!can(user, "prediction:run") || !token || !options || !selected || busy) return
     setBusy(true); setError(''); setFailedPlatforms([]); setResult(null)
     try {
       const prediction = await service.makePrediction(token, selected, options.dataset_id)
@@ -97,11 +99,11 @@ export function PredictorPage() {
           <div className="mt-4"><FormAlert tone="info">Experimental pipeline demonstration. DEMO-derived results are synthetic; a below-baseline model cannot provide reliable marketplace recommendations. Every result includes measured model quality and the baseline. This does not predict actual sales demand.</FormAlert></div>
           <div className="mt-5"><Field label="Find a stored product, brand, or category" name="product-search" value={query} onChange={(value) => { setQuery(value); setOffset(0); setSelected(''); setLoadingOptions(true) }} placeholder="e.g. earbuds or Nova" /></div>
           {loadingOptions && <p role="status" className="mt-4 text-sm text-muted">Loading stored products…</p>}
-          {optionsError && <div className="mt-4"><FormAlert>{optionsError}</FormAlert><Link to="/dashboard/train" className="mt-3 inline-block text-sm text-accent-text">Prepare a dataset on Train Model</Link></div>}
+          {optionsError && <div className="mt-4"><FormAlert>{optionsError}</FormAlert>{can(user, "dataset:build") && <Link to="/dashboard/train" className="mt-3 inline-block text-sm text-accent-text">Prepare a dataset</Link>}</div>}
           {!loadingOptions && options && (
             <>
               <label htmlFor="prediction-product" className="mt-5 block text-sm font-medium text-muted">Product / accessory</label>
-              <select id="prediction-product" value={selected} onChange={(event) => setSelected(event.target.value)} disabled={busy} className="mt-2 w-full rounded-card border border-border-hair bg-background px-3.5 py-2.5 text-sm text-foreground focus:border-accent focus:outline-none">
+              <select id="prediction-product" value={selected} onChange={(event) => setSelected(event.target.value)} disabled={busy} className="mt-2 w-full rounded-card border border-border-hair bg-background px-3.5 py-2.5 text-sm text-foreground focus:border-accent">
                 <option value="">Select a product</option>
                 {options.products.map((item) => <option key={item.product_key} value={item.product_key}>{item.product_name} — {item.category} ({item.platforms.length} platforms)</option>)}
               </select>
@@ -124,7 +126,7 @@ export function PredictorPage() {
               })}
             </div>
           )}
-          <Button className="mt-5" disabled={!product || loadingOptions || busy} onClick={() => void predict()}>{busy ? 'Working…' : 'Make Prediction'}</Button>
+          <PermissionGate permission="prediction:run"><Button className="mt-5" disabled={!product || loadingOptions || busy} onClick={() => void predict()}>{busy ? 'Working…' : 'Make Prediction'}</Button></PermissionGate>
         </Panel>
         <div ref={resultRef} aria-live="polite" aria-busy={busy} className="scroll-mt-6 space-y-4">
           {error && <FormAlert>{error}</FormAlert>}

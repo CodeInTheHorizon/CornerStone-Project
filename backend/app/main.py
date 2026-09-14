@@ -73,6 +73,9 @@ async def unexpected_failure(request: Request, exc: Exception):
     return JSONResponse(status_code=500, headers=headers, content={"detail": "The request could not be completed. Please retry; if it persists, contact the operator."})
 
 
+from app.auth.request_limits import RequestLimitsMiddleware
+app.add_middleware(RequestLimitsMiddleware)
+
 # Allow the local Vite dev server (and any configured deployed frontend)
 # to call this API from the browser.
 app.add_middleware(
@@ -81,6 +84,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Retry-After"],
 )
 
 # Unprefixed system endpoints.

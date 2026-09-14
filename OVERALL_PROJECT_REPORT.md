@@ -1,6 +1,53 @@
 # MarketPulse AI - Overall Project Report
 
-**Report date:** September 13, 2026 (status addenda updated September 14, 2026)
+**Report date:** September 13, 2026 (status addenda updated September 15, 2026)
+
+**Phase 15 addendum (September 15): final production audit.** The objective-by-objective
+completion table, final data/model/security/deployment status and fresh test results are in
+[FINAL_PROJECT_REPORT.md](FINAL_PROJECT_REPORT.md). Fresh results: backend **496 passed,
+1 skipped** (16 PostgreSQL tests passed), frontend **38/38**, build and lint passed, browser
+smoke **3/3**, journeys **39/39**, verification **54/54**. Data: 480 DEMO, 0 IMPORTED, 0 LIVE,
+0 provider requests. Active model v5: XGBoost, DEMO, 33.33% accuracy vs 40.62% majority
+baseline, `below_baseline`, `uncalibrated`, not reliable, not real-data trained. Deployment-ready,
+not deployed. The audit corrected public copy that implied real or fresh marketplace data and a
+README tagline that said "demand forecasting"; no feature, ML or security change.
+
+**Phase 14 addendum (September 15): cross-browser, accessibility and production-style E2E
+verification — complete, locally.** Playwright Chromium, Firefox and WebKit (Windows build,
+not real Safari) against a production-mode backend on disposable PostgreSQL 17 and the
+production bundle:
+
+| Check | Result |
+|---|---|
+| Smoke per engine | Chromium, Firefox, WebKit passed |
+| Journeys (RBAC for all four roles, sessions, deep links, offline API, keyboard, CORS, bundle/traffic cleanliness, charts, validation) | **39/39** |
+| Verification (6 viewports × light/dark × 9 routes, axe WCAG 2.1 A/AA, role journeys incl. isolated training, error handling, sessions) | **54/54** |
+| Backend pytest with disposable PostgreSQL | **496 passed, 1 skipped** (opt-in LIVE Flipkart), 0 failed |
+| Frontend build / lint / unit tests | passed / passed / **38/38** |
+
+Application defects fixed: a protected deep-link login redirect race (users now return
+to the requested same-app page); a Dashboard crash on role-less account data (the
+permission boundary now normalizes account payloads and fails closed); keyboard focus
+rings suppressed on six form controls; horizontally scrolling tables not keyboard
+reachable; an empty table header; skipped heading levels on Trends; garbled UI text.
+No backend, ML, connector or RBAC-rule change. Not verified: hosted Vercel/Render URLs
+(none exist), macOS/iOS Safari, WebKit link Tab order, manual screen readers, real
+devices. The development database was upgraded to `0008` on September 14 at the
+owner's request after a `0004` backup; v1–v5 artifacts are unchanged.
+See [Phase 14 report](docs/PHASE_14_REPORT.md).
+
+**Phase 13 addendum (September 14):** Authorization and abuse controls implemented.
+Central roles (viewer, analyst, operator, administrator), admin-only account APIs,
+JWT token-version revocation, per-operation rate limits and inbound body limits are
+in place. New/migrated users default to viewer; mutation controls use backend permissions.
+Migration head is `0008`; the development DB stayed at `0004` during Phase 13 (upgraded to `0008` on September 14 at the owner's request, see the Phase 14 addendum). No persistent
+model was retrained, and v5 remains DEMO-trained and below baseline, with 0 LIVE data.
+See [Phase 13 report](docs/PHASE_13_REPORT.md) for test results and remaining limitations.
+Full automated run with PostgreSQL: **496 passed, 1 opt-in LIVE test skipped**; frontend
+build/lint passed and **15 tests passed**. Preservation hashes match for 161 existing
+data/model files. Interactive browser verification was unavailable during Phase 13 (done in Phase 14); no admin UI or
+deployment was added.
+This supersedes historical statements below that roles/revocation/body controls are absent.
 
 **Current stage:** Phases 1-10 complete to their verifiable limit; Phase 12 complete. Phase 12 hardened ML validation (leakage fix, provenance policy, quality gate); the active model remains **v5, DEMO-trained, `below_baseline`**. Phase 11 added a gated Flipkart Affiliate API LIVE connector; **0 LIVE records exist** because no Flipkart credentials or data-use approval are available. Phase 10 is **deployment-ready and locally production-verified, but not deployed**. No Render service, Vercel project, domain or managed database exists, so nothing has been verified live. See [Phase 10 report](docs/PHASE_10_REPORT.md), [Deployment](docs/DEPLOYMENT.md) and [Durable storage](docs/DURABLE_STORAGE.md).
 
@@ -86,9 +133,10 @@ The historical inspection below does not describe the new production storage.
 active model is now **XGBoost v5**, trained September 13 during the interrupted
 Phase 10 run on the same DEMO data; its accuracy 33.33%, weighted F1 31.87% and
 majority baseline 40.62% match v4. The database holds 24 users, 2 saved
-predictions, 5 model records and 480 DEMO snapshots. Alembic is still at `0004`;
-the next normal backend startup applies `0005`-`0007`, which only add the
-`stored_objects` and `collection_attempts` tables and two nullable model-quality columns.
+predictions, 5 model records and 480 DEMO snapshots. Alembic was then at `0004`.
+*Superseded:* on September 14 the owner ran the project against it; after a `0004`
+backup, normal startup applied `0005`-`0008`, preserving these rows (all 24 users
+became viewers). See the Phase 14 addendum.
 
 **Phase 10 addendum:** The report below preserves the Phase 1-9 inspection.
 Checkpoint `de173ee` now preserves that work in Git. Deployment configuration,
@@ -142,6 +190,8 @@ and the active model performs below the majority-class baseline.
 | 10 - Deployment | Deployment-ready, locally verified; **not deployed** | Render Blueprint and `app.start`, `/ready`, Vercel config with HTTPS API guard, production settings validation, PostgreSQL storage and migrations, concurrent-startup lock, backup plan. Verified on real PostgreSQL, a Linux container and three browser viewports. Live hosting, a managed database and hosted backups remain. |
 | 11 - LIVE marketplace data | Connector implemented and tested; **gated, 0 LIVE records** | Flipkart Affiliate API collector, collector states, fetch provenance log (`0006`), rate-limit cooldowns, append-only LIVE history, status/UI updates. Needs Flipkart credentials and written data-use approval before any LIVE fetch. |
 | 12 - ML validation hardening | **Complete**; active model unchanged (v5, DEMO-trained, below baseline); forward-label leak fixed; 0 LIVE; no real-data-trained model | Boundary-first split fixing forward-label leakage, explicit provenance policy, quality gate, probability-quality measurement, extra baselines, configurable minimums, migration `0007`, Train Model and Predictor quality UI. No real-data model exists. |
+| 13 - Authorization and abuse controls | Implemented; automated checks pass | Viewer/analyst/operator/administrator permissions, admin APIs, token-version revocation, rate and body limits, migration `0008`. No admin UI. |
+| 14 - Cross-browser and accessibility verification | **Complete locally**; not hosted | Chromium/Firefox/WebKit smoke, 39/39 journeys and 54/54 verification tests over six viewports and both themes with axe audits; deep-link, permission-boundary and accessibility fixes. No real Safari, hosted URL or manual screen-reader test. |
 
 Phase completion describes the implemented software, not the fulfillment of live
 marketplace access or production-readiness requirements.
@@ -366,15 +416,17 @@ PostgreSQL storage for data, datasets and models; a documented, rehearsed backup
 5. Evaluate on suitable real historical data before making reliability claims. The
    boundary-crossing forward-label leak is fixed (Phase 12); a model must reach at least
    `candidate` on LIVE/IMPORTED data before being described as real-data trained.
-6. Define authorization and abuse controls before public multi-user deployment:
-   data/model operations currently share an authenticated operator workspace.
+6. Verify Phase 13 controls in the hosted environment and configure trusted proxy/edge limits;
+   data/model operations still share a role-controlled workspace.
 7. Coordinate training across processes before enabling multiple backend workers or instances.
-8. Revisit browser token storage, revocation and deployment request-size limits.
-9. Keyboard-only and assistive-technology testing, and Firefox/Safari coverage (browser
-   verification used Chromium only).
+8. Revisit browser token storage and hosted edge limits; account-wide revocation and
+   application body limits are implemented in Phase 13.
+9. Manual assistive-technology (screen reader) testing, real macOS/iOS Safari and real
+   devices, and WebKit link keyboard focus. Phase 14 covered keyboard use, axe audits and
+   Chromium/Firefox/WebKit locally; see the Phase 14 report.
 
-The current JWT logout discards client tokens; it does not revoke a copied token
-on the server. Imported observation timestamps depend on the operator's data.
+Phase 13 JWT logout increments the user token version, revoking copied tokens
+on subsequent requests. Browser localStorage exposure remains. Imported observation timestamps depend on the operator's data.
 Local model artifacts are trusted files and must not come from untrusted uploads.
 
 ## Repository and documentation
@@ -417,4 +469,7 @@ Reference reports:
 - [Phase 9 report](docs/PHASE_9_REPORT.md)
 - [Phase 10 report](docs/PHASE_10_REPORT.md)
 - [Marketplace sources (Phase 11)](docs/MARKETPLACE_SOURCES.md)
+- [Phase 12 report](docs/PHASE_12_REPORT.md)
+- [Phase 13 report](docs/PHASE_13_REPORT.md)
+- [Phase 14 report](docs/PHASE_14_REPORT.md)
 - [Setup and usage](README.md)

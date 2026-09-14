@@ -4,6 +4,10 @@ Phase 5 only: these produce and inspect the ML-ready table. No training, no
 prediction, no scoring.
 """
 
+from app.auth.permissions import Permission
+from app.auth.rate_limits import operation
+
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
@@ -41,7 +45,7 @@ def _notice(source_types: list[str]) -> str | None:
 def build(
     payload: DatasetBuildRequest,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(operation(Permission.BUILD, "build")),
 ) -> DatasetBuildResponse:
     filters = DatasetFilters(
         platforms=payload.platforms,

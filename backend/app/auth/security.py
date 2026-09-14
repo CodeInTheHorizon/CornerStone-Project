@@ -46,6 +46,7 @@ def verify_password(password: str, hashed: str) -> bool:
 def create_access_token(
     subject: str | int,
     expires_delta: timedelta | None = None,
+    token_version: int = 0,
 ) -> str:
     """Issue a signed JWT whose subject is the user id."""
     now = datetime.now(timezone.utc)
@@ -57,6 +58,7 @@ def create_access_token(
         "iat": int(now.timestamp()),
         "exp": int(expire.timestamp()),
         "type": "access",
+        "token_version": token_version,
     }
     return jwt.encode(
         payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
@@ -70,12 +72,12 @@ def decode_access_token(token: str) -> dict[str, Any] | None:
             token,
             settings.JWT_SECRET_KEY,
             algorithms=[settings.JWT_ALGORITHM],
-            options={"require": ["sub", "iat", "exp"]},
+            options={"require": ["sub", "iat", "exp", "token_version"]},
         )
     except InvalidTokenError:
         return None
 
     # Guard against a token minted for some other purpose being replayed here.
-    if payload.get("type") != "access":
+    if payload.get("type") != "access" or type(payload.get("token_version")) is not int or payload["token_version"] < 0:
         return None
     return payload

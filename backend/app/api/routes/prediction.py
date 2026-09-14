@@ -1,5 +1,9 @@
 """Authenticated Phase 7 prediction and user-scoped history endpoints."""
 
+from app.auth.permissions import Permission
+from app.auth.rate_limits import operation
+
+
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -35,7 +39,7 @@ def prediction_options(
 
 
 @router.post("/predict", response_model=PredictionResponse)
-def predict(payload: PredictRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def predict(payload: PredictRequest, db: Session = Depends(get_db), user: User = Depends(operation(Permission.PREDICT, "predict"))):
     return call(service.predict, db, user.id, payload)
 
 

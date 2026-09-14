@@ -20,8 +20,8 @@ export function Footer() {
           <div className="max-w-sm">
             <Logo />
             <p className="mt-4 text-sm leading-relaxed text-muted">
-              Marketplace intelligence for electronics sellers. Built on fresh
-              marketplace observations, not borrowed datasets.
+              Marketplace intelligence for electronics sellers. Every stored
+              observation is labelled LIVE, IMPORTED or DEMO.
             </p>
           </div>
 

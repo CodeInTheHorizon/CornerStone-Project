@@ -1,3 +1,5 @@
+import { PermissionGate } from '@/components/PermissionGate'
+import { can } from '@/auth/permissions'
 /**
  * Dashboard overview.
  *
@@ -123,7 +125,7 @@ export function DashboardPage() {
             hint="Your saved experimental predictions."
           />
           <SummaryCard
-            label="Active Model ? Weighted F1"
+            label="Active Model · Weighted F1"
             icon="target"
             unavailable={trained ? undefined : model ? 'Not trained' : 'Unavailable'}
             value={
@@ -177,26 +179,26 @@ export function DashboardPage() {
       {/* Main actions */}
       <section aria-label="Actions" className="mt-6">
         <div className="grid gap-5 md:grid-cols-2">
-          <ActionCard
+          <PermissionGate permission="dataset:build"><ActionCard
             icon="layers"
-            title="Train Model"
+            title={can(user, "model:train") ? "Train Model" : "Prepare Dataset"}
             description="Build the ML-ready dataset from stored snapshots, then train a model and inspect measured validation quality."
-            actionLabel={collected === 0 ? 'Train Model' : 'Prepare dataset'}
+            actionLabel="Prepare dataset"
             blockedReason={
               collected === 0
                 ? 'Needs a dataset. Collect, import or load demo data first.'
                 : undefined
             }
             onAction={() => navigate('/dashboard/train')}
-          />
-          <ActionCard
+          /></PermissionGate>
+          <PermissionGate permission="prediction:run"><ActionCard
             icon="compass"
             title="Make Prediction"
             description="Choose an electronics product, compare marketplaces, and get a 0-100 opportunity score for each with the factors behind it."
             actionLabel="New Prediction"
             blockedReason={trained ? undefined : 'Needs an active trained model. Open Train Model first.'}
             onAction={() => navigate('/dashboard/predictor')}
-          />
+          /></PermissionGate>
         </div>
       </section>
 

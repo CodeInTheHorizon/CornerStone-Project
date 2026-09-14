@@ -4,7 +4,7 @@ Phase 1 defines the table only. Password hashing, registration and JWT
 issuing are introduced in Phase 3.
 """
 
-from sqlalchemy import Boolean, String
+from sqlalchemy import Boolean, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base, TimestampMixin
@@ -19,6 +19,14 @@ class User(Base, TimestampMixin):
     # Stores a hash only -- never a plaintext password.
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    role: Mapped[str] = mapped_column(String(24), default="viewer", server_default="viewer", nullable=False)
+    token_version: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"), nullable=False)
+
+    @property
+    def permissions(self) -> list[str]:
+        from app.auth.permissions import permissions_for
+        return permissions_for(self.role)
 
     predictions: Mapped[list["Prediction"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"

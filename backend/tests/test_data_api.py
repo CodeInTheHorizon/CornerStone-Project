@@ -29,6 +29,8 @@ def auth_headers(client):
         "/auth/register", json={"email": email, "password": "marketpulse1"}
     )
     assert response.status_code == 201, response.text
+    from tests.accounts import grant_role
+    grant_role(response.json()["user"]["id"])
     return {"Authorization": f"Bearer {response.json()['access_token']}"}
 
 

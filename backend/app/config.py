@@ -63,6 +63,18 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: Literal["HS256", "HS384", "HS512"] = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60 * 12, ge=1, le=10080)
 
+    # --- Abuse controls (single process; replace store before scaling) ---
+    RATE_LIMIT_LOGIN: int = Field(default=5, ge=1)
+    RATE_LIMIT_REGISTER: int = Field(default=3, ge=1)
+    RATE_LIMIT_PREDICT: int = Field(default=30, ge=1)
+    RATE_LIMIT_COLLECT: int = Field(default=5, ge=1)
+    RATE_LIMIT_BUILD: int = Field(default=5, ge=1)
+    RATE_LIMIT_IMPORT: int = Field(default=5, ge=1)
+    RATE_LIMIT_DEMO: int = Field(default=5, ge=1)
+    RATE_LIMIT_TRAIN: int = Field(default=2, ge=1)  # per hour
+    REQUEST_MAX_BYTES: int = Field(default=1024 * 1024, ge=1024, le=10 * 1024 * 1024)
+    IMPORT_REQUEST_MAX_BYTES: int = Field(default=6 * 1024 * 1024, ge=6 * 1024 * 1024, le=10 * 1024 * 1024)
+
     # --- Marketplace collection (Phase 4) ---
     # Amazon Product Advertising API 5.0. Requires an approved Amazon
     # Associate account; the collector reports itself unavailable when

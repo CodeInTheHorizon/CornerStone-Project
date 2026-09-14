@@ -42,8 +42,9 @@ def test_complete_migration_chain_generates_postgresql_sql(monkeypatch):
     assert 'CREATE TABLE stored_objects' in sql
     assert 'BYTEA' in sql
     assert 'RENAME source TO source_type' in sql
-    assert "'0007'" in sql
+    assert "'0008'" in sql
     assert 'quality_status' in sql
+    assert 'token_version' in sql and 'role' in sql
     assert 'CREATE TABLE collection_attempts' in sql
     assert '_alembic_tmp' not in sql
     for table in Base.metadata.sorted_tables:
@@ -71,7 +72,8 @@ def test_postgresql_upgrade_persistence_and_schema():
         upgrade_to_head(engine)
         with engine.connect() as connection:
             assert connection.execute(text('SELECT count(*) FROM users')).scalar_one() == 1
-            assert connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one() == '0007'
+            assert connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one() == '0008'
+            assert connection.execute(text('SELECT role, token_version, is_active FROM users')).one() == ('viewer', 0, True)
             assert not compare_metadata(MigrationContext.configure(connection), Base.metadata)
         store = DatabaseStore(engine, 'artifacts', 1024)
         meta = store.put('model_v1.pkl', b'persisted', {'model_version': 'v1'})
@@ -137,7 +139,7 @@ def test_concurrent_startup_migrations_serialize(pg_schema):
     engine = create_engine(_schema_url(url, schema))
     try:
         with engine.connect() as connection:
-            assert connection.execute(text('SELECT version_num FROM alembic_version')).scalars().all() == ['0007']
+            assert connection.execute(text('SELECT version_num FROM alembic_version')).scalars().all() == ['0008']
     finally:
         engine.dispose()
 
@@ -203,6 +205,8 @@ def test_production_journey_on_postgresql(pg_schema, tmp_path):
         with httpx.Client(base_url=base_url, timeout=180) as client:
             assert ok(client.get('/health'))['environment'] == 'production'
             ok(client.post('/auth/register', json={'email': 'pg@example.com', 'password': 'marketpulse1'}), 201)
+            with create_engine(_schema_url(url, schema)).begin() as connection:
+                connection.execute(text("UPDATE users SET role='operator' WHERE email='pg@example.com'"))
             headers = login(client)
             assert ok(client.get('/ml/dataset/status', headers=headers))['has_dataset'] is False
             assert ok(client.get('/ml/status', headers=headers))['trained'] is False
@@ -263,3 +267,65 @@ def test_production_journey_on_postgresql(pg_schema, tmp_path):
             process.kill()
     assert not (tmp_path / 'data' / 'processed').exists()
     assert not (tmp_path / 'models').exists()
+
+
+@requires_postgres
+def test_postgresql_account_versions_and_admin_concurrency(pg_schema):
+    from concurrent.futures import ThreadPoolExecutor
+    from fastapi import HTTPException
+    from fastapi.testclient import TestClient
+    from sqlalchemy.orm import Session
+    from app.main import app
+    from app.database import get_db
+    from app.models import User
+    from app.auth.security import create_access_token, hash_password
+    from app.services.account_service import change_account
+
+    url, schema = pg_schema
+    engine = create_engine(_schema_url(url, schema))
+    upgrade_to_head(engine)
+    password = hash_password("marketpulse1")
+    with Session(engine) as db:
+        users = [User(email=f"pg-role-{i}@example.com", hashed_password=password,
+                      role="administrator" if i < 2 else "analyst") for i in range(3)]
+        db.add_all(users); db.commit()
+        ids = [user.id for user in users]
+    def get_test_db():
+        with Session(engine) as db:
+            yield db
+    app.dependency_overrides[get_db] = get_test_db
+    try:
+        with TestClient(app) as client:
+            admin_headers = {"Authorization":"Bearer " + create_access_token(ids[0])}
+            analyst_headers = {"Authorization":"Bearer " + create_access_token(ids[2])}
+            assert client.patch(f"/admin/users/{ids[2]}/status", headers=admin_headers, json={"is_active":False}).status_code == 200
+            assert client.get("/auth/me", headers=analyst_headers).status_code == 401
+            credentials = {"email":"pg-role-2@example.com", "password":"marketpulse1"}
+            assert client.post("/auth/login", json=credentials).status_code == 403
+            assert client.patch(f"/admin/users/{ids[2]}/status", headers=admin_headers, json={"is_active":True}).status_code == 200
+            token = client.post("/auth/login", json=credentials).json()["access_token"]
+            current = {"Authorization":"Bearer " + token}
+            assert client.post("/auth/logout", headers=current).status_code == 204
+            assert client.get("/auth/me", headers=current).status_code == 401
+        # Two simultaneous cross-demotions must leave an active administrator.
+        import threading
+        barrier = threading.Barrier(2)
+        def demote(actor, target):
+            with Session(engine) as db:
+                barrier.wait(timeout=10)
+                try:
+                    change_account(db, actor, target, role="viewer")
+                    return 200
+                except HTTPException as exc:
+                    db.rollback()
+                    return exc.status_code
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            tasks = [pool.submit(demote, ids[0], ids[1]), pool.submit(demote, ids[1], ids[0])]
+            results = sorted(task.result(timeout=20) for task in tasks)
+        assert results == [200, 403]
+        with Session(engine) as db:
+            assert db.execute(text("SELECT count(*) FROM users WHERE role='administrator' AND is_active")).scalar_one() == 1
+            assert db.get(User, ids[2]).token_version == 3
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+        engine.dispose()

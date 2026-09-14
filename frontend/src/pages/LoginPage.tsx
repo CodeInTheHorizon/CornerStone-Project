@@ -24,8 +24,13 @@ export function LoginPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  // Already signed in: go straight through rather than showing a dead form.
-  if (status === 'authenticated') return <Navigate to="/dashboard" replace />
+  // Where ProtectedRoute was sending the user. Only same-app paths are honoured.
+  const requested = (location.state as { from?: unknown } | null)?.from
+  const destination = typeof requested === 'string' && requested.startsWith('/') && !requested.startsWith('//') ? requested : '/dashboard'
+
+  // Already signed in (including the render right after a successful login):
+  // go straight to the requested page rather than showing a dead form.
+  if (status === 'authenticated') return <Navigate to={destination} replace />
 
   const validate = (): Errors => {
     const next: Errors = {}
@@ -46,8 +51,7 @@ export function LoginPage() {
     try {
       await login({ email: email.trim(), password })
       // Return the user to whatever they were trying to reach.
-      const from = (location.state as { from?: string } | null)?.from
-      navigate(from ?? '/dashboard', { replace: true })
+      navigate(destination, { replace: true })
     } catch (error) {
       setFormError(
         error instanceof ApiRequestError

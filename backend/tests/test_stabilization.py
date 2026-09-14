@@ -22,6 +22,8 @@ from app.scrapers.validation import validate_record
 def headers(client):
     response = client.post('/auth/register', json={'email': f'phase9-{uuid4().hex}@example.com', 'password':'marketpulse1'})
     assert response.status_code == 201
+    from tests.accounts import grant_role
+    grant_role(response.json()["user"]["id"])
     return {'Authorization': f"Bearer {response.json()['access_token']}"}
 
 
@@ -79,8 +81,8 @@ def test_history_mixed_timezone_inputs(client, headers):
 
 def test_import_size_and_csv_failure(client, headers):
     response = client.post('/data/import', headers=headers, files={'file':('large.json',b' '*(5*1024*1024+1),'application/json')})
-    assert response.status_code == 422
-    assert '5 MB' in response.text
+    assert response.status_code == 413
+    assert '5 MiB' in response.text
     response = client.post('/data/import', headers=headers, files={'file':('bad.csv', ('platform,product_name\namazon,'+'x'*150000).encode(),'text/csv')})
     assert response.status_code == 422
     assert 'CSV' in response.text

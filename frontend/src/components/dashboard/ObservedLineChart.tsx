@@ -4,7 +4,7 @@ import type { TrendPoint } from '@/types/analytics'
 export function ObservedLineChart({ points, field, label, unit }: { points: TrendPoint[]; field: 'price' | 'discount' | 'rating' | 'reviews'; label: string; unit: string }) {
   const id = useId()
   const values = points.map((point) => point[field]).filter((value): value is number => value !== null)
-  if (values.length === 0) return <div className="rounded-card border border-border-hair p-4"><h4 className="text-sm font-medium">{label}</h4><p className="mt-3 text-sm text-muted">No valid observations.</p></div>
+  if (values.length === 0) return <div className="rounded-card border border-border-hair p-4"><h3 className="text-sm font-medium tracking-normal">{label}</h3><p className="mt-3 text-sm text-muted">No valid observations.</p></div>
   const low = Math.min(...values)
   const high = Math.max(...values)
   const span = high - low || Math.max(Math.abs(high) * 0.1, 1)
@@ -24,7 +24,7 @@ export function ObservedLineChart({ points, field, label, unit }: { points: Tren
   if (segment) paths.push(segment)
   return (
     <div className="min-w-0 rounded-card border border-border-hair p-4">
-      <h4 className="text-sm font-medium">{label} <span className="text-xs text-subtle">({unit})</span></h4>
+      <h3 className="text-sm font-medium tracking-normal">{label} <span className="text-xs text-subtle">({unit})</span></h3>
       {values.length < 2 && <p className="mt-2 text-xs text-muted">One valid observation; no trend inferred.</p>}
       <div className="overflow-x-auto" role="region" aria-label={`${label} chart, scroll horizontally on small screens`} tabIndex={0}>
       <svg viewBox="0 0 640 205" role="img" aria-labelledby={id} className="mt-3 min-w-[520px] w-full text-muted">

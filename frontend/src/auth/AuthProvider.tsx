@@ -108,9 +108,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applySession],
   )
 
-  const logout = useCallback(() => {
-    // Tokens are stateless, so signing out is purely a client-side discard.
-    // There is no server endpoint that would genuinely revoke this token.
+  const clearSession = useCallback(() => {
+    // Used for rejected tokens and cross-tab logout without issuing another request.
     sessionToken.current = null
     setSessionError(null)
     writeStoredToken(null)
@@ -119,15 +118,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('anonymous')
   }, [])
 
+  const logout = useCallback(async () => {
+    const current = sessionToken.current
+    let failure: string | null = null
+    try {
+      if (current) await authService.revokeSessions(current)
+    } catch (error) {
+      if (!(error instanceof ApiRequestError && error.isUnauthorized)) {
+        failure = 'Signed out on this browser. Server session revocation could not be confirmed; sign in and retry logout when connected.'
+      }
+    }
+    if (sessionToken.current === current) {
+      clearSession()
+      if (failure) setSessionError(failure)
+    }
+  }, [clearSession])
+
   useEffect(() => {
     const rejected = (event: Event) => {
       const rejectedToken = (event as CustomEvent<{ token: string }>).detail.token
       if (rejectedToken !== sessionToken.current) return
-      logout()
+      clearSession()
       setSessionError('Your session expired or was rejected. Please sign in again.')
     }
     const storageChanged = (event: StorageEvent) => {
-      if (event.key === TOKEN_STORAGE_KEY && event.newValue === null) logout()
+      if (event.key === TOKEN_STORAGE_KEY && event.newValue === null) clearSession()
     }
     window.addEventListener('marketpulse:unauthorized', rejected)
     window.addEventListener('storage', storageChanged)
@@ -135,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('marketpulse:unauthorized', rejected)
       window.removeEventListener('storage', storageChanged)
     }
-  }, [logout])
+  }, [clearSession])
 
   const value = useMemo(
     () => ({ user, token, status, sessionError, login, register, logout }),

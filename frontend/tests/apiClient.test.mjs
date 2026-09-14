@@ -70,3 +70,24 @@ test('unreadable success payload cannot become a null page model', async () => {
   assert.equal(await apiRequest('/example'), undefined)
   await sleep(1)
 })
+
+
+test('normal 403 preserves the authenticated session', async () => {
+  globalThis.window = new EventTarget()
+  let rejected = false
+  window.addEventListener('marketpulse:unauthorized', () => { rejected = true })
+  globalThis.fetch = async () => new Response(JSON.stringify({ detail: 'You do not have permission to perform this action.' }), { status: 403 })
+  await assert.rejects(apiRequest('/ml/train', { token: 'fixture', method: 'POST' }), /You do not have permission/)
+  assert.equal(rejected, false)
+})
+
+test('logout sends a server revocation request', async () => {
+  const { revokeSessions } = await server.ssrLoadModule('/src/services/authService.ts')
+  globalThis.fetch = async (url, init) => {
+    assert.ok(url.endsWith('/auth/logout'))
+    assert.equal(init.method, 'POST')
+    assert.equal(init.headers.get('Authorization'), 'Bearer fixture')
+    return new Response(null, { status: 204 })
+  }
+  assert.equal(await revokeSessions('fixture'), undefined)
+})
