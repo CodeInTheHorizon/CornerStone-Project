@@ -384,24 +384,39 @@ class FlipkartCollector(MarketplaceCollector):
             else None
         )
 
+        image_urls_raw = base.get("imageUrls")
+        image_url = None
+        gallery: list[str] | None = None
+        if isinstance(image_urls_raw, dict):
+            for size_key in ("800x800", "400x400", "200x200", "unknown"):
+                url = image_urls_raw.get(size_key)
+                if isinstance(url, str) and url.startswith("http"):
+                    image_url = url
+                    break
+            gallery = [
+                v for v in image_urls_raw.values()
+                if isinstance(v, str) and v.startswith("http")
+            ][:5] or None
+        elif isinstance(image_urls_raw, str) and image_urls_raw.startswith("http"):
+            image_url = image_urls_raw
+
         return NormalizedRecord(
             platform=self.platform.value,
             product_name=title,
-            # Only the brand Flipkart states; no guessing from the title.
             brand=clean_text(base.get("productBrand"), 120),
             category=platform_category or clean_text(category, 120),
             subcategory=subcategory,
             external_id=clean_text(base.get("productId"), 128),
+            image_url=image_url,
+            image_urls=gallery,
             price=price,
             original_price=mrp,
             discount_percentage=discount,
             currency=currency,
-            # Not exposed by the Affiliate API for products. Never substituted.
             rating=None,
             review_count=None,
             availability=availability,
             seller_name=seller,
-            # normalize_url drops the query, which carries the affiliate tracking id.
             listing_url=normalize_url(base.get("productUrl")),
             specifications=specifications,
             stock_status=availability,

@@ -8,15 +8,30 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+from app.config import settings
 from app.models.enums import CollectorState, IngestionMode, Platform
 from app.scrapers.alibaba import AlibabaCollector
-from app.scrapers.amazon import AmazonCollector
+from app.scrapers.amazon_web import AmazonWebCollector
+from app.scrapers.dataforseo_amazon import DataForSEOAmazonCollector
 from app.scrapers.base import CollectorStatus, MarketplaceCollector
 from app.scrapers.croma import CromaCollector
 from app.scrapers.flipkart import FlipkartCollector
 
+
+def _amazon_collector() -> MarketplaceCollector:
+    """Pick the Amazon route the operator has switched on.
+
+    The public-page collector wins when explicitly enabled, because choosing it
+    is a deliberate act; otherwise Amazon collection stays on the paid
+    DataForSEO provider, which is the default supported route.
+    """
+    if settings.AMAZON_WEB_ENABLED:
+        return AmazonWebCollector()
+    return DataForSEOAmazonCollector()
+
+
 _BUILDERS = {
-    Platform.AMAZON: AmazonCollector,
+    Platform.AMAZON: _amazon_collector,
     Platform.FLIPKART: FlipkartCollector,
     Platform.CROMA: CromaCollector,
     Platform.ALIBABA: AlibabaCollector,
@@ -47,24 +62,13 @@ def get_collector(platform: str | Platform) -> MarketplaceCollector:
     return _BUILDERS[resolved]()
 
 
-#: Verified 2026-09-14 against Amazon's Creators API documentation and
-#: Associates Program Policies. See docs/MARKETPLACE_SOURCES.md.
-AMAZON_POLICY_REASON = (
-    "The existing Amazon collector uses PA-API 5, which Amazon deprecated and retired on "
-    "15 May 2026. Its replacement, the Creators API, needs new OAuth credentials and 10 "
-    "qualified referral sales in the trailing 30 days, and Amazon's policies forbid using it to aggregate or analyse "
-    "product data, in tools for Amazon sellers, or to train machine-learning models without "
-    "Amazon's express written approval. No LIVE Amazon collection is enabled."
-)
-
-
 def effective_status(state: CollectorStatus) -> CollectorStatus:
     """One availability policy for the API and analytics refresh controls."""
     if "Product Advertising API 5.0" in state.access_method:
         # No configuration can enable it: the endpoint is retired and the
         # replacement's terms exclude this application's use.
         return replace(state, available=False, ingestion_mode=IngestionMode.UNAVAILABLE,
-                       state=CollectorState.UNAVAILABLE, reason=AMAZON_POLICY_REASON,
+                       state=CollectorState.UNAVAILABLE, reason="Amazon PA-API 5.0 is deprecated and disabled.",
                        required_configuration=())
     return state
 

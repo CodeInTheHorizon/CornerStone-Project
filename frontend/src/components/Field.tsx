@@ -19,9 +19,9 @@ interface FieldProps {
 }
 
 const control =
-  'w-full rounded-card border bg-background px-3.5 py-2.5 text-sm text-foreground ' +
-  'placeholder:text-subtle transition-colors ' +
-  'focus:border-accent'
+  'w-full rounded-card border bg-surface px-3.5 py-2.5 text-sm text-foreground ' +
+  'placeholder:text-subtle transition-[border-color,box-shadow] duration-200 ' +
+  'focus:border-accent focus:shadow-[0_0_0_4px_var(--accent-soft)]'
 
 export function Field({
   label,

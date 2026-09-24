@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { Download } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Field } from '@/components/Field'
 import { FormAlert } from '@/components/FormAlert'
@@ -8,7 +9,11 @@ import { SourceBadge } from '@/components/SourceBadge'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { MarketDataRefresh } from '@/components/dashboard/MarketDataRefresh'
 import { ObservedLineChart } from '@/components/dashboard/ObservedLineChart'
+import { PlatformBadge } from '@/components/dashboard/PlatformBadge'
 import { QualityContext } from '@/components/dashboard/PredictionResults'
+import { Icon } from '@/components/Icon'
+import { exportCSV, exportJSON } from '@/lib/export'
+import { PLATFORM_KEYS } from '@/lib/platforms'
 import { useAuth } from '@/hooks/useAuth'
 import { timestamp, title } from '@/lib/predictionFormat'
 import * as service from '@/services/analyticsService'
@@ -16,10 +21,10 @@ import type { AnalyticsFilters, AnalyticsOptions, AnalyticsSummary, ComparisonRe
 
 const number = (value: number | null | undefined, unit = '') => value == null ? 'Unavailable' : `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}${unit}`
 const stock = (value: number | null) => value === 1 ? 'In stock' : value === 0 ? 'Out of stock' : 'Unknown'
-const control = 'mt-2 w-full rounded-card border border-border-hair bg-background px-3 py-2.5 text-sm text-foreground focus:border-accent'
+const control = 'mt-2 w-full rounded-card border border-border-hair bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-200 focus:border-accent'
 
 function MetricSummary({ label, metric, unit = '', changeUnit = unit }: { label: string; metric: TrendMetric; unit?: string; changeUnit?: string }) {
-  return <div className="rounded-card border border-border-hair p-3 text-xs leading-relaxed text-muted">
+  return <div className="rounded-card border border-border-hair bg-background-alt/50 p-3 text-xs leading-relaxed text-muted">
     <strong>{label}</strong>: latest {number(metric.latest, unit)} · first {number(metric.first, unit)} · change {number(metric.absolute_change, changeUnit)} ({number(metric.percentage_change, '%')}) · {metric.direction ?? 'Direction unavailable'}
     <p>Average {number(metric.average, unit)} · min {number(metric.min, unit)} · max {number(metric.max, unit)} · {metric.valid_observations} valid readings</p>
     {metric.reason && <p className="mt-1">{metric.reason}</p>}
@@ -95,16 +100,16 @@ export function AnalyticsPage({ mode }: { mode: 'trends' | 'comparison' }) {
     ? options?.products.find((item) => item.product_key === filters.product_key)?.product_name ?? filters.product_key.split('|')[0]
     : undefined
 
-  return <DashboardLayout title={`MarketPulse AI — ${mode === 'trends' ? 'Trend Analysis' : 'Analytics'}`}>
+  return <DashboardLayout title={mode === 'trends' ? 'Trend Analysis' : 'Analytics'}>
     <div className="space-y-6">
       <Panel>
-        <h2 className="text-xl font-semibold">{mode === 'trends' ? 'Trends in stored observations' : 'Compare observed marketplace signals'}</h2>
-        <p className="mt-3 text-sm leading-relaxed text-muted">These calculations read snapshot history. DEMO is synthetic, IMPORTED is operator-supplied, and LIVE describes collection provenance. None of these labels guarantees current data or actual sales demand.</p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <h2 className="text-xl font-semibold tracking-tight">{mode === 'trends' ? 'Trends in stored observations' : 'Compare observed marketplace signals'}</h2>
+        <p className="mt-2 text-sm leading-relaxed text-muted">These calculations read snapshot history. DEMO is synthetic, IMPORTED is operator-supplied, and LIVE describes collection provenance. None of these labels guarantees current data or actual sales demand.</p>
+        <div className="mt-5 grid gap-4 rounded-card border border-border-hair bg-background-alt/40 p-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="Search product / brand" name="analytics-search" value={query} onChange={(value) => { setQuery(value); setOptionOffset(0) }} />
           <label className="text-sm text-muted">Product<select className={control} value={filters.product_key ?? ''} onChange={(event) => update('product_key', event.target.value)}><option value="">All products in selected category</option>{filters.product_key && !selectedInOptions && <option value={filters.product_key}>{filters.product_key.split('|')[0]} (selected)</option>}{options?.products.map((item) => <option key={item.product_key} value={item.product_key}>{item.product_name} · {item.category}</option>)}</select></label>
           <label className="text-sm text-muted">Category<select className={control} value={filters.category ?? ''} onChange={(event) => { update('category', event.target.value); update('product_key', '') }}><option value="">All categories</option>{filters.category && !options?.categories.includes(filters.category) && <option>{filters.category}</option>}{options?.categories.map((category) => <option key={category}>{category}</option>)}</select></label>
-          <label className="text-sm text-muted">Platform<select className={control} value={filters.platform ?? ''} onChange={(event) => update('platform', event.target.value)}><option value="">All platforms</option>{['amazon', 'flipkart', 'croma', 'alibaba'].map((platform) => <option key={platform} value={platform}>{title(platform)}</option>)}</select></label>
+          <label className="text-sm text-muted">Platform<select className={control} value={filters.platform ?? ''} onChange={(event) => update('platform', event.target.value)}><option value="">All platforms</option>{PLATFORM_KEYS.map((platform) => <option key={platform} value={platform}>{title(platform)}</option>)}</select></label>
           <label className="text-sm text-muted">Data source<select className={control} value={filters.source_type ?? ''} onChange={(event) => update('source_type', event.target.value)}><option value="">All sources (kept separate)</option>{['demo', 'imported', 'live'].map((source) => <option key={source} value={source}>{source.toUpperCase()}</option>)}</select></label>
           <div className="grid grid-cols-2 gap-3"><Field label="From (UTC)" name="start-date" type="date" value={filters.start_date ?? ''} onChange={(value) => update('start_date', value)} /><Field label="Through (UTC)" name="end-date" type="date" value={filters.end_date ?? ''} onChange={(value) => update('end_date', value)} /></div>
         </div>
@@ -114,12 +119,23 @@ export function AnalyticsPage({ mode }: { mode: 'trends' | 'comparison' }) {
 
       {error && <FormAlert>{error}</FormAlert>}
       {loading && <p role="status" className="text-sm text-muted">Calculating stored history…</p>}
-      {!filters.product_key && !filters.category && <Panel><p className="text-sm text-muted">Select a product for like-for-like histories, or a category for explicitly grouped summaries.</p></Panel>}
+      {!filters.product_key && !filters.category && <Panel className="flex items-center gap-3 border-dashed"><Icon name="chart" className="size-5 shrink-0 text-muted" /><p className="text-sm text-muted">Select a product for like-for-like histories, or a category for explicitly grouped summaries.</p></Panel>}
       {response && !loading && <Panel>
         <div className="flex flex-wrap items-center gap-2">{response.provenance.source_types.map((source) => <SourceBadge key={source} kind={source} />)}<span className="text-sm text-muted">{response.provenance.observation_count} observations · {response.provenance.duplicates_removed} duplicates removed</span></div>
         <p className="mt-3 text-sm text-muted">Observed {timestamp(response.provenance.date_range.start)} through {timestamp(response.provenance.date_range.end)}</p>
         <p className="mt-2 text-xs text-subtle">{response.provenance.notice}</p>
         {response.reason && <p className="mt-3 text-sm text-signal-warn">{response.reason}</p>}
+        <div className="mt-3 flex gap-2">
+          <button onClick={() => exportJSON(response, `analytics-${mode}`)} className="inline-flex items-center gap-1.5 rounded-full border border-border-hair px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent hover:text-accent-text">
+            <Download className="size-3" />Export JSON
+          </button>
+          {trends && <button onClick={() => {
+            const rows = trends.series.flatMap((s) => s.points.map((p) => ({ product: s.product_name, platform: s.platform, source: s.source_type, timestamp: p.timestamp, price: p.price, discount: p.discount, rating: p.rating, reviews: p.reviews })))
+            exportCSV(rows, 'trend-data')
+          }} className="inline-flex items-center gap-1.5 rounded-full border border-border-hair px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent hover:text-accent-text">
+            <Download className="size-3" />Export CSV
+          </button>}
+        </div>
       </Panel>}
 
       {trends && !loading && <>
@@ -127,7 +143,7 @@ export function AnalyticsPage({ mode }: { mode: 'trends' | 'comparison' }) {
         <div className="flex flex-wrap items-center gap-3 text-xs text-muted"><span>Showing {trends.series.length} of {trends.total_series} separate listing histories</span>{offset > 0 && <Button size="sm" variant="ghost" onClick={() => setOffset(Math.max(0, offset - 20))}>Previous histories</Button>}{offset + 20 < trends.total_series && <Button size="sm" variant="ghost" onClick={() => setOffset(offset + 20)}>More histories</Button>}</div>
         {trends.series.map((item, index) => <Panel key={`${item.product_key}-${item.platform}-${item.source_type}-${item.currency}-${item.listing_key}`}>
           <details open={index === 0}>
-            <summary className="cursor-pointer text-sm font-semibold">{item.product_name} · {title(item.platform)} · {item.currency} · {item.observation_count} observations <SourceBadge kind={item.source_type} /></summary>
+            <summary className="cursor-pointer text-sm font-semibold">{item.product_name} · <PlatformBadge platform={item.platform} /> · {item.currency} · {item.observation_count} observations <SourceBadge kind={item.source_type} /></summary>
             <p className="mt-3 text-xs text-subtle">Listing: {item.listing_key} · latest observation {timestamp(item.date_range.end)}</p>
             {item.reason && <p className="mt-3 text-sm text-signal-warn">{item.reason}</p>}
             <div className="mt-4 grid gap-4 xl:grid-cols-2"><ObservedLineChart points={item.points} field="price" label="Price" unit={item.currency} /><ObservedLineChart points={item.points} field="discount" label="Discount" unit="%" /><ObservedLineChart points={item.points} field="rating" label="Rating" unit="0–5" /><ObservedLineChart points={item.points} field="reviews" label="Review count" unit="reviews" /></div>
@@ -147,8 +163,8 @@ export function AnalyticsPage({ mode }: { mode: 'trends' | 'comparison' }) {
         <div className="mt-2"><SourceBadge kind={group.source_type} /></div>
         <p className="mt-3 text-xs leading-relaxed text-muted">{group.notice}</p>
         {group.reason && <p className="mt-3 text-sm text-signal-warn">{group.reason}</p>}
-        <div className="mt-4 grid gap-4 md:grid-cols-2">{group.platforms.map((platform) => <div key={platform.platform} className="rounded-card border border-border-hair p-4">
-          <h4 className="font-medium">{title(platform.platform)}</h4>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">{group.platforms.map((platform) => <div key={platform.platform} className="rounded-card border border-border-hair bg-background-alt/40 p-4">
+          <h4 className="font-medium"><PlatformBadge platform={platform.platform} /></h4>
           {platform.reason && <p className="mt-2 text-sm text-muted">{platform.reason}</p>}
           <dl className="mt-3 space-y-2 text-sm text-muted">{[
             ['Average price', number(platform.average_price)], ['Latest price / listing mean', number(platform.latest_price)], ['Average discount', number(platform.average_discount, '%')], ['Average rating', number(platform.average_rating)], ['Mean review change', number(platform.review_growth)], ['Mean review growth', number(platform.review_growth_percentage, '%')], ['Observed listings', String(platform.listing_count)], ['Share of sampled listings', number(platform.listing_density * 100, '%')],
@@ -159,7 +175,7 @@ export function AnalyticsPage({ mode }: { mode: 'trends' | 'comparison' }) {
         </div>)}</div>
       </Panel>)}
 
-      <Panel><h3 className="mb-4 font-semibold">Data refresh</h3>{summaryError && <div className="mb-3"><FormAlert>{summaryError}</FormAlert></div>}<MarketDataRefresh key={filters.product_key ?? ''} sources={summary?.refresh_sources ?? null} selectedProduct={selectedProductName} onRefresh={() => setRevision((value) => value + 1)} /></Panel>
+      <Panel><h3 className="font-semibold">Data refresh</h3><p className="mt-1 mb-4 text-sm text-muted">LIVE refresh runs only when a collector is configured and approved.</p>{summaryError && <div className="mb-3"><FormAlert>{summaryError}</FormAlert></div>}<MarketDataRefresh key={filters.product_key ?? ''} sources={summary?.refresh_sources ?? null} selectedProduct={selectedProductName} onRefresh={() => setRevision((value) => value + 1)} /></Panel>
     </div>
   </DashboardLayout>
 }

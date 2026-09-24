@@ -30,6 +30,8 @@ from app.models.enums import SourceType, Platform
 from app.schemas.data import (
     CollectRequest,
     CollectResponse,
+    RefreshRequest,
+    RefreshResponse,
     DemoDatasetInfo,
     IngestSummary,
     PlatformStatus,
@@ -122,6 +124,19 @@ def collect(
         collection_timestamp=result.collection_timestamp,
         warnings=result.warnings,
     )
+
+
+@router.post("/refresh", response_model=RefreshResponse, summary="Refresh every configured LIVE marketplace")
+def refresh_market_data(
+    payload: RefreshRequest,
+    db: Session = Depends(get_db),
+    _: User = Depends(operation(Permission.COLLECT, "collect")),
+) -> RefreshResponse:
+    platforms = collection_service.refresh_configured_collectors(
+        db, keyword=payload.keyword, category=payload.category, max_items=payload.max_items
+    )
+    successes = sum(row["status"] == "success" for row in platforms.values())
+    return RefreshResponse(status="success" if successes == len(platforms) else "partial_success", platforms=platforms)
 
 
 @router.post(

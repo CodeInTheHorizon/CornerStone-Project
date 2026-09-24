@@ -62,7 +62,7 @@ export function Contact() {
         <form
           noValidate
           onSubmit={handleSubmit}
-          className="rounded-panel border border-border-hair bg-surface p-8 sm:p-10"
+          className="surface-card p-6 sm:p-10"
         >
           <div className="grid gap-5 sm:grid-cols-2">
             <Field

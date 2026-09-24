@@ -86,6 +86,32 @@ class Settings(BaseSettings):
     AMAZON_PAAPI_REGION: str = "eu-west-1"
     AMAZON_PAAPI_MARKETPLACE: str = "www.amazon.in"
 
+    # DataForSEO Merchant API is the supported Amazon search provider.  These
+    # are deliberately backend-only and a disabled switch prevents accidental
+    # paid requests in a newly deployed environment.
+    DATAFORSEO_LOGIN: str = ""
+    DATAFORSEO_PASSWORD: SecretStr = SecretStr("")
+    AMAZON_LIVE_ENABLED: bool = False
+    DATAFORSEO_TIMEOUT_SECONDS: float = Field(default=20.0, ge=1.0, le=60.0)
+
+    # Amazon public search-page collector. Off by default: Amazon's Conditions
+    # of Use restrict automated collection, so enabling this is an explicit
+    # operator decision, not a fallback the system reaches for on its own.
+    AMAZON_WEB_ENABLED: bool = False
+    AMAZON_WEB_DOMAIN: str = "www.amazon.in"
+    AMAZON_WEB_CURRENCY: str = "INR"
+    AMAZON_WEB_LOCALE: str = "en-IN"
+    AMAZON_WEB_TIMEOUT_SECONDS: float = Field(default=15.0, ge=1.0, le=60.0)
+
+    # Reserved approved-provider adapter slots.  No scraper is used for these
+    # marketplaces; an operator must explicitly enable a lawful provider.
+    CROMA_PROVIDER_ENABLED: bool = False
+    CROMA_PROVIDER_BASE_URL: str = ""
+    CROMA_PROVIDER_API_KEY: SecretStr = SecretStr("")
+    ALIBABA_PROVIDER_ENABLED: bool = False
+    ALIBABA_PROVIDER_BASE_URL: str = ""
+    ALIBABA_PROVIDER_API_KEY: SecretStr = SecretStr("")
+
     # --- Model training minimums (Phase 12) ---
     # Training returns insufficient_data below these, even when scikit-learn
     # could technically fit something. See docs/PHASE_12_REPORT.md.

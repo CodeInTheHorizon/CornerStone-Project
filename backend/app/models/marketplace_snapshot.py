@@ -62,10 +62,22 @@ class MarketplaceSnapshot(Base, TimestampMixin):
     rating: Mapped[float | None] = mapped_column(Float, nullable=True)
     review_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    # --- Images ---
+    image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    image_urls: Mapped[list | None] = mapped_column(JSON, nullable=True)
+
     # --- Availability / seller ---
     availability: Mapped[str | None] = mapped_column(String(64), nullable=True)
     seller_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    seller_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    offer_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     listing_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # --- Alibaba wholesale ---
+    min_order_qty: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    price_min: Mapped[float | None] = mapped_column(Float, nullable=True)
+    price_max: Mapped[float | None] = mapped_column(Float, nullable=True)
+    supplier_years: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # --- Optional extras, only where the platform exposes them ---
     shipping_info: Mapped[str | None] = mapped_column(String(255), nullable=True)

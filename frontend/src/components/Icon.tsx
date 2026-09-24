@@ -36,6 +36,10 @@ export type IconName =
   | 'alert'
   | 'clock'
   | 'check'
+  | 'chevron-down'
+  | 'info'
+  | 'search'
+  | 'package'
 
 const paths: Record<IconName, React.ReactNode> = {
   brain: (
@@ -203,9 +207,32 @@ const paths: Record<IconName, React.ReactNode> = {
       <path d="m5 12.5 4.5 4.5L19 7.5" />
     </>
   ),
+  'chevron-down': (
+    <>
+      <path d="m6 9 6 6 6-6" />
+    </>
+  ),
+  info: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 11v5.5M12 7.8h.01" />
+    </>
+  ),
   spark: (
     <>
       <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18" />
+    </>
+  ),
+  search: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.35-4.35" />
+    </>
+  ),
+  package: (
+    <>
+      <path d="m16.5 9.4-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12" />
     </>
   ),
 }

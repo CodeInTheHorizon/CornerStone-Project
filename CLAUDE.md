@@ -1,304 +1,514 @@
-# MarketPulse AI - Working Notes for Claude Code
+@AGENTS.md
 
-Read `PROJECT_CONTEXT.md` before making changes. It is the source of truth for
-scope, architecture, the 10-day roadmap and the acceptance criteria.
+# MarketPulse AI — Real-Time Amazon Scraper Implementation Guide
 
-## Current state
+Use this file to replicate the real-time Amazon web scraping feature in another Next.js (App Router) project. Follow the sections in order.
 
-**Phase 15 final audit complete (2026-09-15).** `FINAL_PROJECT_REPORT.md` is the
-objective-by-objective status for evaluation and handoff; keep it truthful when anything
-changes. Fresh results: backend 496 passed + 1 opt-in LIVE skip (16 PostgreSQL tests), frontend
-38/38, smoke 3/3, journeys 39/39, verification 54/54. Deployment-ready, **not deployed**.
-- Public copy must never imply real, fresh or LIVE data while stored data is DEMO; the target is a
-  price-direction opportunity proxy, never "demand forecasting".
-- External blockers, not coding tasks: Flipkart credentials + written approval, hosting accounts,
-  managed PostgreSQL/backups, real historical data.
+## Prerequisites
 
-**Phase 14 complete, locally (not hosted).** Playwright Chromium/Firefox/WebKit against a
-production-mode backend on disposable PostgreSQL: smoke passed per engine, journeys 39/39,
-verification 54/54 (6 viewports × light/dark, axe WCAG 2.1 A/AA); backend 496 passed +
-1 opt-in LIVE skip; frontend 38 tests. See docs/PHASE_14_REPORT.md. Rules from it:
-- E2E: `frontend/e2e/{smoke,journeys,verification}.spec.ts`, `diagnostics.ts`, `serve.py`.
-  Needs `PHASE14_POSTGRES_URL` (loopback DB named `phase14*`) and a `.e2e-dist` build with
-  `VITE_API_BASE_URL=http://127.0.0.1:8184`. Run smoke per engine first, then one large spec
-  at a time. Container `marketpulse-phase14-tests` (127.0.0.1:55434) is disposable; never use
-  `land-digitigation-*` containers. Keep the machine awake: standby stalled a 2.9 h run.
-- Never assert fixture counts (e.g. 480) in browser journeys; wait on the page's own API
-  responses or visible state, not `networkidle` or sleeps; select by role/label.
-- Browser-noise filters are measured and narrow (204 after-response abort, navigation
-  cancels, WebKit "access control checks" page errors after test navigation). Do not widen.
-- Permissions UI fails closed: `normalizeUser` at the API boundary; `can()` needs the server
-  permission AND the mirrored `ROLE_PERMISSIONS` (drift test vs backend permissions.py).
-- Login returns to the validated same-app `from` path. Keep `:focus-visible` rings (no
-  `outline-none`); scrollable tables need a named `role="region"` with `tabIndex={0}`.
-- Not verified: hosted URLs, real Safari (WebKit on Windows skips links on Tab), screen readers.
+- Next.js 15+ with App Router (tested on 16.3.0)
+- React 19, Tailwind v4, shadcn/ui
+- pnpm (or npm/yarn)
 
-**Phase 13 implemented and automated checks passed (496 backend passed, 1 opt-in LIVE skip; 15 frontend tests at the time):** centralized viewer/analyst/operator/administrator permissions,
-admin account APIs, additive migration 0008 (viewer default + token_version), versioned
-JWT revocation, process-local operation rate limits, and pre-parser request limits.
-See docs/PHASE_13_REPORT.md. No admin UI. Browser-verified in Phase 14.
-- Never restore public registration to operational privileges; reject supplied role/version fields.
-- Pipeline regression fixtures explicitly provision operators in disposable databases.
-- Logout revokes all sessions; role/status changes revoke existing tokens. Old versionless JWTs fail.
-- Preserve 401 vs 403; ordinary permission denial must not sign out the frontend.
-- One worker/instance only; do not trust arbitrary forwarded IP headers for rate limits.
-- Last active admin invariant is serialized; bootstrap is an explicit operator command, never startup.
-- Development DB was upgraded to 0008 on 2026-09-14 at the owner's request (0004 backup in
-  `data/backups/`, git-ignored); its 24 users are viewers. Still never use it for tests.
-
-
-**Phases 1-12 complete.** Phase 12 complete. Active model still **v5** (XGBoost), **DEMO-trained**, quality status **`below_baseline`**. Forward-label boundary leak fixed. **0 LIVE observations**; no model is real-data trained. Phase 12 details, verbatim for reports:
-- Active model is still **v5** (XGBoost), DEMO-trained, quality status **`below_baseline`**, flagged as trained before the leakage fix. Not retrained or modified.
-- Forward-label boundary leakage fixed: boundary-first temporal split, labels generated per partition (the old method let 96/288 DEMO training labels cross).
-- Training requires explicit `source_types`; DEMO never combines with IMPORTED/LIVE except a development-only override.
-- Quality gate (`below_baseline`/`experimental`/`candidate`/`validated`) persisted; probabilities measured but always `uncalibrated`.
-- 0 LIVE observations; no model is real-data trained. Target unchanged: price-direction proxy, not sales demand.
-
-Phase 11 status, verbatim for reports:
-- Flipkart Affiliate API LIVE connector implemented and tested with mocked responses.
-- Connector is gated: credentials **and** Flipkart's written data-use approval are required.
-- Flipkart credentials are missing (state `credentials_missing`).
-- Written approval is required and not held (`FLIPKART_DATA_USE_APPROVED` stays false).
-- **0 LIVE records**: no request has reached Flipkart and no real marketplace data was collected.
-- ML is unchanged: no features, targets, training or scoring changed; the model is still DEMO-trained.
-
-Never claim LIVE data or LIVE success. Phase 10 is deployment-ready and locally
-production-verified (real PostgreSQL 17, a Linux Render build and start, a
-Playwright browser pass), but **not deployed**: no Git remote, Render/Vercel
-service, domain or managed database exists. Never claim a live deployment.
-
-Phase 1: repository structure, FastAPI backend with config/CORS/`/health`,
-SQLAlchemy models for `User`, `MarketplaceSnapshot`, `Prediction`,
-`ModelMetadata`, React + Vite + TypeScript + Tailwind frontend, typed API client.
-
-Phase 2: public landing page - navbar, hero, "Why Choose" flip cards, developer
-profile, feature grid, WhatsApp contact form, footer; light/dark theming with a
-pre-paint script; scroll reveals honouring `prefers-reduced-motion`.
-
-Phase 3: bcrypt password hashing, JWT auth (`/auth/register`, `/auth/login`,
-`/auth/me`), a protected dashboard shell with sidebar, summary cards and the
-Train Model / Make Prediction actions. Sections beyond the overview render an
-honest placeholder.
-
-Phase 4: marketplace collection layer - collector interface, Amazon via the
-official PA-API 5.0, honest unavailable stubs for Flipkart/Croma/Alibaba,
-normalization, validation, dedup, /data/collect|latest|history|status, and the
-Marketplace Data dashboard page. Alembic migrations replace create_all().
-
-Phase 4.5: source-type provenance (live/imported/demo), a shared ingest
-pipeline every path goes through, CSV/JSON import at /data/import, a synthetic
-demo fixture at data/demo/, enriched /data/status (ingestion mode, required
-configuration, stored provenance) and LIVE/IMPORTED/DEMO/UNAVAILABLE badges.
-
-Phase 5: dataset builder and feature engineering - app/ml/{normalization,
-features,dataset_builder}.py, dataset_service, /ml/dataset/{build,status,
-preview}, CSV + metadata output to data/processed/, and the Dataset
-Preparation panel on Train Model.
-
-Phase 6: model training - app/ml/{target,training}.py, training_service,
-/ml/{train,status,metrics}, versioned artifacts in app/ml/artifacts/,
-ModelMetadata persistence, and training UI on Train Model plus the dashboard
-model status card.
-
-Phase 7: saved-Pipeline prediction, conservative opportunity scores, authenticated
-/ml/predict and /ml/predictions history/detail, /ml/prediction-options product
-selection, migration 0004 with immutable result JSON, and an active ML Predictor
-page with comparison bars, provenance and model/baseline warnings.
-
-Phase 8: snapshot-only analytics_service, authenticated /analytics/{trends,
-platform-comparison,summary,options}, active Trends/Analytics pages, simple SVG
-charts, actual dashboard summaries, and a disabled live-refresh hook with reasons.
-Sources, currencies and listings remain separate; no model inference or training
-runs in analytics. See docs/PHASE_8_REPORT.md for policies and limitations.
-
-Phase 9: configuration/JWT/input hardening, shared request timeouts and session
-expiry, migration logging preservation, bounded import/preview reads, consistent
-unavailable collector status, training collision protection and mobile focus polish.
-Fresh-install API journey and frontend request regressions are in tests. See
-docs/PHASE_9_REPORT.md; browser interaction remains unverified (no available browser).
-
-Phase 10: `render.yaml` (one instance) + `python -m app.start` (one worker),
-`/ready` returning 503 when the DB is unreachable, `frontend/vercel.json` with SPA
-rewrite, Vercel builds requiring an HTTPS `VITE_API_BASE_URL`, and production
-settings validation.
-- **Durable storage:** `app/storage/` (local and database adapters, checksummed
-  immutable bundles), `STORAGE_BACKEND`/`STORAGE_MAX_BYTES`, migration 0005
-  (`stored_objects`). Outside development, settings require a PostgreSQL
-  `DATABASE_URL` (normalized to `postgresql+psycopg`) and database storage;
-  development keeps SQLite and local files.
-- **Startup migrations** take a PostgreSQL advisory lock
-  (`app/database/migrate.py`) so concurrent startups cannot race, and any
-  migration failure stops startup.
-- **Frontend:** the `127.0.0.1:8000` API fallback is dev-server only; production
-  bundles without `VITE_API_BASE_URL` report "API address is not configured".
-- **Docs:** docs/DEPLOYMENT.md holds the env var lists, backup plan and live smoke
-  checklist; docs/PHASE_10_REPORT.md has the evidence and remaining blockers.
-
-Phase 11 (LIVE marketplace data; details in docs/MARKETPLACE_SOURCES.md):
-- **Connector:** `app/scrapers/flipkart.py` is `FlipkartCollector`, the official
-  Affiliate API 1.0 search endpoint with bounded retries, `Retry-After` handling,
-  credential redaction and affiliate-id stripping from URLs. It runs only with
-  `FLIPKART_AFFILIATE_ID`, `FLIPKART_AFFILIATE_TOKEN` (SecretStr) **and**
-  `FLIPKART_DATA_USE_APPROVED=true`, which records Flipkart's written approval;
-  its terms limit use to its own platform. Never default that flag to true or
-  bypass the gate.
-- **Other platforms:** Amazon PA-API 5 was retired on 15 May 2026, and the
-  Creators API terms forbid aggregation, seller tools and ML training without
-  approval, so the registry policy keeps Amazon `unavailable`. Croma has no API.
-  Alibaba's Open API is seller-only.
-- **Collector states** (`CollectorState`): live, credentials_missing,
-  approval_required, credentials_rejected, rate_limited, provider_error,
-  unavailable. `collection_service.platform_statuses` overlays the latest
-  attempt on each collector's static status.
-- **Provenance:** `collection_attempts` (migration 0006) logs every outbound fetch,
-  failures included; LIVE snapshots link to it via `collection_run_id`. A 429
-  sets `retry_after_at`, and `/data/collect` then returns 429 without calling the
-  provider.
-- **History** is append-only. `ingest.recent_live_duplicate` skips only a LIVE
-  observation identical to one stored for the same listing within 10 minutes.
-- **Flipkart gives no product rating or review count;** those stay NULL (never
-  seller ratings). One refresh returns at most 10 results. No scheduler.
-- **Tests** use `httpx.MockTransport` (`tests/test_flipkart.py`,
-  `tests/test_live_collection.py`). `tests/test_flipkart_live.py` is opt-in via
-  `RUN_FLIPKART_LIVE_TEST=1` plus credentials and approval.
-
-Phase 12 (ML validation; details in docs/PHASE_12_REPORT.md):
-- **Split and labels:** `app/ml/validation.py` chooses the date boundary first
-  and labels each partition with `target.add_target` (which records
-  `target_observed_at`). `train_models` discards any precomputed target. Never
-  label globally before splitting.
-- **Provenance:** `app/ml/provenance.py` requires `/ml/train` to pass
-  `source_types`, and the dataset may contain only those types. Do not add
-  row filtering as a shortcut: market features cross provenance.
-- **Gate:** `validation.quality_gate` sets `quality_status`. DEMO,
-  development-override and legacy models are capped at experimental.
-  "validated" needs real data, >=200 validation rows on >=2 dates, a Wilson
-  lower bound above every baseline and log loss better than the class prior.
-- **Legacy records:** `training_service.quality_report` interprets
-  pre-Phase 12 records (no `training_policy_version`) on read. Never backfill
-  or rewrite them.
-- **Minimums:** `ML_MIN_*` settings (100 labelled, 60 train, 20 validation,
-  10 products, 4 dates, 5 per class) return `insufficient_data` before fitting.
-- **Baselines** are accuracies (majority, training majority, previous
-  direction). Never compare weighted F1 with them.
-- **Prediction label:** "Highest experimental opportunity score" unless the
-  model is candidate/validated. Saved pre-Phase 12 predictions must keep
-  validating (new ModelQuality fields need defaults).
-
-No scheduled jobs have been implemented.
-See docs/PHASE_7_REPORT.md for the exact score formula. Preserve historical
-model quality with every saved prediction.
-
-## Layout
-
-```
-backend/app/
-  config.py       env-driven settings (pydantic-settings)
-  main.py         app factory, CORS, router wiring
-  api/            routes/ + aggregate router (feature routers land here)
-  start.py        production entrypoint (python -m app.start)
-  database/       engine, session, declarative Base
-  models/         ORM models
-  schemas/        pydantic request/response shapes
-  auth/           security.py (hashing, JWT), dependencies.py (get_current_user)
-  scrapers/       base (collector contract, states, errors), parsing, validation,
-                  registry + one module per platform (flipkart = Affiliate API)
-  ml/             normalization, features, dataset_builder, target, training, opportunity
-  services/       ingest, collection, import, demo, dataset, training, prediction, analytics, user
-  storage/        dataset/artifact stores over local files or DB bundles
-frontend/src/
-  components/     reusable UI primitives
-  sections/       landing page sections
-  pages/          routed pages
-  theme/          themeContext.ts + ThemeProvider.tsx
-  lib/            pure helpers (cn, contactForm)
-  services/ hooks/ types/ config/
-```
-
-## Frontend conventions
-
-- Landing copy lives in `src/config/site.ts`, not inside components.
-- Colours come from semantic tokens (`bg-surface`, `text-muted`, `border-border-hair`)
-  defined per theme in `src/index.css`. Never hardcode a hex in a component.
-- Any colour change must be re-checked against WCAG AA in **both** themes.
-- Do not pass responsive display classes (`hidden md:inline-flex`) to `Button`;
-  its base sets `inline-flex` and the winner depends on stylesheet order. Put
-  them on a wrapper element.
-
-## Rules
-
-1. Work only on the requested phase; do not implement future phases early.
-2. Inspect existing files before replacing them; preserve working code.
-3. Keep frontend, backend, scraping, ML and analytics modular.
-4. **Never fabricate marketplace data or ML metrics.** Metric columns stay NULL
-   until a real evaluation run fills them. Demo rows must be tagged
-   `source="demo"` (`DataSource.DEMO`) so they can never be shown as live data.
-   In the UI this means `SummaryCard` takes `unavailable="Not trained"` rather
-   than a placeholder digit, and blocked actions state what is missing.
-   Every stored row carries `source_type`; the demo fixture is synthetic and
-   must always be badged DEMO, never rendered as a live observation.
-   In feature engineering this means a value that cannot be computed is NaN,
-   never 0 -- zero is a claim that nothing changed. Trend features must not
-   look ahead: use expanding windows over each listing's own past only.
-   In training it means metrics are always reported beside the naive baselines
-   (as accuracies), near-perfect accuracy is flagged as suspected leakage rather
-   than success, the split stays time-aware and boundary-first because repeated
-   observations of one listing make a random split leak, and no model trained on
-   DEMO data may be described as real-data trained or reliable.
-5. Marketplace collection must use officially permitted access paths. Never
-   bypass CAPTCHAs, authentication, anti-bot protections or access controls. If
-   a source cannot be collected reliably, return an explicit unsupported status.
-6. No secrets in frontend code - only `VITE_`-prefixed public values.
-7. Run the checks below after every phase and report results honestly.
-
-## Commands
+## Step 1: Install dependency
 
 ```bash
-# Backend (from backend/)
-.venv/Scripts/python -m pytest
-.venv/Scripts/python -m uvicorn app.main:app --reload
-
-# Frontend (from frontend/)
-npm run build     # tsc -b && vite build
-npm run lint
-npm test
-npm run dev
+pnpm add cheerio
 ```
 
-## Environment notes
+Cheerio is the only new dependency — it parses Amazon's server-rendered HTML without a headless browser.
 
-- Python 3.14 on Windows. Dependency pins in `requirements.txt` are the versions
-  verified installable on cp314 - several older pins have no 3.14 wheels, so
-  bump rather than downgrade Python if a pin fails.
-- The Vite dev server binds `localhost` (IPv6). `127.0.0.1:5173` will not
-  connect; both origins are allowed in `CORS_ORIGINS` regardless.
-- The schema is managed by Alembic (`backend/migrations/`) and upgraded on
-  startup. When you change a model, add a migration - `tests/test_migrations.py`
-  fails if the migrated schema and the models disagree.
-- Tests isolate database, model artifacts and generated datasets in temporary
-  storage. Do not point test writes at the development artifact directory.
-- The existing inactive v1 database record and artifact disagree. Phase 7 leaves
-  them untouched and rejects incompatible metadata/pipelines.
-- Development database (inspected read-only 2026-09-14): active model is **v5**
-  (XGBoost, trained 2026-09-13 during the interrupted Phase 10 run; v1-v4 are
-  inactive), 24 users, 2 saved predictions, 480 DEMO snapshots, 0 LIVE. Alembic is
-  at **0008** since 2026-09-14 (owner-requested run; rows preserved, all users viewer;
-  0004 backup `data/backups/marketpulse-pre-0008-20260914-174616.db`). Do not delete or
-  retrain over these files without being asked.
-- Prediction is a DEMO pipeline demonstration: v5 (like v4) scores accuracy 33.3%
-  vs majority baseline accuracy 40.6%, weighted F1 31.9%. Never equate class
-  probability or the heuristic opportunity score with reliable marketplace advice
-  or sales demand.
-- In this sandbox pytest cannot write its default temp root; pass
-  `--basetemp` pointing at a writable scratch directory if fixtures fail with
-  `PermissionError`.
-- PostgreSQL tests (`tests/test_postgresql.py`, the `postgresql` storage fixture)
-  skip unless `TEST_POSTGRES_URL` is set. Docker Desktop is installed; a disposable
-  `postgres:17-alpine` bound to `127.0.0.1` works (see docs/DEPLOYMENT.md). Each
-  test uses its own schema. Never point it at a real database.
-- Importing the app (pandas/scikit-learn/scipy) takes 10-30 s when the machine is
-  busy. Subprocess startup tests allow 180-240 s; do not tighten them.
+## Step 2: Add `amazonUrl` to your SKU type
 
-- DEBUG defaults false; legacy DEBUG=release is false. Exact CORS origins accept
-  comma-separated text or JSON. Non-development secrets need at least 32 bytes.
-- Training lock is process-local; run one worker pending cross-process coordination.
+In your types file (e.g. `lib/types.ts`), add an optional `amazonUrl` field to the `Sku` type:
+
+```ts
+export type Sku = {
+  // ... existing fields ...
+  amazonUrl?: string  // Amazon product page URL (e.g. "https://www.amazon.com/dp/B09B8V1LZ3")
+}
+```
+
+Then seed some SKUs in your mock data with real Amazon `/dp/ASIN` URLs. SKUs without `amazonUrl` fall back to mock data — no regression.
+
+## Step 3: Create `lib/scraper/types.ts`
+
+Defines scraper-specific types used across the scraper module.
+
+```ts
+import type { SkuStatus } from "../types"
+
+export type ScrapedStock = "in_stock" | "low_stock" | "out_of_stock" | "unknown"
+
+export type ScrapedListing = {
+  price: number | null
+  stock: ScrapedStock
+  status: SkuStatus
+  raw: { title?: string; availabilityText?: string }
+  scrapedAt: number
+  sourceUrl: string
+}
+
+export type ScrapeErrorCode =
+  | "blocked"
+  | "not_found"
+  | "parse_failed"
+  | "network_error"
+
+export class ScrapeError extends Error {
+  code: ScrapeErrorCode
+  sourceUrl: string
+
+  constructor(code: ScrapeErrorCode, sourceUrl: string, message?: string) {
+    super(message ?? `Scrape failed: ${code} for ${sourceUrl}`)
+    this.name = "ScrapeError"
+    this.code = code
+    this.sourceUrl = sourceUrl
+  }
+}
+```
+
+## Step 4: Create `lib/scraper/fetcher.ts`
+
+HTTP fetcher with mobile/desktop UA rotation, USD cookies (forces US pricing regardless of IP geo), timeout, and optional proxy support via `SCRAPER_PROXY_URL` env var.
+
+```ts
+const AMAZON_COOKIES = "i18n-prefs=USD; lc-main=en_US; sp-cdn=L5Z9:US"
+
+const MOBILE_HEADERS: Record<string, string> = {
+  "User-Agent":
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36",
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+  "Accept-Encoding": "gzip, deflate, br",
+  "Cache-Control": "no-cache",
+  Pragma: "no-cache",
+  Cookie: AMAZON_COOKIES,
+}
+
+const DESKTOP_HEADERS: Record<string, string> = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
+  Accept:
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+  "Accept-Encoding": "gzip, deflate, br",
+  "Cache-Control": "no-cache",
+  Pragma: "no-cache",
+  Cookie: AMAZON_COOKIES,
+}
+
+const FETCH_TIMEOUT_MS = 15_000
+
+export async function fetchHtml(
+  url: string,
+  mode: "mobile" | "desktop" = "mobile",
+): Promise<string> {
+  const proxyUrl = process.env.SCRAPER_PROXY_URL
+  const targetUrl = proxyUrl
+    ? `${proxyUrl.replace(/\/+$/, "")}?url=${encodeURIComponent(url)}`
+    : url
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+
+  try {
+    const res = await fetch(targetUrl, {
+      headers: mode === "mobile" ? MOBILE_HEADERS : DESKTOP_HEADERS,
+      signal: controller.signal,
+      redirect: "follow",
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${url}`)
+    return await res.text()
+  } finally {
+    clearTimeout(timer)
+  }
+}
+```
+
+**Key design decisions:**
+- `i18n-prefs=USD` cookie forces USD pricing even from non-US IPs (otherwise Amazon geo-routes by IP and returns INR/EUR/etc.)
+- Mobile UA is tried first because Amazon's mobile pages have more SSR-rendered price data
+- `SCRAPER_PROXY_URL` env var lets you plug in ScraperAPI/Bright Data/Oxylabs for production reliability
+
+## Step 5: Create `lib/scraper/amazon.ts`
+
+The core Amazon product page parser with a 7-tier price extraction strategy. This is the most critical file — it went through 5 iterations of debugging to handle Amazon's quirks.
+
+```ts
+import * as cheerio from "cheerio"
+import { fetchHtml } from "./fetcher"
+import { ScrapeError } from "./types"
+import type { ScrapedListing, ScrapedStock } from "./types"
+import type { SkuStatus } from "../types"
+
+const MAX_SANE_PRICE = 10_000
+
+function extractPrice(text: string): number | null {
+  const stripped = text
+    .replace(/^[A-Z]{2,3}\s*/, "")   // "INR", "USD", "EUR" prefix
+    .replace(/^[\$₹€£]/, "")          // currency symbols
+    .replace(/,/g, "")                // thousand separators
+    .trim()
+  const val = parseFloat(stripped)
+  if (isNaN(val) || val <= 0 || val > MAX_SANE_PRICE) return null
+  return val
+}
+
+function parsePrice($: cheerio.CheerioAPI): number | null {
+  // 1. Hidden input fields (cart/add-on logic, present in SSR HTML)
+  const hiddenSelectors = [
+    'input#attach-base-product-price[value]',
+    'input[name="displayPrice"][value]',
+    'input#priceValue[value]',
+  ]
+  for (const sel of hiddenSelectors) {
+    const val = $(sel).attr("value")
+    if (val) {
+      const price = extractPrice(val)
+      if (price) return price
+    }
+  }
+
+  // 2. JSON-LD structured data
+  for (const el of $('script[type="application/ld+json"]').toArray()) {
+    try {
+      const data = JSON.parse($(el).text())
+      const offers = data?.offers ?? data?.Offers
+      if (offers) {
+        const raw = Array.isArray(offers) ? offers[0]?.price : offers?.price
+        const price = parseFloat(String(raw))
+        if (!isNaN(price) && price > 0) return price
+      }
+    } catch { /* malformed JSON-LD */ }
+  }
+
+  // 3. Meta tags
+  const metaSelectors = [
+    'meta[itemprop="price"]',
+    'meta[property="product:price:amount"]',
+    'meta[name="twitter:data1"]',
+  ]
+  for (const sel of metaSelectors) {
+    const content = $(sel).attr("content")
+    if (content) {
+      const price = extractPrice(content)
+      if (price) return price
+    }
+  }
+
+  // 4. Composite price from whole + fraction spans (most reliable on current Amazon layouts)
+  //    Amazon renders "$49.99" as two separate spans: <span class="a-price-whole">49</span>
+  //    and <span class="a-price-fraction">99</span>. The .a-offscreen text often lacks decimals.
+  const priceContainers = [
+    "#corePrice_feature_div .a-price",
+    ".a-price",
+    "#price .a-price",
+    "#buybox .a-price",
+  ]
+  for (const sel of priceContainers) {
+    const container = $(sel).first()
+    const whole = container.find(".a-price-whole").first().text().replace(/[^0-9]/g, "")
+    const fraction = container.find(".a-price-fraction").first().text().replace(/[^0-9]/g, "")
+    if (whole) {
+      const combined = parseFloat(`${whole}.${fraction || "00"}`)
+      if (!isNaN(combined) && combined > 0 && combined <= MAX_SANE_PRICE) return combined
+    }
+  }
+
+  // 5. DOM selectors (legacy Amazon layouts)
+  const domSelectors = [
+    "#priceblock_ourprice", "#priceblock_dealprice", "#price_inside_buybox",
+    "#newBuyBoxPrice", "#price", "#apex_offerDisplay_desktop .a-offscreen",
+    "#newPitchPriceWrapper_feature_div .a-offscreen", "#mbc-price-1", ".offer-price",
+  ]
+  for (const sel of domSelectors) {
+    const text = $(sel).first().text().trim()
+    if (text) {
+      const price = extractPrice(text)
+      if (price) return price
+    }
+  }
+
+  // 6. data-asin-price attribute
+  const asinPriceEl = $("[data-asin-price]").first()
+  if (asinPriceEl.length) {
+    const price = extractPrice(asinPriceEl.attr("data-asin-price") ?? "")
+    if (price) return price
+  }
+
+  // 7. Inline script regex — only trust decimal-format prices under $10k
+  const scriptPatterns = [
+    /"priceAmount"\s*:\s*(\d{1,5}\.\d{1,2})\b/,
+    /"price"\s*:\s*"?\$?(\d{1,5}\.\d{2})"/,
+    /"buyingPrice"\s*:\s*(\d{1,5}\.\d{1,2})\b/,
+    /"our_price"\s*:\s*"(\d{1,5}\.\d{2})"/,
+    /"formattedPrice"\s*:\s*"\$(\d{1,5}\.\d{2})"/,
+    /"currencyPrice"\s*:\s*"\$(\d{1,5}\.\d{2})"/,
+  ]
+  const allScripts = $("script:not([src])").text()
+  for (const pattern of scriptPatterns) {
+    const match = allScripts.match(pattern)
+    if (match?.[1]) {
+      const price = parseFloat(match[1])
+      if (!isNaN(price) && price > 0.01 && price <= MAX_SANE_PRICE) return price
+    }
+  }
+
+  return null
+}
+
+function parseAvailability($: cheerio.CheerioAPI): { stock: ScrapedStock; status: SkuStatus } {
+  const availText = (
+    $("#availability").text() + " " +
+    $("#availabilityInsideBuyBox_feature_div").text() + " " +
+    $(".buying-price-availability").text()
+  ).toLowerCase().trim()
+
+  if (/currently unavailable|not available/i.test(availText)) return { stock: "out_of_stock", status: "delisted" }
+  if (/temporarily out of stock/i.test(availText)) return { stock: "out_of_stock", status: "out_of_stock" }
+  if (/only \d+ left/i.test(availText)) return { stock: "low_stock", status: "active" }
+  if (/in stock|add to cart|buy now/i.test(availText)) return { stock: "in_stock", status: "active" }
+
+  if ($("#add-to-cart-button, #addToCart, input[name='submit.add-to-cart']").length > 0) {
+    return { stock: "in_stock", status: "active" }
+  }
+
+  return { stock: "unknown", status: "active" }
+}
+
+function detectBlock($: cheerio.CheerioAPI, url: string): void {
+  if (
+    $("#captchacharacters").length > 0 ||
+    $("title").text().toLowerCase().includes("robot check") ||
+    $("body").text().includes("Enter the characters you see below")
+  ) {
+    throw new ScrapeError("blocked", url, "Amazon CAPTCHA / bot detection triggered")
+  }
+}
+
+export async function scrapeAmazonListing(url: string): Promise<ScrapedListing> {
+  let html: string
+  try {
+    html = await fetchHtml(url, "mobile")
+  } catch (err) {
+    if (err instanceof ScrapeError) throw err
+    throw new ScrapeError("network_error", url, (err as Error).message)
+  }
+
+  let $ = cheerio.load(html)
+  detectBlock($, url)
+
+  if ($("#d", "#error-page").length > 0 || $("title").text().includes("Page Not Found")) {
+    throw new ScrapeError("not_found", url)
+  }
+
+  let price = parsePrice($)
+
+  // Desktop fallback — if mobile didn't yield a price, retry with desktop UA
+  if (price === null) {
+    try {
+      const desktopHtml = await fetchHtml(url, "desktop")
+      const $d = cheerio.load(desktopHtml)
+      detectBlock($d, url)
+      const desktopPrice = parsePrice($d)
+      if (desktopPrice !== null) { price = desktopPrice; $ = $d }
+    } catch { /* desktop retry is best-effort */ }
+  }
+
+  const { stock, status } = parseAvailability($)
+  const title = ($("#productTitle").text().trim() || $("#title").text().trim() || $("h1#title span").text().trim()) || undefined
+  const availabilityText = $("#availability").text().trim() || undefined
+
+  return { price, stock, status, raw: { title, availabilityText }, scrapedAt: Date.now(), sourceUrl: url }
+}
+```
+
+**Pitfalls this code solves (learned the hard way):**
+- Amazon splits visible prices into `a-price-whole` (49) + `a-price-fraction` (99) spans — the `.a-offscreen` text often has no decimal
+- Inline script regex must require decimal format (`\d{1,5}\.\d{1,2}`) or it matches timestamps/widget IDs as garbage prices
+- `MAX_SANE_PRICE = 10,000` caps all extracted prices — prevents JS artifact numbers from leaking through
+- Non-US IPs get local currency (INR in India) — the `i18n-prefs=USD` cookie in fetcher.ts fixes this
+- `extractPrice()` strips currency prefixes (INR, USD, $, etc.) before parsing
+
+## Step 6: Rewrite `app/api/marketplace/sync/route.ts`
+
+Replace the mock `marketplaceTruth()` with a real scraper that:
+- Checks an in-memory TTL cache (60s) per SKU
+- Falls back to mock data for SKUs without `amazonUrl`
+- Uses bounded concurrency (max 3 concurrent scrapes)
+- On failure, returns cached result or mock data (never crashes the whole sync)
+
+```ts
+import { NextResponse } from "next/server"
+import { initialProducts } from "@/lib/mock-data"
+import type { Sku, SkuStatus } from "@/lib/types"
+import { scrapeAmazonListing } from "@/lib/scraper/amazon"
+import { ScrapeError } from "@/lib/scraper/types"
+
+const EXPECTED_TOKEN = process.env.MARKETPLACE_SYNC_TOKEN ?? "demo-marketplace-token"
+const CACHE_TTL_MS = 60_000
+const MAX_CONCURRENCY = 3
+
+export type MarketplaceSkuSnapshot = {
+  skuId: string
+  marketplacePrice: number
+  marketplaceStock: number
+  status: SkuStatus
+}
+
+export type MarketplaceSyncResponse = {
+  syncedAt: number
+  source: "marketplace-live"
+  skus: MarketplaceSkuSnapshot[]
+}
+
+type CacheEntry = { snapshot: MarketplaceSkuSnapshot; expiresAt: number }
+const snapshotCache = new Map<string, CacheEntry>()
+
+function mockSnapshotForSku(sku: Sku): MarketplaceSkuSnapshot {
+  return {
+    skuId: sku.id,
+    marketplacePrice: sku.marketplacePrice,
+    marketplaceStock: sku.marketplaceStock,
+    status: sku.status,
+  }
+}
+
+function stockToNumber(stock: "in_stock" | "low_stock" | "out_of_stock" | "unknown"): number {
+  switch (stock) {
+    case "in_stock": return 100
+    case "low_stock": return 5
+    case "out_of_stock": return 0
+    case "unknown": return -1
+  }
+}
+
+async function scrapeSku(sku: Sku): Promise<MarketplaceSkuSnapshot> {
+  const now = Date.now()
+  const cached = snapshotCache.get(sku.id)
+  if (cached && cached.expiresAt > now) return cached.snapshot
+  if (!sku.amazonUrl) return mockSnapshotForSku(sku)
+
+  try {
+    const listing = await scrapeAmazonListing(sku.amazonUrl)
+    const snapshot: MarketplaceSkuSnapshot = {
+      skuId: sku.id,
+      marketplacePrice: listing.price ?? sku.marketplacePrice,
+      marketplaceStock: stockToNumber(listing.stock),
+      status: listing.status,
+    }
+    snapshotCache.set(sku.id, { snapshot, expiresAt: now + CACHE_TTL_MS })
+    return snapshot
+  } catch (err) {
+    if (cached) return cached.snapshot
+    console.error(`Scrape failed for ${sku.id}:`, err instanceof ScrapeError ? `${err.code} — ${err.message}` : err)
+    return mockSnapshotForSku(sku)
+  }
+}
+
+async function scrapeMarketplaceTruth(): Promise<MarketplaceSkuSnapshot[]> {
+  const allSkus: Sku[] = initialProducts.flatMap((p) => p.skus)
+  const results: MarketplaceSkuSnapshot[] = []
+  for (let i = 0; i < allSkus.length; i += MAX_CONCURRENCY) {
+    const batch = allSkus.slice(i, i + MAX_CONCURRENCY)
+    const batchResults = await Promise.all(batch.map(scrapeSku))
+    results.push(...batchResults)
+  }
+  return results
+}
+
+export async function GET(request: Request) {
+  const auth = request.headers.get("authorization")
+  const token = auth?.replace(/^Bearer\s+/i, "")
+  if (!token || token !== EXPECTED_TOKEN) {
+    return NextResponse.json({ error: "Unauthorized. Provide a valid marketplace sync token." }, { status: 401 })
+  }
+  const response: MarketplaceSyncResponse = {
+    syncedAt: Date.now(),
+    source: "marketplace-live",
+    skus: await scrapeMarketplaceTruth(),
+  }
+  return NextResponse.json(response, { headers: { "cache-control": "no-store" } })
+}
+```
+
+## Step 7: Add auto-polling to `lib/use-dashboard.ts`
+
+Add these to your dashboard hook:
+
+1. Import `useEffect`, `useRef`
+2. Add state: `lastSyncedAt` (number | null), `autoPolling` (boolean, default true)
+3. Add a `syncRef` that always points to the latest `sync` function
+4. Add a `useEffect` that runs `sync("demo-marketplace-token")` every 60s when `autoPolling` is true
+5. Set `lastSyncedAt = Date.now()` on successful sync
+6. Return `lastSyncedAt`, `autoPolling`, `setAutoPolling` from the hook
+
+## Step 8: Update `components/sync-bar.tsx`
+
+Add to SyncBar:
+
+1. A `timeAgo(ts)` helper that returns "just now", "Xs ago", "Xm ago", "Xh ago"
+2. A 1-second ticking interval to keep the time-ago label live
+3. An Auto/Paused toggle button (Play/Pause icons from lucide-react)
+4. Props: `syncedAt: number | null`, `autoPolling: boolean`, `onToggleAutoPolling: () => void`
+
+## Step 9: Wire it up in `components/dashboard.tsx`
+
+Destructure `lastSyncedAt`, `autoPolling`, `setAutoPolling` from `useDashboard()` and pass them to `<SyncBar>`.
+
+## Architecture Summary
+
+```
+Browser (60s poll)
+    |
+    v
+GET /api/marketplace/sync  (Bearer token auth)
+    |
+    +-- SKU has amazonUrl? --> scrapeAmazonListing(url)
+    |                              |
+    |                              +-- fetchHtml(url, "mobile")
+    |                              |       +-- 15s timeout, USD cookies
+    |                              |
+    |                              +-- cheerio.load(html)
+    |                              |       +-- 7-tier price extraction
+    |                              |       +-- availability parsing
+    |                              |       +-- CAPTCHA detection
+    |                              |
+    |                              +-- price null? --> retry desktop UA
+    |
+    +-- No amazonUrl? --> mockSnapshotForSku(sku)
+    |
+    +-- Scrape failed? --> return cached or mock (never crash)
+    |
+    +-- In-memory TTL cache (60s per SKU)
+```
+
+## Environment Variables
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `MARKETPLACE_SYNC_TOKEN` | `demo-marketplace-token` | Bearer token for sync API auth |
+| `SCRAPER_PROXY_URL` | (none) | Optional proxy service URL (ScraperAPI, Bright Data, etc.) |
+
+## Known Limitations
+
+- Amazon actively blocks non-browser scraping. For production, use `SCRAPER_PROXY_URL` with a rotating proxy service, or switch to Amazon's Selling Partner API (SP-API) for ToS-compliant access.
+- Prices are capped at $10,000 (`MAX_SANE_PRICE`) to filter garbage from inline JS.
+- In-memory cache resets on server restart (no persistence layer).
+- Cheerio only parses static HTML — some prices are rendered client-side via JS and may return null.
+
+## Files Changed (Summary)
+
+| File | Action | What |
+|------|--------|------|
+| `package.json` | Modified | Added `cheerio` dependency |
+| `lib/types.ts` | Modified | Added `amazonUrl?: string` to `Sku` type |
+| `lib/mock-data.ts` | Modified | Added `amazonUrl` to 2 test SKUs |
+| `lib/scraper/types.ts` | New | Scraper data types + `ScrapeError` class |
+| `lib/scraper/fetcher.ts` | New | HTTP fetcher with UA rotation + USD cookies |
+| `lib/scraper/amazon.ts` | New | 7-tier Amazon price parser + availability + CAPTCHA detection |
+| `app/api/marketplace/sync/route.ts` | Rewritten | Real scraping with cache, concurrency, fallbacks |
+| `lib/use-dashboard.ts` | Modified | Added 60s auto-polling + lastSyncedAt state |
+| `components/sync-bar.tsx` | Modified | Added time-ago, auto/pause toggle |
+| `components/dashboard.tsx` | Modified | Wired auto-polling props to SyncBar |

@@ -30,8 +30,8 @@ export function DashboardSectionPage() {
   const label = item?.label ?? 'This section'
 
   return (
-    <DashboardLayout title={`MarketPulse AI — ${label}`}>
-      <div className="rounded-panel border border-border-hair bg-surface p-8 sm:p-10">
+    <DashboardLayout title={label}>
+      <div className="surface-card p-8 sm:p-10">
         <span
           className="grid size-11 place-items-center rounded-card bg-accent-soft text-accent-text"
           aria-hidden="true"

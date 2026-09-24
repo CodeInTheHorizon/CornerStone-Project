@@ -1,19 +1,13 @@
-"""Model training endpoints.
-
-Phase 6 only: train, evaluate, compare, persist, report. Prediction and the
-opportunity score are Phase 7.
-"""
-
-from app.auth.permissions import Permission
-from app.auth.rate_limits import operation
-
-
+import asyncio
+import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
+from app.auth.permissions import Permission
+from app.auth.rate_limits import operation
 from app.database import get_db
 from app.ml.training import XGBOOST_AVAILABLE, TrainingError
 from app.models import ModelMetadata, User
@@ -27,7 +21,7 @@ from app.schemas.training import (
     TrainRequest,
     TrainResponse,
 )
-from app.services import training_service
+from app.services import training_service, training_state
 
 router = APIRouter(prefix="/ml", tags=["ml"])
 
@@ -117,6 +111,43 @@ def train(
         notice=training_service.notice_for(record),
         quality=_quality(record),
     )
+
+
+@router.post("/train-async", summary="Start training in background")
+async def train_async(
+    payload: TrainRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(operation(Permission.TRAIN, "train")),
+):
+    training_id = uuid.uuid4().hex[:12]
+    training_state.start(training_id)
+
+    async def _run():
+        try:
+            record = await asyncio.to_thread(
+                training_service.train,
+                db,
+                dataset_id=payload.dataset_id,
+                models=payload.models,
+                source_types=payload.source_types,
+                development_override=payload.development_override,
+            )
+            training_state.finish(training_id, result={"model_version": record.model_version, "algorithm": record.algorithm})
+        except TrainingError as exc:
+            training_state.finish(training_id, error=exc.reason)
+        except Exception as exc:
+            training_state.finish(training_id, error=str(exc))
+
+    asyncio.create_task(_run())
+    return {"training_id": training_id, "status": "started"}
+
+
+@router.get("/training-status", summary="Poll background training status")
+def get_training_status(training_id: str, _: User = Depends(get_current_user)):
+    state = training_state.get(training_id)
+    if not state:
+        raise HTTPException(404, "Training ID not found")
+    return state
 
 
 @router.get(

@@ -21,6 +21,7 @@ class User(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     role: Mapped[str] = mapped_column(String(24), default="viewer", server_default="viewer", nullable=False)
+    business_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
     token_version: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"), nullable=False)
 
     @property

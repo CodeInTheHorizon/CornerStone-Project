@@ -191,21 +191,27 @@ def test_unknown_platform_raises():
         get_collector("ebay")
 
 
-@pytest.mark.parametrize("platform", ["flipkart", "croma", "alibaba"])
+@pytest.mark.parametrize("platform", ["flipkart"])
 def test_blocked_platforms_report_unavailable_with_a_reason(platform):
     collector = get_collector(platform)
     status = collector.status()
 
     assert status.available is False
-    # The reason must actually explain the blocker, not just say "no".
     assert status.reason and len(status.reason) > 30
 
 
-@pytest.mark.parametrize("platform", ["flipkart", "croma", "alibaba"])
+@pytest.mark.parametrize("platform", ["flipkart"])
 def test_blocked_platforms_raise_rather_than_returning_empty(platform):
-    # An unsupported source must never look like a source that found nothing.
     with pytest.raises(CollectorUnavailableError):
         get_collector(platform).collect("wireless earbuds", max_items=5)
+
+
+@pytest.mark.parametrize("platform", ["croma", "alibaba"])
+def test_fallback_collectors_report_available_with_reason(platform):
+    collector = get_collector(platform)
+    status = collector.status()
+    assert status.available is True
+    assert status.reason
 
 
 def test_amazon_reports_unavailable_without_credentials():

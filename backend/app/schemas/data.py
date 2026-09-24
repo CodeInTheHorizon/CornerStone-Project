@@ -52,6 +52,24 @@ class CollectResponse(BaseModel):
     collection_timestamp: datetime
     warnings: list[str] = Field(default_factory=list)
 
+class RefreshRequest(BaseModel):
+    keyword: str = Field(min_length=2, max_length=120)
+    category: str | None = Field(default=None, max_length=120)
+    country: str = Field(default="IN", min_length=2, max_length=2)
+    max_items: int = Field(default=20, ge=1, le=MAX_ITEMS)
+
+class RefreshPlatformResult(BaseModel):
+    status: str
+    freshness: str | None = None
+    provider: str | None = None
+    records: int = 0
+    retrieved_at: datetime | None = None
+    reason: str | None = None
+
+class RefreshResponse(BaseModel):
+    status: str
+    platforms: dict[str, RefreshPlatformResult]
+
 
 class SnapshotRead(BaseModel):
     """One stored marketplace observation."""
@@ -70,6 +88,9 @@ class SnapshotRead(BaseModel):
     subcategory: str | None
     external_id: str | None
 
+    image_url: str | None = None
+    image_urls: list[str] | None = None
+
     price: float | None
     original_price: float | None
     discount_percentage: float | None
@@ -80,7 +101,14 @@ class SnapshotRead(BaseModel):
 
     availability: str | None
     seller_name: str | None
+    seller_count: int | None = None
+    offer_count: int | None = None
     listing_url: str | None
+
+    min_order_qty: int | None = None
+    price_min: float | None = None
+    price_max: float | None = None
+    supplier_years: int | None = None
 
     shipping_info: str | None
     delivery_time: str | None

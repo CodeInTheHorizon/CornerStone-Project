@@ -1,4 +1,4 @@
-/** Hairline-bordered surface used as the base container primitive. */
+/** Card surface used as the base container primitive. */
 
 import { cn } from '@/lib/cn'
 
@@ -9,12 +9,7 @@ interface PanelProps {
 
 export function Panel({ className, children }: PanelProps) {
   return (
-    <div
-      className={cn(
-        'min-w-0 break-words rounded-panel border border-border-hair bg-surface p-6',
-        className,
-      )}
-    >
+    <div className={cn('surface-card min-w-0 break-words p-5 sm:p-6', className)}>
       {children}
     </div>
   )

@@ -6,7 +6,7 @@ export function Logo({ className }: { className?: string }) {
   return (
     <span className={cn('inline-flex items-center gap-2.5', className)}>
       <span
-        className="grid size-8 place-items-center rounded-[9px] bg-accent text-accent-ink"
+        className="grid size-8 place-items-center rounded-[10px] bg-linear-to-br from-brand to-brand-deep text-white shadow-accent"
         aria-hidden="true"
       >
         <svg viewBox="0 0 24 24" fill="none" className="size-5">

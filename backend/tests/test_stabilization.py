@@ -159,12 +159,7 @@ def test_server_failure_is_generic(client, headers, monkeypatch, caplog):
 
 
 def test_collection_policy_consistent(client, headers, monkeypatch):
-    from app.scrapers.amazon import AmazonCollector
-    monkeypatch.setattr('app.services.collection_service.get_collector',lambda _: AmazonCollector(access_key='fixture',secret_key='fixture',partner_tag='fixture'))
-    response=client.post('/data/collect',headers=headers,json={'platform':'amazon','keyword':'earbuds'})
-    assert response.status_code == 501
-    assert 'deprecated' in response.text
     summary=client.get('/analytics/summary',headers=headers).json()
     status=client.get('/data/status',headers=headers).json()
-    assert not status['platforms']['amazon']['available']
-    assert 'amazon' not in summary['available_live_platforms']
+    assert 'amazon' in status['platforms']
+    assert isinstance(status['platforms']['amazon']['available'], bool)

@@ -297,6 +297,18 @@ These are current and deliberate — please read before evaluating the project.
 
 ## Marketplace collection
 
+Amazon LIVE collection uses DataForSEO Merchant Amazon Products Live only when
+`DATAFORSEO_LOGIN`, `DATAFORSEO_PASSWORD`, and `AMAZON_LIVE_ENABLED=true` are
+set in the backend environment. Collection is explicit through `POST /data/collect`
+or `POST /data/refresh`; normal dashboards only read stored observations. A
+successful fetch is labelled LIVE, while existing imported/demo observations
+retain their original provenance. Flipkart requires its approved Affiliate API
+credentials and `FLIPKART_DATA_USE_APPROVED=true`; Croma and Alibaba require a
+separately approved marketplace-search provider and otherwise report NOT CONFIGURED.
+DataForSEO charges per live request, so use refresh deliberately and respect
+provider rate limits. The retired Amazon PA-API adapter remains in source but
+is no longer selected by the registry.
+
 Collection is on demand: choose a platform and product keyword on **Marketplace
 Data** (or a product on Trends/Analytics) and press **Refresh Market Data**.
 LIVE records are fetched through an official API, validated, normalized,

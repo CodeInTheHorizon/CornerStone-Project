@@ -103,6 +103,20 @@ class NormalizedRecord:
     seller_name: str | None = None
     listing_url: str | None = None
 
+    # Images
+    image_url: str | None = None
+    image_urls: list[str] | None = None
+
+    # Alibaba-specific wholesale fields
+    min_order_qty: int | None = None
+    price_min: float | None = None
+    price_max: float | None = None
+    supplier_years: int | None = None
+
+    # Competition
+    seller_count: int | None = None
+    offer_count: int | None = None
+
     # Optional extras, stored as JSON metadata
     shipping_info: str | None = None
     delivery_time: str | None = None

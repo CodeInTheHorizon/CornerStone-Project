@@ -1,12 +1,13 @@
 @import 'tailwindcss';
 
 /*
- * MarketPulse AI design system.
+ * MarketPulse AI design system — lavender theme.
  *
- * Direction (adapted from a minimal, airy, high-contrast reference — see
- * docs/design-direction.md): one accent used sparingly, structure carried by
- * hairline borders and whitespace rather than heavy shadows, tight display
- * tracking, geometric radii, generous section rhythm.
+ * Direction: modern, minimal, clean. A light purple / lavender ground, white
+ * rounded cards with soft purple-tinted shadows, one violet brand accent
+ * (#7C3AED, secondary #A78BFA), minimal line icons and generous spacing.
+ * Green, amber and red are reserved for state and deepened where needed so
+ * every text pairing meets WCAG AA in both themes.
  *
  * Theming: semantic variables are redefined per theme below and exposed to
  * Tailwind through `@theme inline`, so utilities such as `bg-surface` follow
@@ -19,68 +20,105 @@
  * Light theme (default)                                            *
  * ---------------------------------------------------------------- */
 :root {
-  --background: #fbfbfa;
-  --background-alt: #f4f4f2;
+  --background: #f5f3ff;
+  --background-alt: #ede9fe;
   --surface: #ffffff;
   --surface-raised: #ffffff;
 
-  --border: #e4e4e0;
-  --border-strong: #d2d2cd;
+  --border: #e6e1fb;
+  --border-strong: #d3c9f6;
 
-  --foreground: #111213;
-  --muted: #56595d;
-  --subtle: #6b6f75;
+  --foreground: #1e1b4b;
+  --muted: #4b5563;
+  --subtle: #565e72;
 
-  /* Accent fill is the same warm tone in both themes so the brand holds.
-     `accent-ink` is the text colour that sits ON the fill; `accent-text` is
+  /* `accent-ink` is the text colour that sits ON the fill; `accent-text` is
      the accessible accent colour for text ON the page ground. */
-  --accent: #f0b429;
-  --accent-hover: #dda317;
-  --accent-ink: #16130a;
-  --accent-text: #8a6206;
-  --accent-soft: rgb(240 180 41 / 0.14);
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-ink: #ffffff;
+  --accent-text: #6d28d9;
+  --accent-soft: rgb(124 58 237 / 0.1);
+  --accent-secondary: #a78bfa;
 
-  --signal-ok: #17794b;
-  --signal-warn: #8a6206;
-  --signal-down: #b3261e;
+  --signal-ok: #04683f;
+  --signal-warn: #8f3f0b;
+  --signal-down: #a91b1b;
 
-  --ring: #f0b429;
-  --shadow-card: 0 1px 2px rgb(17 18 19 / 0.04), 0 8px 24px rgb(17 18 19 / 0.05);
+  --ring: #7c3aed;
+  --shadow-card: 0 1px 2px rgb(76 29 149 / 0.04), 0 4px 12px rgb(76 29 149 / 0.05), 0 8px 28px rgb(76 29 149 / 0.07);
+  --shadow-pop: 0 4px 8px rgb(76 29 149 / 0.06), 0 12px 24px rgb(76 29 149 / 0.1), 0 22px 48px rgb(76 29 149 / 0.16);
+  --shadow-accent: 0 4px 12px rgb(124 58 237 / 0.2), 0 8px 24px rgb(124 58 237 / 0.28);
+  --shadow-glow: 0 0 20px rgb(124 58 237 / 0.15), 0 0 60px rgb(124 58 237 / 0.08);
+
+  --surface-glass: rgb(255 255 255 / 0.7);
+  --surface-glass-border: rgb(255 255 255 / 0.5);
+
+  /* Soft decorative page wash; never the only background behind text. */
+  --page-wash:
+    radial-gradient(900px 520px at 100% -8%, rgb(167 139 250 / 0.22), transparent 70%),
+    radial-gradient(760px 480px at -12% 4%, rgb(124 58 237 / 0.08), transparent 70%);
 
   /* Decorative only — never used behind text. */
-  --grid-line: rgb(17 18 19 / 0.05);
+  --grid-line: rgb(76 29 149 / 0.05);
+
+  /* Series colours: >= 3:1 against the card surface. */
+  --chart-1: #7c3aed;
+  --chart-2: #0d9488;
+  --chart-3: #ea580c;
+  --chart-4: #db2777;
+  --chart-grid: rgb(30 27 75 / 0.08);
+  --chart-track: #ede9fe;
 }
 
 /* ---------------------------------------------------------------- *
  * Dark theme                                                       *
  * ---------------------------------------------------------------- */
 .dark {
-  --background: #08090a;
-  --background-alt: #0c0e0f;
-  --surface: #0f1113;
-  --surface-raised: #16191b;
+  --background: #0f0d1f;
+  --background-alt: #151229;
+  --surface: #1a1733;
+  --surface-raised: #221e3f;
 
-  --border: #23282c;
-  --border-strong: #333a3f;
+  --border: #2e2a4d;
+  --border-strong: #433d6b;
 
-  --foreground: #f6f7f8;
-  --muted: #b2b8bd;
-  --subtle: #7c848a;
+  --foreground: #f5f3ff;
+  --muted: #c9c5e0;
+  --subtle: #a6a1c4;
 
-  --accent: #f0b429;
-  --accent-hover: #f7c34a;
-  --accent-ink: #16130a;
-  --accent-text: #f0b429;
-  --accent-soft: rgb(240 180 41 / 0.12);
+  --accent: #a78bfa;
+  --accent-hover: #c4b5fd;
+  --accent-ink: #1e1b4b;
+  --accent-text: #c4b5fd;
+  --accent-soft: rgb(167 139 250 / 0.16);
+  --accent-secondary: #7c3aed;
 
-  --signal-ok: #3ecf8e;
-  --signal-warn: #f0b429;
-  --signal-down: #f2555a;
+  --signal-ok: #34d399;
+  --signal-warn: #fbbf24;
+  --signal-down: #f87171;
 
-  --ring: #f0b429;
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.28);
+  --ring: #a78bfa;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.25), 0 8px 28px rgb(0 0 0 / 0.3);
+  --shadow-pop: 0 4px 8px rgb(0 0 0 / 0.3), 0 12px 24px rgb(0 0 0 / 0.4), 0 22px 48px rgb(0 0 0 / 0.5);
+  --shadow-accent: 0 4px 12px rgb(124 58 237 / 0.25), 0 8px 24px rgb(124 58 237 / 0.35);
+  --shadow-glow: 0 0 20px rgb(124 58 237 / 0.2), 0 0 60px rgb(124 58 237 / 0.12);
 
-  --grid-line: rgb(246 247 248 / 0.055);
+  --surface-glass: rgb(26 23 51 / 0.7);
+  --surface-glass-border: rgb(46 42 77 / 0.6);
+
+  --page-wash:
+    radial-gradient(900px 520px at 100% -8%, rgb(124 58 237 / 0.2), transparent 70%),
+    radial-gradient(760px 480px at -12% 4%, rgb(167 139 250 / 0.07), transparent 70%);
+
+  --grid-line: rgb(245 243 255 / 0.05);
+
+  --chart-1: #a78bfa;
+  --chart-2: #2dd4bf;
+  --chart-3: #fb923c;
+  --chart-4: #f472b6;
+  --chart-grid: rgb(245 243 255 / 0.09);
+  --chart-track: #2a2548;
 }
 
 /* ---------------------------------------------------------------- *
@@ -104,6 +142,10 @@
   --color-accent-ink: var(--accent-ink);
   --color-accent-text: var(--accent-text);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-secondary: var(--accent-secondary);
+  /* Fixed brand fills that carry white text in both themes (>= 5.7:1). */
+  --color-brand: #7c3aed;
+  --color-brand-deep: #5b21b6;
 
   --color-signal-ok: var(--signal-ok);
   --color-signal-warn: var(--signal-warn);
@@ -114,12 +156,27 @@
   --font-mono: ui-monospace, 'JetBrains Mono', 'SFMono-Regular', monospace;
 
   --radius-card: 12px;
-  --radius-panel: 16px;
+  --radius-panel: 20px;
 
   /* Constrained content width, matching the reference's airy shell. */
   --spacing-shell: 1180px;
 
   --shadow-card: var(--shadow-card);
+  --shadow-pop: var(--shadow-pop);
+  --shadow-accent: var(--shadow-accent);
+  --shadow-glow: var(--shadow-glow);
+
+  --color-surface-glass: var(--surface-glass);
+  --color-surface-glass-border: var(--surface-glass-border);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-track: var(--chart-track);
+
+  /* Motion: short, calm transitions for hover, focus, menus and tabs. */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 }
 
 @layer base {
@@ -131,6 +188,8 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    background-image: var(--page-wash);
+    background-attachment: fixed;
     margin: 0;
   }
 
@@ -197,4 +256,81 @@
       transform: none;
     }
   }
+}
+
+/* Page ground with the soft lavender wash (used by full-screen shells). */
+@utility page-canvas {
+  background-color: var(--background);
+  background-image: var(--page-wash);
+  background-attachment: fixed;
+}
+
+/* Card surface shared by every panel. */
+@utility surface-card {
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--border);
+  background-color: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+@layer components {
+  /* Placeholder block with the shape of the content it stands in for. */
+  .skeleton {
+    border-radius: 8px;
+    background: linear-gradient(90deg, var(--background-alt) 0%, var(--border) 50%, var(--background-alt) 100%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  }
+
+  /* Mobile navigation drawer fades in. Opacity only: the panel never sits off-screen. */
+  .workspace-drawer {
+    animation: drawer-in 180ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  @keyframes drawer-in {
+    from { opacity: 0.4; }
+    to { opacity: 1; }
+  }
+
+  @keyframes skeleton-shimmer {
+    from { background-position: 100% 0; }
+    to { background-position: -100% 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton { animation: none; }
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+}
+
+@utility glass-card {
+  background: var(--surface-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--surface-glass-border);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-card);
+}
+
+@utility gradient-accent {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+}
+
+@utility dot-grid {
+  background-image: radial-gradient(circle, var(--grid-line) 1px, transparent 1px);
+  background-size: 24px 24px;
 }

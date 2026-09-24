@@ -17,13 +17,14 @@ from sqlalchemy.orm import Session
 from app.models import CollectionAttempt, MarketplaceSnapshot
 from app.models.enums import AttemptOutcome, CollectorState, Platform, SourceType
 from app.scrapers import (
+    CollectorCredentialsRejectedError,
     CollectorRateLimitedError,
     CollectorRequestError,
     CollectorStatus,
     CollectorUnavailableError,
     UnknownPlatformError,
     all_statuses,
-    get_collector,
+    get_collector, supported_platforms,
 )
 from app.services.ingest import ingest
 from app.scrapers.registry import effective_status
@@ -154,6 +155,16 @@ def run_collection(
         "LIVE collection %s on %s: received=%d stored=%d duplicates=%d rejected=%d",
         run_id, platform_name, attempt.items_received, ingested.stored, ingested.duplicates, ingested.rejected,
     )
+
+    if ingested.stored > 0:
+        try:
+            from app.services.alert_service import check_alerts
+            triggered = check_alerts(db)
+            if triggered:
+                logger.info("Alert check after collection: %d alerts triggered", triggered)
+        except Exception:
+            logger.debug("Alert check skipped (table may not exist yet)")
+
     return CollectionResult(
         platform=platform_name,
         keyword=keyword,
@@ -166,6 +177,31 @@ def run_collection(
         duplicates_skipped=ingested.duplicates,
         warnings=[*outcome.warnings, *ingested.warnings, *ingested.rejected_rows],
     )
+
+
+def refresh_configured_collectors(db: Session, *, keyword: str, category: str | None = None,
+                                 max_items: int = 20) -> dict[str, dict]:
+    """Run configured collectors independently, preserving partial success."""
+    results: dict[str, dict] = {}
+    for platform in supported_platforms():
+        collector = get_collector(platform)
+        state = effective_status(collector.status())
+        if not state.available:
+            results[platform] = {"status": "not_configured", "provider": state.provider, "reason": state.reason}
+            continue
+        try:
+            result = run_collection(db, platform=platform, keyword=keyword, category=category, max_items=max_items)
+            results[platform] = {"status": "success", "freshness": "LIVE", "provider": result.provider,
+                "records": result.items_collected, "retrieved_at": result.collection_timestamp}
+        except CollectorRateLimitedError as exc:
+            results[platform] = {"status": "rate_limited", "provider": state.provider, "reason": str(exc)}
+        except CollectorCredentialsRejectedError as exc:
+            results[platform] = {"status": "credentials_missing", "provider": state.provider, "reason": str(exc)}
+        except CollectorRequestError as exc:
+            results[platform] = {"status": "provider_error", "provider": state.provider, "reason": str(exc)}
+        except CollectorUnavailableError as exc:
+            results[platform] = {"status": "not_configured", "provider": state.provider, "reason": str(exc)}
+    return results
 
 
 def _record_failure(db: Session, attempt: CollectionAttempt, exc: CollectorRequestError) -> None:
@@ -390,6 +426,7 @@ __all__ = [
     "latest_attempt",
     "latest_snapshots",
     "platform_statuses",
+    "refresh_configured_collectors",
     "run_collection",
     "runtime_status",
     "snapshot_counts",

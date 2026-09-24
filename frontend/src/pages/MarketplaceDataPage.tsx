@@ -217,7 +217,7 @@ export function MarketplaceDataPage() {
   const demo = status?.demo_dataset
 
   return (
-    <DashboardLayout title="MarketPulse AI — Marketplace Data">
+    <DashboardLayout title="Marketplace Data">
       {loading && <p role="status" className="mb-4 text-sm text-muted">Loading stored marketplace data…</p>}
       {loadError && (
         <div className="mb-6">
@@ -237,7 +237,7 @@ export function MarketplaceDataPage() {
             return (
               <div
                 key={name}
-                className="flex flex-col rounded-panel border border-border-hair bg-surface p-5"
+                className="flex flex-col surface-card p-5"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold capitalize">{name}</p>
@@ -340,7 +340,7 @@ export function MarketplaceDataPage() {
         <PermissionGate permission="data:collect"><form
           noValidate
           onSubmit={handleCollect}
-          className="rounded-panel border border-border-hair bg-surface p-7"
+          className="surface-card p-5 sm:p-7"
         >
           <h2 className="text-lg font-semibold">Refresh LIVE market data</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted">
@@ -465,7 +465,7 @@ export function MarketplaceDataPage() {
           <PermissionGate permission="data:import"><form
             noValidate
             onSubmit={handleImport}
-            className="rounded-panel border border-border-hair bg-surface p-7"
+            className="surface-card p-5 sm:p-7"
           >
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-semibold">Import a dataset</h2>
@@ -513,7 +513,7 @@ export function MarketplaceDataPage() {
             </div>
           </form></PermissionGate>
 
-          <div className="rounded-panel border border-border-hair bg-surface p-7">
+          <div className="surface-card p-5 sm:p-7">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-semibold">Demo dataset</h2>
               <SourceBadge kind="demo" />
@@ -565,7 +565,7 @@ export function MarketplaceDataPage() {
         {importResult && (
           <div
             role="status"
-            className="mt-5 rounded-panel border border-border-hair bg-surface p-6"
+            className="mt-5 surface-card p-6"
           >
             <div className="flex flex-wrap items-center gap-3">
               <SourceBadge kind={importResult.source_type} />
@@ -625,7 +625,7 @@ export function MarketplaceDataPage() {
 
       {/* Stored records */}
       <section aria-label="Stored records" className="mt-6">
-        <div className="rounded-panel border border-border-hair bg-surface">
+        <div className="surface-card">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border-hair px-6 py-4">
             <h2 className="text-sm font-semibold">
               Latest stored records

@@ -28,15 +28,15 @@ export function Section({
       id={id}
       aria-labelledby={`${id}-heading`}
       className={cn(
-        'border-t border-border-hair py-20 sm:py-28',
-        tone === 'alt' ? 'bg-background-alt' : 'bg-background',
+        'py-20 sm:py-28',
+        tone === 'alt' ? 'bg-surface/55' : 'bg-transparent',
         className,
       )}
     >
       <div className="mx-auto max-w-shell px-6">
         <Reveal className="max-w-2xl">
           {eyebrow && (
-            <p className="text-xs font-semibold tracking-[0.18em] text-accent-text uppercase">
+            <p className="inline-flex rounded-full bg-accent-soft px-3 py-1 text-xs font-semibold tracking-[0.14em] text-accent-text uppercase">
               {eyebrow}
             </p>
           )}

@@ -32,7 +32,7 @@ export function Developer() {
   return (
     <Section id="developer" eyebrow="Team" heading="Meet the Developer">
       <Reveal>
-        <div className="rounded-panel border border-border-hair bg-surface p-8 sm:p-10">
+        <div className="surface-card p-8 sm:p-10">
           <div className="flex flex-col gap-8 sm:flex-row sm:items-start">
             <Avatar name={developer.name} />
 

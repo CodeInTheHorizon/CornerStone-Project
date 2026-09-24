@@ -29,28 +29,30 @@ export function ActionCard({
   const blocked = Boolean(blockedReason)
 
   return (
-    <div className="flex h-full flex-col rounded-panel border border-border-hair bg-surface p-7">
-      <span
-        className="grid size-11 place-items-center rounded-card bg-accent-soft text-accent-text"
-        aria-hidden="true"
-      >
-        <Icon name={icon} className="size-[22px]" />
-      </span>
+    <div className="surface-card flex h-full flex-col p-5 sm:p-6">
+      <div className="flex items-start gap-4">
+        <span
+          className="grid size-10 shrink-0 place-items-center rounded-card bg-accent-soft text-accent-text"
+          aria-hidden="true"
+        >
+          <Icon name={icon} className="size-5" />
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-base font-semibold">{title}</h3>
+          <p className="mt-1 text-sm leading-relaxed text-muted">{description}</p>
+        </div>
+      </div>
 
-      <h3 className="mt-5 text-lg font-semibold">{title}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-muted">{description}</p>
-
-      <div className="mt-6 flex-1" />
+      <div className="mt-5 flex-1" />
 
       {blockedReason && (
-        <p className="mb-4 flex items-start gap-2 text-xs leading-relaxed text-subtle">
+        <p className="mb-3 flex items-start gap-2 text-xs leading-relaxed text-subtle">
           <Icon name="alert" className="mt-0.5 size-3.5 shrink-0" />
           <span>{blockedReason}</span>
         </p>
       )}
 
-      {/* A dimmed accent fill still reads as the primary call to action. An
-          unavailable action uses the outline variant so it looks inactive. */}
+      {/* An unavailable action uses the outline variant so it looks inactive. */}
       <Button
         onClick={onAction}
         disabled={blocked}

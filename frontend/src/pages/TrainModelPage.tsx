@@ -192,7 +192,7 @@ export function TrainModelPage() {
     : []
 
   return (
-    <DashboardLayout title="MarketPulse AI — Train Model">
+    <DashboardLayout title={can(user, 'model:train') ? 'Train Model' : 'Datasets / Model Status'}>
       {loadingStatus && <p role="status" className="mb-4 text-sm text-muted">Loading dataset and model status…</p>}
       {loadError && (
         <div className="mb-6">
@@ -205,7 +205,7 @@ export function TrainModelPage() {
         <PermissionGate permission="dataset:build"><form
           noValidate
           onSubmit={handleBuild}
-          className="rounded-panel border border-border-hair bg-surface p-7"
+          className="surface-card p-5 sm:p-7"
         >
           <h2 className="text-lg font-semibold">Dataset preparation</h2>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">
@@ -318,7 +318,7 @@ export function TrainModelPage() {
       {/* Dataset summary */}
       {latest && (
         <section aria-label="Dataset summary" className="mt-6">
-          <div className="rounded-panel border border-border-hair bg-surface p-7">
+          <div className="surface-card p-5 sm:p-7">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <h2 className="text-sm font-semibold">
                 Latest dataset
@@ -407,7 +407,7 @@ export function TrainModelPage() {
       {/* Preview */}
       {preview && preview.rows.length > 0 && (
         <section aria-label="Dataset preview" className="mt-6">
-          <div className="rounded-panel border border-border-hair bg-surface">
+          <div className="surface-card">
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border-hair px-6 py-4">
               <h2 className="text-sm font-semibold">
                 Preview
@@ -467,7 +467,7 @@ export function TrainModelPage() {
 
       {/* Training */}
       <section aria-label="Model training" className="mt-6">
-        <PermissionGate permission="model:train"><div className="rounded-panel border border-border-hair bg-surface p-7">
+        <PermissionGate permission="model:train"><div className="surface-card p-5 sm:p-7">
           <h2 className="text-lg font-semibold">Model training</h2>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">
             Trains on the dataset above and reports measured validation
@@ -587,7 +587,7 @@ export function TrainModelPage() {
 
       {modelStatus && modelStatus.history.length > 0 && (
         <section aria-label="Training history" className="mt-6">
-          <div className="rounded-panel border border-border-hair bg-surface">
+          <div className="surface-card">
             <div className="border-b border-border-hair px-6 py-4">
               <h2 className="text-sm font-semibold">Training history</h2>
             </div>

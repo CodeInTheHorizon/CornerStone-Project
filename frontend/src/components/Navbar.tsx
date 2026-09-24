@@ -42,7 +42,7 @@ export function Navbar() {
       className={cn(
         'fixed inset-x-0 top-0 z-50 transition-colors duration-300',
         scrolled || menuOpen
-          ? 'border-b border-border-hair bg-background/85 backdrop-blur-md'
+          ? 'border-b border-border-hair bg-surface/80 shadow-card backdrop-blur-md'
           : 'border-b border-transparent',
       )}
     >
@@ -88,7 +88,7 @@ export function Navbar() {
               </Link>
               <Link
                 to="/register"
-                className="hidden rounded-card border border-border-strong px-3.5 py-2 text-sm font-medium transition-colors hover:border-accent hover:text-accent-text sm:inline-flex"
+                className="hidden rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-ink shadow-accent transition-colors hover:bg-accent-hover sm:inline-flex"
               >
                 Register
               </Link>
@@ -120,7 +120,7 @@ export function Navbar() {
       <div
         id="mobile-menu"
         hidden={!menuOpen}
-        className="border-t border-border-hair bg-background px-6 py-4 lg:hidden"
+        className="border-t border-border-hair bg-surface px-6 py-4 lg:hidden"
       >
         <ul className="flex flex-col gap-1">
           {navLinks.map((link) => (

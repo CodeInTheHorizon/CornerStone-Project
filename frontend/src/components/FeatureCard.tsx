@@ -11,12 +11,12 @@ interface FeatureCardProps {
 export function FeatureCard({ icon, title, description }: FeatureCardProps) {
   return (
     <article
-      className="group h-full rounded-panel border border-border-hair bg-surface p-7
-                 transition-[border-color,transform] duration-300
-                 hover:-translate-y-1 hover:border-accent/60"
+      className="group surface-card h-full p-7
+                 transition-[border-color,box-shadow,transform] duration-300
+                 hover:-translate-y-1 hover:border-accent/40 hover:shadow-pop"
     >
       <span
-        className="grid size-11 place-items-center rounded-card bg-accent-soft text-accent-text
+        className="grid size-11 place-items-center rounded-2xl bg-accent-soft text-accent-text
                    transition-colors duration-300 group-hover:bg-accent group-hover:text-accent-ink"
         aria-hidden="true"
       >

@@ -7,20 +7,20 @@ type Size = 'sm' | 'md' | 'lg'
 
 const base =
   'inline-flex items-center justify-center gap-2 rounded-card font-medium ' +
-  'transition-[background-color,border-color,color,transform] duration-200 ' +
+  'transition-[background-color,border-color,color,box-shadow,transform] duration-200 ' +
   'active:translate-y-px disabled:pointer-events-none disabled:opacity-50'
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-accent text-accent-ink hover:bg-accent-hover',
+  primary: 'bg-accent text-accent-ink shadow-accent hover:bg-accent-hover',
   secondary:
-    'border border-border-strong bg-surface text-foreground hover:border-accent hover:text-accent-text',
+    'border border-border-strong bg-surface text-foreground hover:border-accent hover:bg-accent-soft hover:text-accent-text',
   ghost: 'text-muted hover:bg-accent-soft hover:text-accent-text',
 }
 
 const sizes: Record<Size, string> = {
   sm: 'px-3.5 py-2 text-sm',
   md: 'px-5 py-2.5 text-sm',
-  lg: 'px-6 py-3.5 text-base',
+  lg: 'rounded-full px-7 py-3.5 text-base',
 }
 
 interface CommonProps {

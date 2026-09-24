@@ -105,7 +105,7 @@ export function TrainingResults({ metrics }: { metrics: ModelMetrics }) {
     metrics.metrics.accuracy > metrics.majority_baseline
 
   return (
-    <div className="rounded-panel border border-border-hair bg-surface p-7">
+    <div className="surface-card p-5 sm:p-7">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="text-sm font-semibold">
           Evaluation
