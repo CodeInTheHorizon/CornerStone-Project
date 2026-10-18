@@ -65,7 +65,8 @@ def collector(provider=None, *, approved=True, affiliate_id=AFFILIATE_ID, token=
 # --------------------------------------------------------------------------
 
 
-def test_registry_uses_the_flipkart_api_collector():
+def test_registry_uses_the_flipkart_api_collector(monkeypatch):
+    monkeypatch.setattr("app.config.settings.FLIPKART_WEB_ENABLED", False)
     assert isinstance(get_collector("flipkart"), FlipkartCollector)
 
 

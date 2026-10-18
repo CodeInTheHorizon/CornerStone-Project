@@ -8,6 +8,7 @@ import {
 import {
   ArrowLeft, Star, ExternalLink, ImageOff, TrendingUp,
   BarChart3, Bookmark, BookmarkCheck, RefreshCw, AlertTriangle,
+  Calculator,
 } from 'lucide-react'
 
 import { useAuth } from '@/hooks/useAuth'
@@ -16,9 +17,13 @@ import {
   getProduct, getProductHistory, getProductScores, trackProduct,
   type ProductOut, type PricePoint, type ScoreResponse,
 } from '@/services/productService'
+import {
+  analyzeProfitability, allocateInventory,
+  type ProfitabilityResponse, type OptimizationResponse,
+} from '@/services/profitabilityService'
 
 const PLATFORM_COLORS: Record<string, string> = {
-  amazon: '#3b82f6', flipkart: '#eab308', croma: '#22c55e', alibaba: '#f97316',
+  amazon: '#3b82f6', flipkart: '#eab308', croma: '#22c55e', alibaba: '#f97316', meesho: '#e11d48',
 }
 
 function platformColor(p: string) {
@@ -79,6 +84,15 @@ export function ProductDetailPage() {
   const [loading, setLoading] = useState(true)
   const [recomputing, setRecomputing] = useState(false)
 
+  // Seller unit economics & inventory allocation state
+  const [costPrice, setCostPrice] = useState<number>(1000)
+  const [availableInventory, setAvailableInventory] = useState<number>(100)
+  const [targetMargin, setTargetMargin] = useState<number>(15)
+  const [profitData, setProfitData] = useState<ProfitabilityResponse | null>(null)
+  const [optData, setOptData] = useState<OptimizationResponse | null>(null)
+  const [calcBusy, setCalcBusy] = useState<boolean>(false)
+  const [calcError, setCalcError] = useState<string>('')
+
   const id = Number(productId)
 
   const load = useCallback(async () => {
@@ -93,6 +107,16 @@ export function ProductDetailPage() {
       setProduct(prod)
       setHistory(hist)
       setScores(sc)
+
+      // Initialize cost price to ~65% of minimum observed price
+      if (prod && prod.listings && prod.listings.length > 0) {
+        const prices = prod.listings
+          .map((l) => l.price_current)
+          .filter((p): p is number => p !== null && p > 0)
+        if (prices.length > 0) {
+          setCostPrice(Math.round(Math.min(...prices) * 0.65))
+        }
+      }
     } catch { /* handled by empty state */ }
     finally { setLoading(false) }
   }, [token, id])
@@ -114,6 +138,40 @@ export function ProductDetailPage() {
       setScores(await getProductScores(token, id, true))
     } catch { /* ignore */ }
     finally { setRecomputing(false) }
+  }
+
+  const handleAnalyzeProfitability = async () => {
+    if (!token || !product) return
+    if (costPrice <= 0) {
+      setCalcError('Cost price must be greater than zero.')
+      return
+    }
+    setCalcBusy(true)
+    setCalcError('')
+    try {
+      const [pRes, oRes] = await Promise.all([
+        analyzeProfitability(token, {
+          cost_price: Number(costPrice),
+          available_inventory: Number(availableInventory),
+          desired_margin_pct: Number(targetMargin),
+          platforms: ['amazon', 'flipkart', 'croma', 'alibaba', 'meesho'],
+          product_id: product.id,
+        }),
+        allocateInventory(token, {
+          total_inventory: Number(availableInventory),
+          min_margin_pct: Number(targetMargin),
+          max_channel_share: 0.70,
+          product_id: product.id,
+          cost_price: Number(costPrice),
+        }),
+      ])
+      setProfitData(pRes)
+      setOptData(oRes)
+    } catch (err: unknown) {
+      setCalcError(err instanceof Error ? err.message : 'Analysis failed')
+    } finally {
+      setCalcBusy(false)
+    }
   }
 
   // Build chart data: merge all platforms into [{date, amazon, flipkart, ...}]
@@ -310,6 +368,160 @@ export function ProductDetailPage() {
             </div>
           </section>
         )}
+
+        {/* Profitability & Optimal Inventory Allocation Section */}
+        <section className="mt-8">
+          <div className="surface-card p-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="flex items-center gap-2 text-base font-semibold">
+                  <Calculator className="size-5 text-accent-text" /> Seller Profitability & Allocation Calculator
+                </h2>
+                <p className="mt-1 text-xs text-muted">
+                  Simulate seller fees, net margins, and optimal inventory distribution across sales channels for this product.
+                </p>
+              </div>
+              <button
+                onClick={() => void handleAnalyzeProfitability()}
+                disabled={calcBusy}
+                className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-accent-contrast shadow-sm transition hover:opacity-95 disabled:opacity-50"
+              >
+                {calcBusy ? <Calculator className="size-3.5 animate-spin" /> : <TrendingUp className="size-3.5" />}
+                {calcBusy ? 'Calculating Economics...' : 'Calculate Economics & Allocation'}
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-3">
+              <div>
+                <label className="block text-xs font-medium text-subtle">Seller Unit Cost (₹ COGS)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={costPrice}
+                  onChange={(e) => setCostPrice(Number(e.target.value))}
+                  className="mt-1.5 w-full rounded-lg border border-border-hair bg-background px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-subtle">Available Inventory (Units)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={availableInventory}
+                  onChange={(e) => setAvailableInventory(Number(e.target.value))}
+                  className="mt-1.5 w-full rounded-lg border border-border-hair bg-background px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-subtle">Target Net Margin (%)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="80"
+                  value={targetMargin}
+                  onChange={(e) => setTargetMargin(Number(e.target.value))}
+                  className="mt-1.5 w-full rounded-lg border border-border-hair bg-background px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+            </div>
+
+            {calcError && (
+              <p className="mt-3 text-xs text-red-500">{calcError}</p>
+            )}
+
+            {profitData && (
+              <div className="mt-6 space-y-6 border-t border-border-hair/60 pt-6">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-lg bg-background-alt p-3">
+                    <span className="text-[11px] text-muted">Best Channel by Profit</span>
+                    <p className="text-lg font-bold capitalize text-green-500">{profitData.best_channel_by_profit}</p>
+                  </div>
+                  <div className="rounded-lg bg-background-alt p-3">
+                    <span className="text-[11px] text-muted">Best Channel by Margin</span>
+                    <p className="text-lg font-bold capitalize text-blue-500">{profitData.best_channel_by_margin}</p>
+                  </div>
+                  {optData && (
+                    <>
+                      <div className="rounded-lg bg-background-alt p-3">
+                        <span className="text-[11px] text-muted">Total Expected Net Profit</span>
+                        <p className="text-lg font-bold text-foreground">{fmt(optData.total_expected_profit)}</p>
+                      </div>
+                      <div className="rounded-lg bg-background-alt p-3">
+                        <span className="text-[11px] text-muted">Blended Margin</span>
+                        <p className="text-lg font-bold text-accent-text">{optData.average_margin_pct.toFixed(1)}%</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Economics Table */}
+                <div className="overflow-x-auto rounded-lg border border-border-hair">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-border-hair bg-background-alt text-subtle">
+                        <th className="px-3 py-2.5">Channel</th>
+                        <th className="px-3 py-2.5 text-right">Selling Price</th>
+                        <th className="px-3 py-2.5 text-right">Total Fees</th>
+                        <th className="px-3 py-2.5 text-right">Net Profit / Unit</th>
+                        <th className="px-3 py-2.5 text-right">Margin %</th>
+                        <th className="px-3 py-2.5 text-right">Target Price ({targetMargin}%)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {profitData.channels.map((ch) => (
+                        <tr key={ch.platform} className="border-b border-border-hair/50 last:border-0">
+                          <td className="px-3 py-2 font-medium capitalize">
+                            <span className="inline-flex items-center gap-1.5">
+                              <span className="size-2 rounded-full" style={{ backgroundColor: platformColor(ch.platform) }} />
+                              {ch.platform}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-right">{fmt(ch.selling_price)}</td>
+                          <td className="px-3 py-2 text-right text-red-500">-{fmt(ch.total_fee_per_unit)}</td>
+                          <td className={`px-3 py-2 text-right font-bold ${ch.net_profit_per_unit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+                            {fmt(ch.net_profit_per_unit)}
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            <span className={`rounded px-1 py-0.5 font-semibold ${ch.margin_pct >= targetMargin ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-yellow-500/10 text-yellow-600'}`}>
+                              {ch.margin_pct.toFixed(1)}%
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-right font-medium text-accent-text">{fmt(ch.min_selling_price_for_target)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Optimal Allocation Breakdown */}
+                {optData && optData.allocations.length > 0 && (
+                  <div>
+                    <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-subtle">
+                      Recommended Stock Allocation ({optData.total_allocated} / {availableInventory} units)
+                    </h3>
+                    <div className="flex h-3.5 overflow-hidden rounded-full">
+                      {optData.allocations.map((a) => (
+                        <div key={a.platform} title={`${a.platform}: ${a.allocated_units} units (${a.share_pct}%)`}
+                          style={{ width: `${a.share_pct}%`, backgroundColor: platformColor(a.platform) }} />
+                      ))}
+                    </div>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {optData.allocations.map((a) => (
+                        <div key={a.platform} className="rounded-lg border border-border-hair bg-background p-3 text-xs">
+                          <div className="flex justify-between font-semibold capitalize">
+                            <span>{a.platform}</span>
+                            <span className="text-accent-text">{a.allocated_units} units ({a.share_pct}%)</span>
+                          </div>
+                          <p className="mt-1 text-[11px] text-muted">{a.rationale}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
       </motion.div>
     </DashboardLayout>
   )

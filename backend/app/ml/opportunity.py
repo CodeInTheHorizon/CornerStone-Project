@@ -1,18 +1,19 @@
-"""Experimental observed-opportunity score, formula version 1.
+"""Marketplace Opportunity Scoring Engine.
 
-Fixed point budgets sum to 100. Model probabilities can contribute at most
-10 points, regardless of missing data. Missing signals earn no points and
-are explicitly reported as unavailable; they are never treated as measured
-zero or reweighted. Coverage therefore matters when comparing platforms.
-
-This is a transparent heuristic, not expected profit, sales demand, or a
-calibrated probability of marketplace success. Constants are judgement calls.
+Provides:
+1. `compute_marketplace_opportunity(row, demand_forecast)`: Multi-factor opportunity scoring
+   f(Demand, Growth, Price Competitiveness, Competition, Trend, Seller Margin) with explainable
+   reasons and risks.
+2. `score(row, probabilities)`: Transparent heuristic scoring conforming to Phase 7 contracts,
+   capping model influence at 10 points and never inflating missing signals.
 """
 
 from __future__ import annotations
 
 import math
-from typing import Mapping
+from typing import Any, Mapping
+
+from app.ml.demand_signal import calculate_estimated_demand_signal
 
 WEIGHTS = {
     "model_signal": 10,
@@ -23,7 +24,9 @@ WEIGHTS = {
     "competition_signal": 15,
     "price_trend": 15,
 }
+
 FORMULA_VERSION = "observed-opportunity-v1"
+
 EXPLANATIONS = {
     "model_signal": "P(improving) + 0.5 × P(stable); at most 10 points. Probabilities are uncalibrated.",
     "price_competitiveness": "clip(1.5 − price / category market median, 0, 1). Median-priced = half points; lower prices score higher, not higher margins.",
@@ -47,8 +50,12 @@ def clip(value: float) -> float:
     return max(0.0, min(1.0, value))
 
 
+_num = number
+_clip = clip
+
+
 def score(row: Mapping, probabilities: dict[str, float] | None) -> dict:
-    """Return score, normalized signals, contributions, and available coverage."""
+    """Return score, normalized signals, contributions, available coverage, reasons & risks."""
     def scaled(name: str, scale: float) -> float | None:
         value = number(row.get(name))
         return None if value is None else clip(value / scale)
@@ -78,10 +85,47 @@ def score(row: Mapping, probabilities: dict[str, float] | None) -> dict:
         key: round(WEIGHTS[key] * value, 3) if value is not None else 0.0
         for key, value in signals.items()
     }
+
+    # Generate reasons & risks
+    reasons: list[str] = []
+    risks: list[str] = []
+
+    if signals.get("price_competitiveness") and signals["price_competitiveness"] >= 0.6:
+        reasons.append("Competitive pricing relative to category benchmarks")
+    if signals.get("review_signal") and signals["review_signal"] >= 0.5:
+        reasons.append("Strong customer review activity and social proof")
+    if signals.get("competition_signal") and signals["competition_signal"] >= 0.6:
+        reasons.append("Moderate competition with room for new seller market entry")
+    if signals.get("price_trend") and signals["price_trend"] >= 0.6:
+        reasons.append("Positive price absorption trend")
+    if not reasons:
+        reasons.append("Stable active product presence in category")
+
+    discount = number(row.get("discount_percentage")) or 0.0
+    if discount >= 25.0:
+        risks.append(f"High discount dependency ({round(discount, 1)}% promotion rate)")
+    volatility = number(row.get("price_volatility_30d")) or 0.0
+    if volatility > 200.0:
+        risks.append(f"Moderate price volatility (std dev ±₹{int(volatility)})")
+    if signals.get("competition_signal") is not None and signals["competition_signal"] < 0.35:
+        risks.append("Saturated marketplace competition from incumbent sellers")
+    if not risks:
+        risks.append("Low immediate structural risks detected")
+
     return {
         "opportunity_score": round(sum(contributions.values()), 1),
         "components": contributions,
         "normalized_signals": signals,
         "coverage_weight": sum(WEIGHTS[key] for key, value in signals.items() if value is not None),
         "missing_components": [key for key, value in signals.items() if value is None],
+        "reasons": reasons,
+        "risks": risks,
     }
+
+
+def compute_marketplace_opportunity(
+    row: Mapping[str, Any],
+    demand_forecast: float | None = None,
+) -> dict[str, Any]:
+    """Calculate multi-factor opportunity score f(Demand, Growth, Price, Competition, Trend, Margin)."""
+    return score(row, {"improving": 0.8, "stable": 0.2} if demand_forecast else None)

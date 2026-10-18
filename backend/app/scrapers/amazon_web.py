@@ -281,15 +281,18 @@ class AmazonWebCollector(MarketplaceCollector):
             "Cookie": f"i18n-prefs={self.currency}; lc-main={self.locale.replace('-', '_')}",
         }
 
-    def _fetch(self, client: httpx.Client, keyword: str, mobile: bool) -> str:
+    def _fetch(self, client: httpx.Client, keyword: str, mobile: bool, page: int = 1) -> str:
         url = f"https://{self.domain}/s"
         last_error: Exception | None = None
+        params: dict[str, Any] = {"k": keyword}
+        if page > 1:
+            params["page"] = page
 
         for attempt in range(MAX_ATTEMPTS):
             try:
                 response = client.get(
                     url,
-                    params={"k": keyword},
+                    params=params,
                     headers=self._headers(mobile),
                     timeout=self.timeout,
                     follow_redirects=True,
@@ -360,38 +363,46 @@ class AmazonWebCollector(MarketplaceCollector):
         if not state.available:
             raise CollectorUnavailableError(state.reason or "Not configured.")
 
-        limit = min(max(1, max_items), 60)
+        limit = min(max(1, max_items), 100)
         client = self.client or httpx.Client(timeout=self.timeout)
         own_client = self.client is None
+        outcome = CollectionOutcome()
+        fetched_at = datetime.now(timezone.utc)
+
+        seen_asins: set[str] = set()
         try:
-            html = self._fetch(client, keyword, mobile=True)
-            cards = _split_cards(html)
-            # Mobile markup occasionally renders no parsable cards; the desktop
-            # layout is the documented fallback rather than a second guess.
-            if not cards:
-                html = self._fetch(client, keyword, mobile=False)
+            for page in range(1, 5):
+                if len(outcome.records) >= limit:
+                    break
+                html = self._fetch(client, keyword, mobile=True, page=page)
                 cards = _split_cards(html)
+                if not cards:
+                    html = self._fetch(client, keyword, mobile=False, page=page)
+                    cards = _split_cards(html)
+                if not cards:
+                    break
+
+                new_added = False
+                for rank, card in enumerate(cards, start=len(outcome.records) + 1):
+                    record = self._to_record(card, category, rank, fetched_at, outcome.warnings)
+                    if record is not None:
+                        if record.external_id:
+                            if record.external_id in seen_asins:
+                                continue
+                            seen_asins.add(record.external_id)
+                        outcome.records.append(record)
+                        new_added = True
+                    if len(outcome.records) >= limit:
+                        break
+                if not new_added or len(cards) < 10:
+                    break
         finally:
             if own_client:
                 client.close()
 
-        outcome = CollectionOutcome()
-        if not cards:
-            outcome.warnings.append(f"No parsable Amazon results for '{keyword}'.")
-            return outcome
-
-        fetched_at = datetime.now(timezone.utc)
-        for rank, card in enumerate(cards, start=1):
-            record = self._to_record(card, category, rank, fetched_at, outcome.warnings)
-            if record is not None:
-                outcome.records.append(record)
-            if len(outcome.records) >= limit:
-                break
-
         if not outcome.records:
-            outcome.warnings.append(
-                f"Amazon returned {len(cards)} results for '{keyword}', none parsable."
-            )
+            outcome.warnings.append(f"No parsable Amazon results for '{keyword}'.")
+
         return outcome
 
     # -- normalization -----------------------------------------------------

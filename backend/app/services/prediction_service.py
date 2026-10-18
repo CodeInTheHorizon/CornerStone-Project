@@ -311,10 +311,12 @@ def predict(db: Session, user_id: int, payload: PredictRequest) -> PredictionRes
         id=0, product=str(product.iloc[0]["product_name"]), product_key=payload.product_key,
         created_at=datetime.now(timezone.utc), recommended_platform=top.platform,
         recommendation_label=recommendation_label(model),
+        recommendation_reasons=getattr(top, "reasons", []),
+        recommendation_risks=getattr(top, "risks", []),
         ranking=ranking, platform_results=results, score_difference=difference,
         key_factors=top.key_factors, model=model, warning=warning,
         data_provenance={"dataset_id": metadata["dataset_id"], "dataset_generated_at": metadata.get("generated_at"), "source_types": source_types, "model_source_types": model.source_types, "observations_used": len(product), "stale_after_days": STALE_AFTER_DAYS},
-        formula={"version": opportunity.FORMULA_VERSION, "weights": opportunity.WEIGHTS, "explanations": opportunity.EXPLANATIONS, "missing_policy": "No points for missing components; fixed weights, no reweighting. Compare coverage as well as score."},
+        formula={"version": opportunity.FORMULA_VERSION, "weights": opportunity.WEIGHTS, "explanations": getattr(opportunity, "EXPLANATIONS", {}), "missing_policy": "No points for missing components; fixed weights, no reweighting. Compare coverage as well as score."},
     )
     stored = Prediction(
         user_id=user_id, model_metadata_id=record.id, product_name=response.product,

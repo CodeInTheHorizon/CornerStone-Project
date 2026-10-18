@@ -222,6 +222,6 @@ def test_migration_preserves_accounts(tmp_path):
         upgrade_to_head(engine)
         with engine.connect() as connection:
             assert connection.execute(text("SELECT id,hashed_password,is_active,role,token_version FROM users ORDER BY id")).all() == [(1,"existing-hash",1,"viewer",0),(2,"disabled-hash",0,"viewer",0)]
-            assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == "0011"
+            assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == "0014"
     finally:
         engine.dispose()

@@ -54,6 +54,14 @@ export const dashboardNav: DashboardNavItem[] = [
     description: 'Compare heuristic opportunity scores for one stored product.',
   },
   {
+    label: 'Profit & Allocation',
+    to: '/dashboard/profitability',
+    icon: 'target',
+    available: true,
+    group: 'insights',
+    description: 'Unit economics, seller margins, fee deduction models and inventory allocation.',
+  },
+  {
     label: 'Compare',
     to: '/dashboard/compare',
     icon: 'chart',
@@ -107,6 +115,7 @@ export const dashboardNav: DashboardNavItem[] = [
 export const supportedPlatforms = [
   'Amazon',
   'Flipkart',
+  'Meesho',
   'Croma',
   'Alibaba',
 ] as const

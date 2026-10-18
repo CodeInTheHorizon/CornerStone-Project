@@ -192,7 +192,8 @@ def test_unknown_platform_raises():
 
 
 @pytest.mark.parametrize("platform", ["flipkart"])
-def test_blocked_platforms_report_unavailable_with_a_reason(platform):
+def test_blocked_platforms_report_unavailable_with_a_reason(platform, monkeypatch):
+    monkeypatch.setattr("app.config.settings.FLIPKART_WEB_ENABLED", False)
     collector = get_collector(platform)
     status = collector.status()
 
@@ -201,7 +202,8 @@ def test_blocked_platforms_report_unavailable_with_a_reason(platform):
 
 
 @pytest.mark.parametrize("platform", ["flipkart"])
-def test_blocked_platforms_raise_rather_than_returning_empty(platform):
+def test_blocked_platforms_raise_rather_than_returning_empty(platform, monkeypatch):
+    monkeypatch.setattr("app.config.settings.FLIPKART_WEB_ENABLED", False)
     with pytest.raises(CollectorUnavailableError):
         get_collector(platform).collect("wireless earbuds", max_items=5)
 

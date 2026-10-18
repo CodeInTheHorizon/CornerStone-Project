@@ -18,6 +18,7 @@ from app.ml.features import build_features, FEATURE_NAMES
 from app.ml.target import add_target, CLASSES
 from app.ml.training import train_models, XGBOOST_AVAILABLE
 from app.models import ModelMetadata, Prediction
+from app.models.enums import Platform
 from app.schemas.prediction import PredictRequest
 from app.services import dataset_service, prediction_service as service, training_service
 
@@ -153,7 +154,7 @@ def test_api_persists_complete_result_and_quality(ready, client, db_session):
     assert body["model"]["below_baseline"] is True
     assert "DEMO" in body["warning"] and "baseline" in body["warning"]
     assert body["data_provenance"]["source_types"] == ["demo"]
-    assert len(body["platform_results"]) == 4
+    assert len(body["platform_results"]) == len(list(Platform))
     scores = [r["opportunity_score"] for r in body["ranking"]]
     assert scores == sorted(scores, reverse=True)
     record = db_session.get(Prediction, body["id"])

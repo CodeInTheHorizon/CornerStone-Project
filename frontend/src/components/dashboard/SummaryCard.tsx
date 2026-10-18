@@ -52,7 +52,7 @@ interface SummaryCardProps {
 }
 
 function AnimatedNumber({ value }: { value: number }) {
-  const [display, setDisplay] = useState(0)
+  const [display, setDisplay] = useState(value)
   const ref = useRef<number | null>(null)
 
   useEffect(() => {

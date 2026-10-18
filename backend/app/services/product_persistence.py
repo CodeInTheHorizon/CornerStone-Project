@@ -107,9 +107,12 @@ def persist_listing(
     history = PriceHistory(
         listing_id=listing.id,
         price=record.price,
+        mrp=record.original_price,
         discount_pct=record.discount_percentage,
         rating=record.rating,
+        rating_count=record.review_count,
         review_count=record.review_count,
+        availability=record.availability,
         seller_count=record.seller_count,
         observed_at=now,
     )

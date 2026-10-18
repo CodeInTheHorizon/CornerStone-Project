@@ -15,6 +15,13 @@ from app.models.enums import (
 )
 from app.models.alert import PriceAlert
 from app.models.collection_attempt import CollectionAttempt
+from app.models.live_scraping import (
+    ProductObservation,
+    ScrapeAttempt,
+    ScrapeListingPage,
+    ScrapeSourceState,
+    ScrapeTarget,
+)
 from app.models.marketplace_snapshot import MarketplaceSnapshot
 from app.models.model_metadata import ModelMetadata
 from app.models.opportunity_score import OpportunityScore
@@ -41,6 +48,11 @@ __all__ = [
     "Prediction",
     "PriceHistory",
     "Product",
+    "ProductObservation",
+    "ScrapeAttempt",
+    "ScrapeListingPage",
+    "ScrapeSourceState",
+    "ScrapeTarget",
     "SourceType",
     "TrackedProduct",
     "TrainingStatus",

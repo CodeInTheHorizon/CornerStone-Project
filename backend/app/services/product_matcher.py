@@ -40,6 +40,9 @@ def _similarity(a: str, b: str) -> float:
     return SequenceMatcher(None, a, b).ratio()
 
 
+from app.matching.engine import match_or_create_product
+
+
 def find_or_create_product(
     db: Session,
     *,
@@ -48,53 +51,15 @@ def find_or_create_product(
     category: str = "electronics",
     subcategory: str | None = None,
     image_url: str | None = None,
+    raw_specs: dict | None = None,
 ) -> tuple[Product, float]:
-    """Find the best-matching canonical Product or create a new one.
-
-    Returns (product, confidence) where confidence is 1.0 for exact matches
-    and the fuzzy ratio for partial matches.
-    """
-    norm = _normalize_title(title)
-    if not norm:
-        product = Product(
-            canonical_title=title,
-            brand=brand,
-            category=category,
-            subcategory=subcategory,
-            primary_image_url=image_url,
-        )
-        db.add(product)
-        db.flush()
-        return product, 1.0
-
-    stmt = select(Product)
-    if brand:
-        stmt = stmt.where(Product.brand == brand)
-    stmt = stmt.where(Product.category == category)
-    candidates = db.execute(stmt).scalars().all()
-
-    best_match: Product | None = None
-    best_score: float = 0.0
-
-    for candidate in candidates:
-        cand_norm = _normalize_title(candidate.canonical_title)
-        score = _similarity(norm, cand_norm)
-        if score > best_score:
-            best_score = score
-            best_match = candidate
-
-    if best_match is not None and best_score >= MATCH_THRESHOLD:
-        if image_url and not best_match.primary_image_url:
-            best_match.primary_image_url = image_url
-        return best_match, round(best_score, 4)
-
-    product = Product(
-        canonical_title=title,
+    """Find the best-matching canonical Product or create a new one using RapidFuzz & specs."""
+    return match_or_create_product(
+        db,
+        title=title,
         brand=brand,
         category=category,
         subcategory=subcategory,
-        primary_image_url=image_url,
+        image_url=image_url,
+        raw_specs=raw_specs,
     )
-    db.add(product)
-    db.flush()
-    return product, 1.0

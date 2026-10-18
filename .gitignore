@@ -57,3 +57,6 @@ frontend/e2e-results*.json
 frontend/playwright-report/
 frontend/test-results/
 backend/.pytest-phase14*
+backend/.pytest_temp/
+*.log
+graphify-out/

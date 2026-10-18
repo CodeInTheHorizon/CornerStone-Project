@@ -66,7 +66,30 @@ TREND_FEATURES = [
     "availability_trend",
 ]
 
-FEATURE_NAMES = BASIC_FEATURES + TIME_FEATURES + MARKET_FEATURES + TREND_FEATURES
+ROLLING_HISTORICAL_FEATURES = [
+    "price_change_7d",
+    "price_change_30d",
+    "average_price_7d",
+    "average_price_30d",
+    "price_volatility_30d",
+    "current_discount",
+    "average_discount_30d",
+    "review_growth_7d",
+    "review_growth_30d",
+    "review_velocity",
+    "rating_count_growth_7d",
+    "rating_count_growth_30d",
+    "stockout_frequency",
+    "seller_competition",
+]
+
+FEATURE_NAMES = (
+    BASIC_FEATURES
+    + TIME_FEATURES
+    + MARKET_FEATURES
+    + TREND_FEATURES
+    + ROLLING_HISTORICAL_FEATURES
+)
 
 #: A listing needs at least this many observations before a slope is meaningful.
 MIN_TREND_OBSERVATIONS = 3
@@ -292,6 +315,110 @@ def add_trend_features(frame: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def add_rolling_historical_features(frame: pd.DataFrame) -> pd.DataFrame:
+    """Calculate leakage-safe 7-day and 30-day historical rolling features per listing."""
+    out = frame.sort_values([*GROUP_KEYS, "collection_timestamp"]).copy()
+
+    for col in ROLLING_HISTORICAL_FEATURES:
+        out[col] = np.nan
+
+    grouped = out.groupby(GROUP_KEYS, dropna=False, sort=False)
+
+    for _, group in grouped:
+        times = group["collection_timestamp"].to_numpy()
+        prices = group["effective_price"].to_numpy(dtype=float)
+        discounts = group["discount_percentage"].to_numpy(dtype=float)
+        reviews = group["review_count"].to_numpy(dtype=float)
+        avail = group["availability_state"].to_numpy(dtype=float)
+        comp = (
+            group["competition_score"].to_numpy(dtype=float)
+            if "competition_score" in group
+            else np.full(len(group), np.nan)
+        )
+
+        n = len(group)
+        p_chg_7d = np.full(n, np.nan)
+        p_chg_30d = np.full(n, np.nan)
+        p_avg_7d = np.full(n, np.nan)
+        p_avg_30d = np.full(n, np.nan)
+        p_vol_30d = np.full(n, np.nan)
+        curr_disc = discounts.copy()
+        avg_disc_30d = np.full(n, np.nan)
+        rev_gr_7d = np.full(n, np.nan)
+        rev_gr_30d = np.full(n, np.nan)
+        rev_vel = np.full(n, np.nan)
+        rat_gr_7d = np.full(n, np.nan)
+        rat_gr_30d = np.full(n, np.nan)
+        stockout_fq = np.full(n, np.nan)
+
+        for i in range(n):
+            curr_t = times[i]
+            dt_days = (curr_t - times[: i + 1]) / np.timedelta64(1, "D")
+            mask_7d = dt_days <= 7.0
+            mask_30d = dt_days <= 30.0
+
+            p_7d = prices[: i + 1][mask_7d]
+            valid_p_7d = p_7d[~np.isnan(p_7d)]
+            if len(valid_p_7d) > 0:
+                p_avg_7d[i] = np.mean(valid_p_7d)
+                p_chg_7d[i] = valid_p_7d[-1] - valid_p_7d[0]
+
+            p_30d = prices[: i + 1][mask_30d]
+            valid_p_30d = p_30d[~np.isnan(p_30d)]
+            if len(valid_p_30d) > 0:
+                p_avg_30d[i] = np.mean(valid_p_30d)
+                p_chg_30d[i] = valid_p_30d[-1] - valid_p_30d[0]
+                p_vol_30d[i] = float(np.std(valid_p_30d)) if len(valid_p_30d) > 1 else 0.0
+
+            d_30d = discounts[: i + 1][mask_30d]
+            valid_d_30d = d_30d[~np.isnan(d_30d)]
+            if len(valid_d_30d) > 0:
+                avg_disc_30d[i] = np.mean(valid_d_30d)
+
+            r_7d = reviews[: i + 1][mask_7d]
+            valid_r_7d = r_7d[~np.isnan(r_7d)]
+            if len(valid_r_7d) > 0:
+                rev_diff_7d = valid_r_7d[-1] - valid_r_7d[0]
+                rev_gr_7d[i] = rev_diff_7d
+                rat_gr_7d[i] = rev_diff_7d
+                elapsed_7d = (
+                    max(1.0, float(dt_days[mask_7d][0]))
+                    if len(dt_days[mask_7d]) > 1
+                    else 1.0
+                )
+                rev_vel[i] = max(0.0, rev_diff_7d / elapsed_7d)
+
+            r_30d = reviews[: i + 1][mask_30d]
+            valid_r_30d = r_30d[~np.isnan(r_30d)]
+            if len(valid_r_30d) > 0:
+                rev_diff_30d = valid_r_30d[-1] - valid_r_30d[0]
+                rev_gr_30d[i] = rev_diff_30d
+                rat_gr_30d[i] = rev_diff_30d
+
+            av_30d = avail[: i + 1][mask_30d]
+            valid_av = av_30d[~np.isnan(av_30d)]
+            if len(valid_av) > 0:
+                stockout_fq[i] = float(np.sum(valid_av == -1) / len(valid_av))
+
+        idx = group.index
+        out.loc[idx, "price_change_7d"] = p_chg_7d
+        out.loc[idx, "price_change_30d"] = p_chg_30d
+        out.loc[idx, "average_price_7d"] = p_avg_7d
+        out.loc[idx, "average_price_30d"] = p_avg_30d
+        out.loc[idx, "price_volatility_30d"] = p_vol_30d
+        out.loc[idx, "current_discount"] = curr_disc
+        out.loc[idx, "average_discount_30d"] = avg_disc_30d
+        out.loc[idx, "review_growth_7d"] = rev_gr_7d
+        out.loc[idx, "review_growth_30d"] = rev_gr_30d
+        out.loc[idx, "review_velocity"] = rev_vel
+        out.loc[idx, "rating_count_growth_7d"] = rat_gr_7d
+        out.loc[idx, "rating_count_growth_30d"] = rat_gr_30d
+        out.loc[idx, "stockout_frequency"] = stockout_fq
+        out.loc[idx, "seller_competition"] = comp
+
+    return out
+
+
 def build_features(frame: pd.DataFrame) -> pd.DataFrame:
     """Apply every feature stage in order."""
     if frame.empty:
@@ -304,6 +431,7 @@ def build_features(frame: pd.DataFrame) -> pd.DataFrame:
     out = add_time_features(out)
     out = add_market_features(out)
     out = add_trend_features(out)
+    out = add_rolling_historical_features(out)
 
     return out.sort_values(
         ["collection_timestamp", "platform", "product_key"]

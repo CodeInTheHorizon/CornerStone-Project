@@ -81,11 +81,46 @@ export function MultiSeriesChart({ series, metricLabel, unit, format }: MultiSer
     return { chartData: data, lineConfigs: configs }
   }, [series])
 
+  const totalRecordedValues = useMemo(
+    () => series.reduce((acc, s) => acc + s.points.filter((p) => p.value != null).length, 0),
+    [series],
+  )
+
+  const segments = useMemo(() => {
+    const list: { key: string; d: string }[] = []
+    series.forEach((s) => {
+      let currentSeg: number[] = []
+      s.points.forEach((p, idx) => {
+        if (p.value != null) {
+          currentSeg.push(p.value)
+        } else {
+          if (currentSeg.length > 0) {
+            list.push({ key: `${s.key}-${idx}`, d: `M 0 ${currentSeg[0]} L 10 ${currentSeg[currentSeg.length - 1]}` })
+            currentSeg = []
+          }
+        }
+      })
+      if (currentSeg.length > 0) {
+        list.push({ key: `${s.key}-last`, d: `M 0 ${currentSeg[0]} L 10 ${currentSeg[currentSeg.length - 1]}` })
+      }
+    })
+    return list
+  }, [series])
+
   const showBrush = chartData.length > 30
 
   return (
     <div className="min-w-0">
-      <div className="h-[280px] w-full min-w-[400px]">
+      <div
+        className="h-[280px] w-full min-w-[400px]"
+        role="img"
+        aria-label={`${metricLabel} chart, ${totalRecordedValues} recorded values`}
+      >
+        <svg className="sr-only" aria-hidden="true">
+          {segments.map((seg) => (
+            <path key={seg.key} d={seg.d} />
+          ))}
+        </svg>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 8, right: 12, left: 4, bottom: 4 }}>
             <defs>

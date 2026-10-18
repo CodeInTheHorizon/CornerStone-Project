@@ -1,0 +1,649 @@
+date,product_id,product_name,category,brand,platform,price,mrp,discount_percentage,rating,review_count,review_velocity,inventory,units_sold,revenue
+2026-06-01,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,amazon,29971.92,34999,14.4,4.8,11113,21.76,86,40,1198876.8
+2026-06-01,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,flipkart,25670.23,34999,26.7,4.4,10767,2.68,485,68,1745575.64
+2026-06-01,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,meesho,31658.13,34999,9.5,4.0,4911,19.32,221,21,664820.73
+2026-06-01,prod_apple_smartphones,iPhone 15,smartphones,Apple,amazon,73209.21,79999,8.5,4.1,5812,17.05,394,28,2049857.88
+2026-06-01,prod_apple_smartphones,iPhone 15,smartphones,Apple,flipkart,64150.91,79999,19.8,3.8,9309,7.63,41,49,3143394.59
+2026-06-01,prod_apple_smartphones,iPhone 15,smartphones,Apple,meesho,74045.63,79999,7.4,4.5,6882,6.03,252,21,1554958.23
+2026-06-01,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,amazon,22673.01,25999,12.8,4.3,8427,8.1,485,50,1133650.5
+2026-06-01,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,flipkart,18707.1,25999,28.0,3.9,3341,3.49,169,52,972769.2
+2026-06-01,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,meesho,19312.46,25999,25.7,4.2,4573,19.91,79,47,907685.62
+2026-06-01,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,amazon,18987.81,26999,29.7,4.6,3381,2.18,409,75,1424085.75
+2026-06-01,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,flipkart,20443.17,26999,24.3,3.9,5697,5.82,432,52,1063044.84
+2026-06-01,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,meesho,25220.05,26999,6.6,4.1,5215,26.08,322,29,731381.45
+2026-06-01,prod_apple_audio,AirPods Pro 2,audio,Apple,amazon,23001.62,24999,8.0,4.5,11531,20.52,387,36,828058.32
+2026-06-01,prod_apple_audio,AirPods Pro 2,audio,Apple,flipkart,21077.03,24999,15.7,3.8,2064,3.04,321,34,716619.02
+2026-06-01,prod_apple_audio,AirPods Pro 2,audio,Apple,meesho,18076.99,24999,27.7,4.0,6450,26.93,122,30,542309.7
+2026-06-01,prod_boat_audio,boAt Rockerz 550,audio,boAt,amazon,4547.56,4999,9.0,4.7,12217,22.9,437,45,204640.2
+2026-06-01,prod_boat_audio,boAt Rockerz 550,audio,boAt,flipkart,3633.57,4999,27.3,4.3,12207,31.57,165,48,174411.36
+2026-06-01,prod_boat_audio,boAt Rockerz 550,audio,boAt,meesho,4215.27,4999,15.7,4.6,12980,2.23,260,32,134888.64
+2026-06-01,prod_sony_audio,Sony WH-1000XM5,audio,Sony,amazon,32200.26,34999,8.0,4.1,14172,12.67,264,37,1191409.62
+2026-06-01,prod_sony_audio,Sony WH-1000XM5,audio,Sony,flipkart,24746.2,34999,29.3,4.8,4150,18.41,157,64,1583756.8
+2026-06-01,prod_sony_audio,Sony WH-1000XM5,audio,Sony,meesho,27915.51,34999,20.2,4.3,1246,11.2,455,31,865380.81
+2026-06-01,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,amazon,24828.28,29999,17.2,4.8,4009,24.18,383,46,1142100.88
+2026-06-01,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,flipkart,25740.77,29999,14.2,4.4,9686,19.68,54,49,1261297.73
+2026-06-01,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,meesho,27100.21,29999,9.7,3.8,9067,24.36,18,23,623304.83
+2026-06-01,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,amazon,6308.87,7999,21.1,4.0,10518,14.76,468,40,252354.8
+2026-06-01,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,flipkart,7372.13,7999,7.8,4.7,13221,10.51,333,42,309629.46
+2026-06-01,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,meesho,6539.88,7999,18.2,4.0,1849,31.61,451,34,222355.92
+2026-06-01,prod_apple_laptops,MacBook Air M2,laptops,Apple,amazon,86268.9,99999,13.7,4.5,13508,31.27,392,47,4054638.3
+2026-06-01,prod_apple_laptops,MacBook Air M2,laptops,Apple,flipkart,90958.37,99999,9.0,4.7,9293,2.3,59,41,3729293.17
+2026-06-01,prod_apple_laptops,MacBook Air M2,laptops,Apple,meesho,90978.89,99999,9.0,4.3,10532,23.51,119,29,2638387.81
+2026-06-01,prod_hp_laptops,HP Pavilion 15,laptops,HP,amazon,59067.34,67999,13.1,4.5,9919,30.02,332,44,2598962.96
+2026-06-01,prod_hp_laptops,HP Pavilion 15,laptops,HP,flipkart,58347.97,67999,14.2,4.1,4037,34.11,202,48,2800702.56
+2026-06-01,prod_hp_laptops,HP Pavilion 15,laptops,HP,meesho,51087.46,67999,24.9,4.3,8865,18.25,105,45,2298935.7
+2026-06-01,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,amazon,59466.08,62999,5.6,4.4,3068,33.04,477,42,2497575.36
+2026-06-01,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,flipkart,59605.61,62999,5.4,4.7,6708,33.9,482,40,2384224.4
+2026-06-01,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,meesho,53783.86,62999,14.6,4.7,5095,7.59,282,45,2420273.7
+2026-06-08,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,amazon,28261.16,34999,19.3,3.9,9417,34.67,78,45,1271752.2
+2026-06-08,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,flipkart,26767.51,34999,23.5,4.5,10686,13.86,153,63,1686353.13
+2026-06-08,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,meesho,25662.38,34999,26.7,4.7,7914,18.55,401,50,1283119.0
+2026-06-08,prod_apple_smartphones,iPhone 15,smartphones,Apple,amazon,60083.4,79999,24.9,4.7,5400,14.39,56,65,3905421.0
+2026-06-08,prod_apple_smartphones,iPhone 15,smartphones,Apple,flipkart,66687.21,79999,16.6,4.3,4654,21.5,24,41,2734175.61
+2026-06-08,prod_apple_smartphones,iPhone 15,smartphones,Apple,meesho,65554.32,79999,18.1,4.6,3629,22.56,51,23,1507749.36
+2026-06-08,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,amazon,21185.06,25999,18.5,4.4,11028,34.2,262,46,974512.76
+2026-06-08,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,flipkart,22938.71,25999,11.8,4.2,1637,2.84,481,44,1009303.24
+2026-06-08,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,meesho,22040.96,25999,15.2,4.0,2768,10.26,279,32,705310.72
+2026-06-08,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,amazon,23759.57,26999,12.0,4.8,11199,20.29,309,43,1021661.51
+2026-06-08,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,flipkart,23246.32,26999,13.9,4.6,708,5.83,32,47,1092577.04
+2026-06-08,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,meesho,24988.69,26999,7.4,4.3,7365,7.72,222,23,574739.87
+2026-06-08,prod_apple_audio,AirPods Pro 2,audio,Apple,amazon,19779.87,24999,20.9,3.8,5931,22.65,256,54,1068112.98
+2026-06-08,prod_apple_audio,AirPods Pro 2,audio,Apple,flipkart,22730.75,24999,9.1,3.9,9815,2.87,297,43,977422.25
+2026-06-08,prod_apple_audio,AirPods Pro 2,audio,Apple,meesho,21323.09,24999,14.7,4.4,7144,20.01,471,40,852923.6
+2026-06-08,prod_boat_audio,boAt Rockerz 550,audio,boAt,amazon,4662.37,4999,6.7,3.9,764,5.12,344,20,93247.4
+2026-06-08,prod_boat_audio,boAt Rockerz 550,audio,boAt,flipkart,3693.17,4999,26.1,3.8,12309,11.3,67,55,203124.35
+2026-06-08,prod_boat_audio,boAt Rockerz 550,audio,boAt,meesho,3652.43,4999,26.9,4.5,12150,11.31,96,50,182621.5
+2026-06-08,prod_sony_audio,Sony WH-1000XM5,audio,Sony,amazon,24582.38,34999,29.8,4.2,5894,27.62,176,79,1942008.02
+2026-06-08,prod_sony_audio,Sony WH-1000XM5,audio,Sony,flipkart,29495.46,34999,15.7,4.6,11440,5.4,452,46,1356791.16
+2026-06-08,prod_sony_audio,Sony WH-1000XM5,audio,Sony,meesho,30448.7,34999,13.0,4.7,6143,2.36,453,23,700320.1
+2026-06-08,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,amazon,21373.82,29999,28.8,4.8,8814,22.85,229,66,1410672.12
+2026-06-08,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,flipkart,23455.33,29999,21.8,4.6,11977,28.06,54,54,1266587.82
+2026-06-08,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,meesho,24377.72,29999,18.7,4.2,13371,13.58,67,26,633820.72
+2026-06-08,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,amazon,6362.77,7999,20.5,3.9,1719,25.13,45,54,343589.58
+2026-06-08,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,flipkart,7436.37,7999,7.0,3.9,14806,14.35,191,27,200781.99
+2026-06-08,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,meesho,6044.95,7999,24.4,4.4,6651,31.91,64,41,247842.95
+2026-06-08,prod_apple_laptops,MacBook Air M2,laptops,Apple,amazon,83282.65,99999,16.7,3.9,2222,5.88,328,47,3914284.55
+2026-06-08,prod_apple_laptops,MacBook Air M2,laptops,Apple,flipkart,70944.98,99999,29.1,4.2,4642,30.66,119,81,5746543.38
+2026-06-08,prod_apple_laptops,MacBook Air M2,laptops,Apple,meesho,70752.32,99999,29.2,3.8,13421,19.41,496,29,2051817.28
+2026-06-08,prod_hp_laptops,HP Pavilion 15,laptops,HP,amazon,48121.15,67999,29.2,4.3,9626,24.96,232,68,3272238.2
+2026-06-08,prod_hp_laptops,HP Pavilion 15,laptops,HP,flipkart,49279.59,67999,27.5,3.8,4573,33.36,446,52,2562538.68
+2026-06-08,prod_hp_laptops,HP Pavilion 15,laptops,HP,meesho,59883.64,67999,11.9,4.0,7223,13.66,295,27,1616858.28
+2026-06-08,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,amazon,47031.98,62999,25.3,4.5,2857,32.06,413,79,3715526.42
+2026-06-08,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,flipkart,50187.91,62999,20.3,4.2,14024,30.58,32,39,1957328.49
+2026-06-08,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,meesho,53850.11,62999,14.5,4.8,12710,29.66,239,32,1723203.52
+2026-06-15,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,amazon,32755.78,34999,6.4,4.7,12287,34.99,498,37,1211963.86
+2026-06-15,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,flipkart,24982.59,34999,28.6,4.6,4086,16.87,73,84,2098537.56
+2026-06-15,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,meesho,31248.48,34999,10.7,4.5,9462,13.82,65,31,968702.88
+2026-06-15,prod_apple_smartphones,iPhone 15,smartphones,Apple,amazon,60552.88,79999,24.3,4.3,12856,20.21,284,67,4057042.96
+2026-06-15,prod_apple_smartphones,iPhone 15,smartphones,Apple,flipkart,73318.78,79999,8.4,3.8,11449,22.47,354,25,1832969.5
+2026-06-15,prod_apple_smartphones,iPhone 15,smartphones,Apple,meesho,75708.16,79999,5.4,4.2,9053,14.94,224,29,2195536.64
+2026-06-15,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,amazon,21358.25,25999,17.8,4.6,6249,22.53,432,67,1431002.75
+2026-06-15,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,flipkart,18676.46,25999,28.2,4.3,4244,17.15,490,60,1120587.6
+2026-06-15,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,meesho,20582.1,25999,20.8,4.0,1600,6.25,72,27,555716.7
+2026-06-15,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,amazon,21323.31,26999,21.0,4.0,5512,31.59,242,52,1108812.12
+2026-06-15,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,flipkart,24351.15,26999,9.8,3.8,2949,11.19,96,22,535725.3
+2026-06-15,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,meesho,22538.91,26999,16.5,4.0,5781,18.61,348,32,721245.12
+2026-06-15,prod_apple_audio,AirPods Pro 2,audio,Apple,amazon,18289.4,24999,26.8,4.7,1385,11.14,405,73,1335126.2
+2026-06-15,prod_apple_audio,AirPods Pro 2,audio,Apple,flipkart,22440.67,24999,10.2,4.2,7525,22.4,190,34,762982.78
+2026-06-15,prod_apple_audio,AirPods Pro 2,audio,Apple,meesho,23519.79,24999,5.9,4.1,10843,31.54,260,22,517435.38
+2026-06-15,prod_boat_audio,boAt Rockerz 550,audio,boAt,amazon,4189.9,4999,16.2,4.3,4015,10.89,194,39,163406.1
+2026-06-15,prod_boat_audio,boAt Rockerz 550,audio,boAt,flipkart,4599.38,4999,8.0,4.7,9107,24.41,396,36,165577.68
+2026-06-15,prod_boat_audio,boAt Rockerz 550,audio,boAt,meesho,4077.8,4999,18.4,4.4,11308,16.24,72,31,126411.8
+2026-06-15,prod_sony_audio,Sony WH-1000XM5,audio,Sony,amazon,27597.44,34999,21.1,4.4,5663,34.56,306,47,1297079.68
+2026-06-15,prod_sony_audio,Sony WH-1000XM5,audio,Sony,flipkart,31911.57,34999,8.8,4.0,2829,8.16,149,26,829700.82
+2026-06-15,prod_sony_audio,Sony WH-1000XM5,audio,Sony,meesho,32547.02,34999,7.0,4.3,6450,34.42,64,20,650940.4
+2026-06-15,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,amazon,23484.39,29999,21.7,4.7,8573,20.86,147,64,1503000.96
+2026-06-15,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,flipkart,26071.54,29999,13.1,4.2,7860,10.0,66,40,1042861.6
+2026-06-15,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,meesho,24139.91,29999,19.5,4.0,7476,19.58,35,30,724197.3
+2026-06-15,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,amazon,7472.32,7999,6.6,4.8,5174,28.73,134,40,298892.8
+2026-06-15,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,flipkart,6407.92,7999,19.9,4.3,6471,13.51,465,39,249908.88
+2026-06-15,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,meesho,5722.6,7999,28.5,4.0,1464,26.46,291,49,280407.4
+2026-06-15,prod_apple_laptops,MacBook Air M2,laptops,Apple,amazon,75117.57,99999,24.9,4.0,2873,7.42,409,57,4281701.49
+2026-06-15,prod_apple_laptops,MacBook Air M2,laptops,Apple,flipkart,86028.38,99999,14.0,4.7,6190,28.95,225,42,3613191.96
+2026-06-15,prod_apple_laptops,MacBook Air M2,laptops,Apple,meesho,87464.68,99999,12.5,4.5,7789,9.66,450,28,2449011.04
+2026-06-15,prod_hp_laptops,HP Pavilion 15,laptops,HP,amazon,49189.25,67999,27.7,4.4,2195,33.01,317,60,2951355.0
+2026-06-15,prod_hp_laptops,HP Pavilion 15,laptops,HP,flipkart,51100.82,67999,24.9,4.4,8235,31.5,396,48,2452839.36
+2026-06-15,prod_hp_laptops,HP Pavilion 15,laptops,HP,meesho,60374.8,67999,11.2,4.5,986,20.81,383,36,2173492.8
+2026-06-15,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,amazon,46914.45,62999,25.5,3.9,12773,6.21,204,60,2814867.0
+2026-06-15,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,flipkart,56238.4,62999,10.7,4.5,10940,23.16,350,39,2193297.6
+2026-06-15,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,meesho,54404.42,62999,13.6,4.0,13672,21.25,206,27,1468919.34
+2026-06-22,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,amazon,31907.26,34999,8.8,4.4,7835,22.18,18,38,1212475.88
+2026-06-22,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,flipkart,25177.41,34999,28.1,4.5,2711,21.02,307,61,1535822.01
+2026-06-22,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,meesho,25073.57,34999,28.4,4.7,7037,5.74,492,57,1429193.49
+2026-06-22,prod_apple_smartphones,iPhone 15,smartphones,Apple,amazon,57582.44,79999,28.0,4.7,8023,21.51,205,51,2936704.44
+2026-06-22,prod_apple_smartphones,iPhone 15,smartphones,Apple,flipkart,59942.18,79999,25.1,3.8,5335,15.14,273,61,3656472.98
+2026-06-22,prod_apple_smartphones,iPhone 15,smartphones,Apple,meesho,69060.07,79999,13.7,4.5,7057,9.41,231,24,1657441.68
+2026-06-22,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,amazon,21459.78,25999,17.5,4.2,13765,13.96,294,48,1030069.44
+2026-06-22,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,flipkart,20386.22,25999,21.6,4.0,14435,6.91,213,47,958152.34
+2026-06-22,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,meesho,24263.07,25999,6.7,4.5,3543,31.64,110,19,460998.33
+2026-06-22,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,amazon,22462.72,26999,16.8,4.4,1452,27.59,232,48,1078210.56
+2026-06-22,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,flipkart,22944.0,26999,15.0,4.4,2750,8.0,432,57,1307808.0
+2026-06-22,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,meesho,23821.59,26999,11.8,4.4,6426,2.84,86,32,762290.88
+2026-06-22,prod_apple_audio,AirPods Pro 2,audio,Apple,amazon,23579.71,24999,5.7,4.0,3850,24.17,19,22,518753.62
+2026-06-22,prod_apple_audio,AirPods Pro 2,audio,Apple,flipkart,22633.19,24999,9.5,4.5,3953,5.28,129,43,973227.17
+2026-06-22,prod_apple_audio,AirPods Pro 2,audio,Apple,meesho,19573.68,24999,21.7,4.0,4750,31.58,16,25,489342.0
+2026-06-22,prod_boat_audio,boAt Rockerz 550,audio,boAt,amazon,4715.89,4999,5.7,4.0,8954,15.91,447,35,165056.15
+2026-06-22,prod_boat_audio,boAt Rockerz 550,audio,boAt,flipkart,4424.84,4999,11.5,4.2,9059,10.85,315,35,154869.4
+2026-06-22,prod_boat_audio,boAt Rockerz 550,audio,boAt,meesho,4204.0,4999,15.9,4.1,14252,27.2,78,37,155548.0
+2026-06-22,prod_sony_audio,Sony WH-1000XM5,audio,Sony,amazon,25421.94,34999,27.4,4.6,6665,2.74,141,67,1703269.98
+2026-06-22,prod_sony_audio,Sony WH-1000XM5,audio,Sony,flipkart,30992.6,34999,11.4,3.9,12606,34.49,267,27,836800.2
+2026-06-22,prod_sony_audio,Sony WH-1000XM5,audio,Sony,meesho,33088.14,34999,5.5,4.7,2207,21.03,144,25,827203.5
+2026-06-22,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,amazon,22276.19,29999,25.7,4.0,659,6.52,451,65,1447952.35
+2026-06-22,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,flipkart,23995.32,29999,20.0,4.5,3042,32.18,215,48,1151775.36
+2026-06-22,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,meesho,28146.82,29999,6.2,4.0,11201,4.73,305,18,506642.76
+2026-06-22,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,amazon,7021.73,7999,12.2,4.2,10926,11.81,287,39,273847.47
+2026-06-22,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,flipkart,5725.62,7999,28.4,4.5,3616,3.03,138,66,377890.92
+2026-06-22,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,meesho,6606.44,7999,17.4,4.4,5346,27.44,62,24,158554.56
+2026-06-22,prod_apple_laptops,MacBook Air M2,laptops,Apple,amazon,82611.89,99999,17.4,4.5,6804,10.13,411,56,4626265.84
+2026-06-22,prod_apple_laptops,MacBook Air M2,laptops,Apple,flipkart,88195.49,99999,11.8,4.4,5734,5.02,459,38,3351428.62
+2026-06-22,prod_apple_laptops,MacBook Air M2,laptops,Apple,meesho,81451.66,99999,18.5,4.7,11117,28.62,332,41,3339518.06
+2026-06-22,prod_hp_laptops,HP Pavilion 15,laptops,HP,amazon,60354.76,67999,11.2,4.3,3707,34.59,472,50,3017738.0
+2026-06-22,prod_hp_laptops,HP Pavilion 15,laptops,HP,flipkart,54944.12,67999,19.2,4.7,992,25.01,155,64,3516423.68
+2026-06-22,prod_hp_laptops,HP Pavilion 15,laptops,HP,meesho,48546.76,67999,28.6,4.3,12999,29.87,166,52,2524431.52
+2026-06-22,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,amazon,50457.95,62999,19.9,4.0,2248,4.54,351,44,2220149.8
+2026-06-22,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,flipkart,58819.7,62999,6.6,4.1,8322,28.09,166,32,1882230.4
+2026-06-22,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,meesho,50149.36,62999,20.4,4.0,853,30.71,20,41,2056123.76
+2026-06-29,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,amazon,25032.44,34999,28.5,4.6,14970,13.57,385,66,1652141.04
+2026-06-29,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,flipkart,27758.53,34999,20.7,4.7,14769,27.35,214,52,1443443.56
+2026-06-29,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,meesho,31159.81,34999,11.0,3.9,5642,11.48,155,20,623196.2
+2026-06-29,prod_apple_smartphones,iPhone 15,smartphones,Apple,amazon,75641.58,79999,5.4,4.8,6702,14.68,343,41,3101304.78
+2026-06-29,prod_apple_smartphones,iPhone 15,smartphones,Apple,flipkart,67647.54,79999,15.4,4.7,14198,17.42,310,49,3314729.46
+2026-06-29,prod_apple_smartphones,iPhone 15,smartphones,Apple,meesho,65745.41,79999,17.8,4.0,3059,9.28,101,36,2366834.76
+2026-06-29,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,amazon,24323.09,25999,6.4,4.8,13314,32.62,497,30,729692.7
+2026-06-29,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,flipkart,19770.69,25999,24.0,4.5,2731,28.92,119,50,988534.5
+2026-06-29,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,meesho,20845.09,25999,19.8,4.4,1826,30.96,140,43,896338.87
+2026-06-29,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,amazon,21930.9,26999,18.8,3.9,6422,14.3,137,49,1074614.1
+2026-06-29,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,flipkart,25102.01,26999,7.0,4.0,10407,4.51,427,30,753060.3
+2026-06-29,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,meesho,21650.45,26999,19.8,4.6,5543,24.37,287,34,736115.3
+2026-06-29,prod_apple_audio,AirPods Pro 2,audio,Apple,amazon,18765.34,24999,24.9,4.5,12833,30.62,357,69,1294808.46
+2026-06-29,prod_apple_audio,AirPods Pro 2,audio,Apple,flipkart,19498.34,24999,22.0,4.4,11414,7.23,441,62,1208897.08
+2026-06-29,prod_apple_audio,AirPods Pro 2,audio,Apple,meesho,18587.9,24999,25.6,3.9,5359,26.54,88,44,817867.6
+2026-06-29,prod_boat_audio,boAt Rockerz 550,audio,boAt,amazon,4114.84,4999,17.7,3.8,4662,22.36,490,44,181052.96
+2026-06-29,prod_boat_audio,boAt Rockerz 550,audio,boAt,flipkart,3956.7,4999,20.9,4.3,11807,5.53,382,50,197835.0
+2026-06-29,prod_boat_audio,boAt Rockerz 550,audio,boAt,meesho,4321.8,4999,13.5,4.4,14014,5.38,469,33,142619.4
+2026-06-29,prod_sony_audio,Sony WH-1000XM5,audio,Sony,amazon,30615.69,34999,12.5,4.5,1476,21.21,179,44,1347090.36
+2026-06-29,prod_sony_audio,Sony WH-1000XM5,audio,Sony,flipkart,25623.32,34999,26.8,4.8,14548,26.74,73,72,1844879.04
+2026-06-29,prod_sony_audio,Sony WH-1000XM5,audio,Sony,meesho,33055.47,34999,5.6,4.1,7585,27.42,344,21,694164.87
+2026-06-29,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,amazon,21020.87,29999,29.9,4.2,7045,7.4,399,69,1450440.03
+2026-06-29,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,flipkart,27881.21,29999,7.1,4.5,9990,11.02,475,27,752792.67
+2026-06-29,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,meesho,21422.17,29999,28.6,4.2,9758,15.12,144,54,1156797.18
+2026-06-29,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,amazon,7172.89,7999,10.3,3.8,9949,14.16,433,38,272569.82
+2026-06-29,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,flipkart,5909.69,7999,26.1,4.6,9580,6.33,25,75,443226.75
+2026-06-29,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,meesho,6006.17,7999,24.9,4.3,2200,6.13,345,40,240246.8
+2026-06-29,prod_apple_laptops,MacBook Air M2,laptops,Apple,amazon,82709.31,99999,17.3,3.9,8938,10.88,400,39,3225663.09
+2026-06-29,prod_apple_laptops,MacBook Air M2,laptops,Apple,flipkart,94708.54,99999,5.3,3.9,6191,17.84,304,24,2273004.96
+2026-06-29,prod_apple_laptops,MacBook Air M2,laptops,Apple,meesho,73496.21,99999,26.5,4.6,1074,17.86,61,37,2719359.77
+2026-06-29,prod_hp_laptops,HP Pavilion 15,laptops,HP,amazon,54090.56,67999,20.5,4.5,8614,2.32,169,54,2920890.24
+2026-06-29,prod_hp_laptops,HP Pavilion 15,laptops,HP,flipkart,58638.48,67999,13.8,3.8,1639,15.1,75,37,2169623.76
+2026-06-29,prod_hp_laptops,HP Pavilion 15,laptops,HP,meesho,50989.28,67999,25.0,4.0,2928,5.45,321,42,2141549.76
+2026-06-29,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,amazon,45103.94,62999,28.4,3.9,8348,25.4,436,62,2796444.28
+2026-06-29,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,flipkart,54502.79,62999,13.5,4.6,1661,31.53,278,49,2670636.71
+2026-06-29,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,meesho,49712.86,62999,21.1,4.3,11108,4.69,39,32,1590811.52
+2026-07-06,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,amazon,25621.16,34999,26.8,4.0,14650,13.12,99,64,1639754.24
+2026-07-06,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,flipkart,28889.96,34999,17.5,4.4,10928,9.54,498,39,1126708.44
+2026-07-06,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,meesho,32617.33,34999,6.8,3.8,4236,17.27,435,24,782815.92
+2026-07-06,prod_apple_smartphones,iPhone 15,smartphones,Apple,amazon,67489.29,79999,15.6,4.1,5880,34.59,29,51,3441953.79
+2026-07-06,prod_apple_smartphones,iPhone 15,smartphones,Apple,flipkart,67226.85,79999,16.0,4.5,7556,30.82,451,43,2890754.55
+2026-07-06,prod_apple_smartphones,iPhone 15,smartphones,Apple,meesho,64152.19,79999,19.8,4.7,3554,22.56,319,43,2758544.17
+2026-07-06,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,amazon,20046.37,25999,22.9,4.7,3105,9.84,485,52,1042411.24
+2026-07-06,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,flipkart,21499.37,25999,17.3,4.0,13125,16.7,262,39,838475.43
+2026-07-06,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,meesho,23636.19,25999,9.1,4.2,14556,10.52,331,22,519996.18
+2026-07-06,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,amazon,24765.69,26999,8.3,4.8,7079,9.79,46,32,792502.08
+2026-07-06,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,flipkart,23374.36,26999,13.4,4.6,6747,10.21,312,47,1098594.92
+2026-07-06,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,meesho,24517.66,26999,9.2,3.8,11177,23.91,242,24,588423.84
+2026-07-06,prod_apple_audio,AirPods Pro 2,audio,Apple,amazon,22462.59,24999,10.1,3.9,4411,3.88,270,45,1010816.55
+2026-07-06,prod_apple_audio,AirPods Pro 2,audio,Apple,flipkart,22985.89,24999,8.1,4.3,14041,12.43,258,19,436731.91
+2026-07-06,prod_apple_audio,AirPods Pro 2,audio,Apple,meesho,17582.86,24999,29.7,4.8,571,33.41,323,61,1072554.46
+2026-07-06,prod_boat_audio,boAt Rockerz 550,audio,boAt,amazon,4104.68,4999,17.9,4.3,10169,6.61,24,43,176501.24
+2026-07-06,prod_boat_audio,boAt Rockerz 550,audio,boAt,flipkart,4496.78,4999,10.0,4.5,14563,5.1,339,36,161884.08
+2026-07-06,prod_boat_audio,boAt Rockerz 550,audio,boAt,meesho,4527.66,4999,9.4,4.5,12652,33.17,344,27,122246.82
+2026-07-06,prod_sony_audio,Sony WH-1000XM5,audio,Sony,amazon,25646.35,34999,26.7,4.4,940,32.72,347,66,1692659.1
+2026-07-06,prod_sony_audio,Sony WH-1000XM5,audio,Sony,flipkart,27483.97,34999,21.5,4.2,9942,5.52,332,51,1401682.47
+2026-07-06,prod_sony_audio,Sony WH-1000XM5,audio,Sony,meesho,25562.26,34999,27.0,4.2,5241,24.03,405,41,1048052.66
+2026-07-06,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,amazon,27597.51,29999,8.0,4.3,583,12.71,189,33,910717.83
+2026-07-06,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,flipkart,25584.96,29999,14.7,4.2,3944,14.32,121,29,741963.84
+2026-07-06,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,meesho,23487.62,29999,21.7,4.4,7220,14.53,433,39,916017.18
+2026-07-06,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,amazon,7547.77,7999,5.6,4.1,6012,15.16,294,31,233980.87
+2026-07-06,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,flipkart,6069.47,7999,24.1,4.6,10912,33.53,18,51,309542.97
+2026-07-06,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,meesho,6304.26,7999,21.2,4.7,4030,32.59,39,53,334125.78
+2026-07-06,prod_apple_laptops,MacBook Air M2,laptops,Apple,amazon,92463.55,99999,7.5,4.3,4223,11.4,160,40,3698542.0
+2026-07-06,prod_apple_laptops,MacBook Air M2,laptops,Apple,flipkart,87216.44,99999,12.8,4.4,10884,11.0,212,31,2703709.64
+2026-07-06,prod_apple_laptops,MacBook Air M2,laptops,Apple,meesho,77971.27,99999,22.0,4.0,8114,25.4,62,36,2806965.72
+2026-07-06,prod_hp_laptops,HP Pavilion 15,laptops,HP,amazon,48229.53,67999,29.1,4.3,12186,20.16,31,67,3231378.51
+2026-07-06,prod_hp_laptops,HP Pavilion 15,laptops,HP,flipkart,49567.76,67999,27.1,4.0,3574,22.16,211,51,2527955.76
+2026-07-06,prod_hp_laptops,HP Pavilion 15,laptops,HP,meesho,51330.31,67999,24.5,4.1,12427,15.98,337,29,1488578.99
+2026-07-06,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,amazon,52733.82,62999,16.3,4.4,2936,26.32,432,40,2109352.8
+2026-07-06,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,flipkart,59476.75,62999,5.6,4.4,9302,20.04,123,29,1724825.75
+2026-07-06,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,meesho,52025.1,62999,17.4,4.8,2478,24.94,208,36,1872903.6
+2026-07-13,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,amazon,27190.41,34999,22.3,4.8,2361,5.44,364,62,1685805.42
+2026-07-13,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,flipkart,32554.15,34999,7.0,3.9,13465,8.33,168,24,781299.6
+2026-07-13,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,meesho,32641.61,34999,6.7,4.3,1480,28.41,124,24,783398.64
+2026-07-13,prod_apple_smartphones,iPhone 15,smartphones,Apple,amazon,62981.67,79999,21.3,4.3,5202,12.99,338,54,3401010.18
+2026-07-13,prod_apple_smartphones,iPhone 15,smartphones,Apple,flipkart,66695.05,79999,16.6,3.9,8653,33.6,95,43,2867887.15
+2026-07-13,prod_apple_smartphones,iPhone 15,smartphones,Apple,meesho,65282.63,79999,18.4,3.9,7030,26.95,180,34,2219609.42
+2026-07-13,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,amazon,18672.63,25999,28.2,4.0,6290,7.03,496,72,1344429.36
+2026-07-13,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,flipkart,19226.04,25999,26.1,4.3,9541,4.94,380,47,903623.88
+2026-07-13,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,meesho,19616.06,25999,24.6,4.5,1024,12.0,138,40,784642.4
+2026-07-13,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,amazon,19324.82,26999,28.4,4.4,4930,15.1,229,67,1294762.94
+2026-07-13,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,flipkart,19443.38,26999,28.0,4.3,14886,30.1,112,75,1458253.5
+2026-07-13,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,meesho,20131.47,26999,25.4,4.2,13230,30.65,404,47,946179.09
+2026-07-13,prod_apple_audio,AirPods Pro 2,audio,Apple,amazon,23243.32,24999,7.0,4.2,3016,24.93,179,39,906489.48
+2026-07-13,prod_apple_audio,AirPods Pro 2,audio,Apple,flipkart,18361.67,24999,26.6,4.7,7562,22.01,384,55,1009891.85
+2026-07-13,prod_apple_audio,AirPods Pro 2,audio,Apple,meesho,21257.51,24999,15.0,3.9,5829,4.25,22,27,573952.77
+2026-07-13,prod_boat_audio,boAt Rockerz 550,audio,boAt,amazon,4116.5,4999,17.7,4.2,2032,23.15,115,48,197592.0
+2026-07-13,prod_boat_audio,boAt Rockerz 550,audio,boAt,flipkart,4559.06,4999,8.8,3.9,11821,17.17,38,26,118535.56
+2026-07-13,prod_boat_audio,boAt Rockerz 550,audio,boAt,meesho,4597.35,4999,8.0,4.1,1965,24.84,40,28,128725.8
+2026-07-13,prod_sony_audio,Sony WH-1000XM5,audio,Sony,amazon,30569.41,34999,12.7,4.4,8142,16.06,74,51,1559039.91
+2026-07-13,prod_sony_audio,Sony WH-1000XM5,audio,Sony,flipkart,31546.15,34999,9.9,4.2,6504,29.31,369,40,1261846.0
+2026-07-13,prod_sony_audio,Sony WH-1000XM5,audio,Sony,meesho,29607.81,34999,15.4,4.3,778,10.57,382,24,710587.44
+2026-07-13,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,amazon,26885.09,29999,10.4,3.8,3997,34.2,402,48,1290484.32
+2026-07-13,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,flipkart,27676.06,29999,7.7,4.3,7088,29.86,58,33,913309.98
+2026-07-13,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,meesho,26064.06,29999,13.1,4.5,7402,14.4,203,30,781921.8
+2026-07-13,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,amazon,5815.1,7999,27.3,4.8,11910,12.41,347,67,389611.7
+2026-07-13,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,flipkart,5917.52,7999,26.0,3.8,13575,17.23,322,54,319546.08
+2026-07-13,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,meesho,6325.87,7999,20.9,4.4,1466,19.11,83,42,265686.54
+2026-07-13,prod_apple_laptops,MacBook Air M2,laptops,Apple,amazon,77993.53,99999,22.0,3.8,1729,25.64,45,35,2729773.55
+2026-07-13,prod_apple_laptops,MacBook Air M2,laptops,Apple,flipkart,71086.75,99999,28.9,4.5,5622,11.79,181,71,5047159.25
+2026-07-13,prod_apple_laptops,MacBook Air M2,laptops,Apple,meesho,90369.21,99999,9.6,4.0,1926,23.79,384,20,1807384.2
+2026-07-13,prod_hp_laptops,HP Pavilion 15,laptops,HP,amazon,63202.15,67999,7.1,4.8,4783,27.38,316,35,2212075.25
+2026-07-13,prod_hp_laptops,HP Pavilion 15,laptops,HP,flipkart,62535.51,67999,8.0,4.4,11732,23.25,269,40,2501420.4
+2026-07-13,prod_hp_laptops,HP Pavilion 15,laptops,HP,meesho,47939.8,67999,29.5,4.4,8945,26.69,407,50,2396990.0
+2026-07-13,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,amazon,54521.42,62999,13.5,4.7,3756,14.28,221,44,2398942.48
+2026-07-13,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,flipkart,44995.84,62999,28.6,4.0,2261,8.52,444,60,2699750.4
+2026-07-13,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,meesho,46998.09,62999,25.4,4.7,12774,32.32,133,51,2396902.59
+2026-07-20,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,amazon,25881.77,34999,26.0,4.5,11758,23.65,96,78,2018778.06
+2026-07-20,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,flipkart,31806.96,34999,9.1,3.9,11026,28.99,114,31,986015.76
+2026-07-20,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,meesho,26837.22,34999,23.3,4.3,9060,18.78,155,40,1073488.8
+2026-07-20,prod_apple_smartphones,iPhone 15,smartphones,Apple,amazon,58532.81,79999,26.8,4.4,11536,7.28,236,50,2926640.5
+2026-07-20,prod_apple_smartphones,iPhone 15,smartphones,Apple,flipkart,59997.83,79999,25.0,4.0,8548,26.19,311,44,2639904.52
+2026-07-20,prod_apple_smartphones,iPhone 15,smartphones,Apple,meesho,60323.41,79999,24.6,4.4,575,27.11,27,47,2835200.27
+2026-07-20,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,amazon,18471.81,25999,29.0,4.2,5240,6.91,159,60,1108308.6
+2026-07-20,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,flipkart,20005.77,25999,23.1,4.7,9099,14.92,212,62,1240357.74
+2026-07-20,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,meesho,20671.87,25999,20.5,4.2,12015,5.07,298,35,723515.45
+2026-07-20,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,amazon,25211.3,26999,6.6,4.4,8641,20.5,305,37,932818.1
+2026-07-20,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,flipkart,23827.83,26999,11.7,4.6,7724,4.54,38,37,881629.71
+2026-07-20,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,meesho,20872.38,26999,22.7,4.6,8000,16.53,82,38,793150.44
+2026-07-20,prod_apple_audio,AirPods Pro 2,audio,Apple,amazon,23195.32,24999,7.2,4.0,9174,26.28,499,42,974203.44
+2026-07-20,prod_apple_audio,AirPods Pro 2,audio,Apple,flipkart,21116.35,24999,15.5,4.4,11891,5.91,210,51,1076933.85
+2026-07-20,prod_apple_audio,AirPods Pro 2,audio,Apple,meesho,20174.99,24999,19.3,4.4,3174,13.95,173,16,322799.84
+2026-07-20,prod_boat_audio,boAt Rockerz 550,audio,boAt,amazon,3709.64,4999,25.8,4.1,8012,11.86,470,51,189191.64
+2026-07-20,prod_boat_audio,boAt Rockerz 550,audio,boAt,flipkart,3658.36,4999,26.8,4.6,3198,28.49,234,62,226818.32
+2026-07-20,prod_boat_audio,boAt Rockerz 550,audio,boAt,meesho,4648.32,4999,7.0,4.5,7698,16.42,367,29,134801.28
+2026-07-20,prod_sony_audio,Sony WH-1000XM5,audio,Sony,amazon,27909.73,34999,20.3,3.9,11394,23.68,478,33,921021.09
+2026-07-20,prod_sony_audio,Sony WH-1000XM5,audio,Sony,flipkart,30779.98,34999,12.1,4.1,4081,31.91,132,32,984959.36
+2026-07-20,prod_sony_audio,Sony WH-1000XM5,audio,Sony,meesho,29313.94,34999,16.2,4.6,1447,18.09,26,27,791476.38
+2026-07-20,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,amazon,25415.94,29999,15.3,4.1,13547,2.72,335,59,1499540.46
+2026-07-20,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,flipkart,21473.12,29999,28.4,3.9,6572,10.59,368,59,1266914.08
+2026-07-20,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,meesho,24259.21,29999,19.1,4.3,14594,22.08,181,26,630739.46
+2026-07-20,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,amazon,7148.47,7999,10.6,4.1,12833,20.52,266,28,200157.16
+2026-07-20,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,flipkart,6153.6,7999,23.1,3.9,10763,19.94,50,47,289219.2
+2026-07-20,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,meesho,7267.54,7999,9.1,4.7,12824,24.08,236,26,188956.04
+2026-07-20,prod_apple_laptops,MacBook Air M2,laptops,Apple,amazon,81363.39,99999,18.6,3.9,7931,28.61,235,38,3091808.82
+2026-07-20,prod_apple_laptops,MacBook Air M2,laptops,Apple,flipkart,90881.43,99999,9.1,4.1,11472,19.14,110,40,3635257.2
+2026-07-20,prod_apple_laptops,MacBook Air M2,laptops,Apple,meesho,83718.18,99999,16.3,4.8,11694,2.9,41,35,2930136.3
+2026-07-20,prod_hp_laptops,HP Pavilion 15,laptops,HP,amazon,55441.25,67999,18.5,4.3,2029,23.67,412,46,2550297.5
+2026-07-20,prod_hp_laptops,HP Pavilion 15,laptops,HP,flipkart,48203.19,67999,29.1,4.0,8088,11.48,398,59,2843988.21
+2026-07-20,prod_hp_laptops,HP Pavilion 15,laptops,HP,meesho,51034.71,67999,24.9,4.2,13768,19.59,87,44,2245527.24
+2026-07-20,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,amazon,54860.13,62999,12.9,4.7,13639,11.14,491,36,1974964.68
+2026-07-20,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,flipkart,56947.55,62999,9.6,4.7,9987,7.02,225,40,2277902.0
+2026-07-20,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,meesho,45951.21,62999,27.1,4.6,7825,33.92,214,49,2251609.29
+2026-07-27,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,amazon,25532.4,34999,27.0,4.2,2852,2.42,284,60,1531944.0
+2026-07-27,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,flipkart,25459.51,34999,27.3,3.9,11106,8.18,430,61,1553030.11
+2026-07-27,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,meesho,27034.6,34999,22.8,4.1,7331,29.11,235,34,919176.4
+2026-07-27,prod_apple_smartphones,iPhone 15,smartphones,Apple,amazon,59434.27,79999,25.7,4.1,3019,25.5,414,45,2674542.15
+2026-07-27,prod_apple_smartphones,iPhone 15,smartphones,Apple,flipkart,73159.65,79999,8.5,4.1,7030,26.71,329,34,2487428.1
+2026-07-27,prod_apple_smartphones,iPhone 15,smartphones,Apple,meesho,59170.31,79999,26.0,4.3,14697,22.93,71,46,2721834.26
+2026-07-27,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,amazon,20238.09,25999,22.2,3.9,3035,30.24,121,57,1153571.13
+2026-07-27,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,flipkart,20520.48,25999,21.1,4.5,7933,12.08,114,62,1272269.76
+2026-07-27,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,meesho,19574.34,25999,24.7,4.5,4274,31.94,338,44,861270.96
+2026-07-27,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,amazon,22631.54,26999,16.2,4.3,13036,20.04,196,44,995787.76
+2026-07-27,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,flipkart,20654.88,26999,23.5,4.7,4560,30.33,153,71,1466496.48
+2026-07-27,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,meesho,20216.13,26999,25.1,3.8,14460,25.98,159,43,869293.59
+2026-07-27,prod_apple_audio,AirPods Pro 2,audio,Apple,amazon,18294.56,24999,26.8,3.9,10703,19.84,57,49,896433.44
+2026-07-27,prod_apple_audio,AirPods Pro 2,audio,Apple,flipkart,20819.37,24999,16.7,4.1,9176,11.81,156,47,978510.39
+2026-07-27,prod_apple_audio,AirPods Pro 2,audio,Apple,meesho,18106.18,24999,27.6,4.7,10183,21.58,447,41,742353.38
+2026-07-27,prod_boat_audio,boAt Rockerz 550,audio,boAt,amazon,4449.72,4999,11.0,4.6,1002,21.23,497,49,218036.28
+2026-07-27,prod_boat_audio,boAt Rockerz 550,audio,boAt,flipkart,4669.51,4999,6.6,4.6,9185,5.79,55,43,200788.93
+2026-07-27,prod_boat_audio,boAt Rockerz 550,audio,boAt,meesho,3712.65,4999,25.7,4.7,8790,19.08,220,42,155931.3
+2026-07-27,prod_sony_audio,Sony WH-1000XM5,audio,Sony,amazon,26477.8,34999,24.3,4.4,13441,16.63,307,61,1615145.8
+2026-07-27,prod_sony_audio,Sony WH-1000XM5,audio,Sony,flipkart,27101.18,34999,22.6,4.0,7929,5.44,198,48,1300856.64
+2026-07-27,prod_sony_audio,Sony WH-1000XM5,audio,Sony,meesho,24932.14,34999,28.8,4.4,11282,18.71,320,34,847692.76
+2026-07-27,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,amazon,25785.24,29999,14.0,4.3,1161,6.62,145,42,1082980.08
+2026-07-27,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,flipkart,23918.35,29999,20.3,4.1,3501,19.05,12,28,669713.8
+2026-07-27,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,meesho,25957.68,29999,13.5,4.6,8794,18.92,153,42,1090222.56
+2026-07-27,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,amazon,7424.89,7999,7.2,4.4,2150,13.39,258,42,311845.38
+2026-07-27,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,flipkart,6194.71,7999,22.6,4.8,2406,11.07,203,56,346903.76
+2026-07-27,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,meesho,5784.05,7999,27.7,4.5,9314,12.21,413,31,179305.55
+2026-07-27,prod_apple_laptops,MacBook Air M2,laptops,Apple,amazon,93510.95,99999,6.5,4.4,10455,5.78,198,33,3085861.35
+2026-07-27,prod_apple_laptops,MacBook Air M2,laptops,Apple,flipkart,91973.46,99999,8.0,4.2,11392,4.34,49,30,2759203.8
+2026-07-27,prod_apple_laptops,MacBook Air M2,laptops,Apple,meesho,78284.9,99999,21.7,4.5,5747,21.59,14,41,3209680.9
+2026-07-27,prod_hp_laptops,HP Pavilion 15,laptops,HP,amazon,52291.69,67999,23.1,3.9,13585,4.19,271,41,2143959.29
+2026-07-27,prod_hp_laptops,HP Pavilion 15,laptops,HP,flipkart,57424.57,67999,15.6,4.1,7547,21.05,31,32,1837586.24
+2026-07-27,prod_hp_laptops,HP Pavilion 15,laptops,HP,meesho,58765.29,67999,13.6,4.5,9958,29.9,349,30,1762958.7
+2026-07-27,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,amazon,55511.87,62999,11.9,4.1,11940,16.73,401,48,2664569.76
+2026-07-27,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,flipkart,54826.98,62999,13.0,4.4,5882,21.84,355,44,2412387.12
+2026-07-27,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,meesho,57221.04,62999,9.2,4.2,2567,31.37,179,19,1087199.76
+2026-08-03,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,amazon,27598.27,34999,21.1,4.4,5438,4.37,210,49,1352315.23
+2026-08-03,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,flipkart,27948.63,34999,20.1,4.2,3659,34.61,232,51,1425380.13
+2026-08-03,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,meesho,29000.26,34999,17.1,3.8,7829,33.81,198,15,435003.9
+2026-08-03,prod_apple_smartphones,iPhone 15,smartphones,Apple,amazon,68239.41,79999,14.7,4.0,838,26.96,234,36,2456618.76
+2026-08-03,prod_apple_smartphones,iPhone 15,smartphones,Apple,flipkart,73676.3,79999,7.9,4.8,5052,31.32,305,35,2578670.5
+2026-08-03,prod_apple_smartphones,iPhone 15,smartphones,Apple,meesho,69191.39,79999,13.5,4.3,2735,20.27,275,28,1937358.92
+2026-08-03,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,amazon,23013.44,25999,11.5,4.0,1335,13.3,142,33,759443.52
+2026-08-03,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,flipkart,23794.31,25999,8.5,4.2,9580,18.13,206,35,832800.85
+2026-08-03,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,meesho,20664.91,25999,20.5,4.0,6229,3.3,243,34,702606.94
+2026-08-03,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,amazon,19142.1,26999,29.1,4.7,10971,19.6,436,60,1148526.0
+2026-08-03,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,flipkart,24806.54,26999,8.1,4.6,4498,30.94,472,28,694583.12
+2026-08-03,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,meesho,19027.63,26999,29.5,4.3,13021,21.43,193,42,799160.46
+2026-08-03,prod_apple_audio,AirPods Pro 2,audio,Apple,amazon,18988.0,24999,24.0,4.2,7913,18.25,292,53,1006364.0
+2026-08-03,prod_apple_audio,AirPods Pro 2,audio,Apple,flipkart,18970.94,24999,24.1,4.4,14362,8.62,63,65,1233111.1
+2026-08-03,prod_apple_audio,AirPods Pro 2,audio,Apple,meesho,18455.71,24999,26.2,4.7,1405,31.15,229,46,848962.66
+2026-08-03,prod_boat_audio,boAt Rockerz 550,audio,boAt,amazon,3591.3,4999,28.2,3.8,7414,24.69,364,60,215478.0
+2026-08-03,prod_boat_audio,boAt Rockerz 550,audio,boAt,flipkart,4374.88,4999,12.5,4.2,12164,11.2,113,53,231868.64
+2026-08-03,prod_boat_audio,boAt Rockerz 550,audio,boAt,meesho,3502.02,4999,29.9,4.5,12512,11.72,17,54,189109.08
+2026-08-03,prod_sony_audio,Sony WH-1000XM5,audio,Sony,amazon,26770.07,34999,23.5,3.9,11424,27.37,332,56,1499123.92
+2026-08-03,prod_sony_audio,Sony WH-1000XM5,audio,Sony,flipkart,27880.17,34999,20.3,3.9,7570,4.56,209,42,1170967.14
+2026-08-03,prod_sony_audio,Sony WH-1000XM5,audio,Sony,meesho,30196.96,34999,13.7,3.9,12219,33.27,45,39,1177681.44
+2026-08-03,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,amazon,26252.38,29999,12.5,3.9,7759,28.22,356,23,603804.74
+2026-08-03,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,flipkart,25477.6,29999,15.1,4.1,3869,11.27,403,52,1324835.2
+2026-08-03,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,meesho,21703.44,29999,27.7,4.1,7408,9.46,323,39,846434.16
+2026-08-03,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,amazon,7353.24,7999,8.1,4.7,7794,16.83,297,40,294129.6
+2026-08-03,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,flipkart,6233.99,7999,22.1,4.0,10852,29.14,403,49,305465.51
+2026-08-03,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,meesho,7313.33,7999,8.6,4.6,4435,18.39,149,20,146266.6
+2026-08-03,prod_apple_laptops,MacBook Air M2,laptops,Apple,amazon,93640.76,99999,6.4,4.5,5105,2.0,260,21,1966455.96
+2026-08-03,prod_apple_laptops,MacBook Air M2,laptops,Apple,flipkart,77324.81,99999,22.7,3.9,12670,2.13,130,52,4020890.12
+2026-08-03,prod_apple_laptops,MacBook Air M2,laptops,Apple,meesho,92451.77,99999,7.5,4.2,4420,29.81,163,23,2126390.71
+2026-08-03,prod_hp_laptops,HP Pavilion 15,laptops,HP,amazon,58184.74,67999,14.4,4.8,1794,24.67,251,45,2618313.3
+2026-08-03,prod_hp_laptops,HP Pavilion 15,laptops,HP,flipkart,52633.66,67999,22.6,3.8,2920,25.53,336,61,3210653.26
+2026-08-03,prod_hp_laptops,HP Pavilion 15,laptops,HP,meesho,59532.24,67999,12.5,3.9,11836,23.26,33,24,1428773.76
+2026-08-03,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,amazon,51967.86,62999,17.5,4.2,7136,8.89,190,43,2234617.98
+2026-08-03,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,flipkart,47760.05,62999,24.2,4.2,12421,30.06,113,57,2722322.85
+2026-08-03,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,meesho,45986.8,62999,27.0,4.0,10328,22.06,154,32,1471577.6
+2026-08-10,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,amazon,26786.51,34999,23.5,4.1,9850,15.04,359,46,1232179.46
+2026-08-10,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,flipkart,30734.29,34999,12.2,4.2,1342,5.68,262,33,1014231.57
+2026-08-10,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,meesho,33120.49,34999,5.4,4.2,5391,2.64,70,21,695530.29
+2026-08-10,prod_apple_smartphones,iPhone 15,smartphones,Apple,amazon,67913.36,79999,15.1,4.3,9129,2.33,237,47,3191927.92
+2026-08-10,prod_apple_smartphones,iPhone 15,smartphones,Apple,flipkart,60519.42,79999,24.3,4.6,8058,34.21,71,66,3994281.72
+2026-08-10,prod_apple_smartphones,iPhone 15,smartphones,Apple,meesho,70687.46,79999,11.6,3.8,4752,27.51,263,22,1555124.12
+2026-08-10,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,amazon,24690.25,25999,5.0,4.1,9873,34.15,425,29,716017.25
+2026-08-10,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,flipkart,22730.17,25999,12.6,3.9,3809,10.14,247,40,909206.8
+2026-08-10,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,meesho,24323.08,25999,6.4,4.8,14169,27.91,495,17,413492.36
+2026-08-10,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,amazon,24127.78,26999,10.6,4.0,2541,22.54,392,37,892727.86
+2026-08-10,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,flipkart,20174.17,26999,25.3,4.4,6128,24.25,137,54,1089405.18
+2026-08-10,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,meesho,23688.22,26999,12.3,4.3,13407,25.35,40,22,521140.84
+2026-08-10,prod_apple_audio,AirPods Pro 2,audio,Apple,amazon,19805.95,24999,20.8,4.2,2446,33.61,269,45,891267.75
+2026-08-10,prod_apple_audio,AirPods Pro 2,audio,Apple,flipkart,19501.59,24999,22.0,3.9,4483,28.63,235,47,916574.73
+2026-08-10,prod_apple_audio,AirPods Pro 2,audio,Apple,meesho,23474.69,24999,6.1,4.0,6960,8.9,34,18,422544.42
+2026-08-10,prod_boat_audio,boAt Rockerz 550,audio,boAt,amazon,4007.25,4999,19.8,3.9,9523,34.38,103,51,204369.75
+2026-08-10,prod_boat_audio,boAt Rockerz 550,audio,boAt,flipkart,4153.04,4999,16.9,4.5,4086,23.14,336,39,161968.56
+2026-08-10,prod_boat_audio,boAt Rockerz 550,audio,boAt,meesho,3784.71,4999,24.3,4.3,675,2.3,184,52,196804.92
+2026-08-10,prod_sony_audio,Sony WH-1000XM5,audio,Sony,amazon,27698.53,34999,20.9,4.0,5164,29.99,367,37,1024845.61
+2026-08-10,prod_sony_audio,Sony WH-1000XM5,audio,Sony,flipkart,32993.82,34999,5.7,4.3,10105,5.91,151,29,956820.78
+2026-08-10,prod_sony_audio,Sony WH-1000XM5,audio,Sony,meesho,24558.32,34999,29.8,3.8,11534,14.27,202,56,1375265.92
+2026-08-10,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,amazon,25820.73,29999,13.9,4.6,4139,20.61,185,48,1239395.04
+2026-08-10,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,flipkart,27062.15,29999,9.8,4.7,1976,18.7,118,22,595367.3
+2026-08-10,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,meesho,27184.93,29999,9.4,4.7,4595,33.37,294,27,733993.11
+2026-08-10,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,amazon,6565.78,7999,17.9,4.6,4596,13.65,448,49,321723.22
+2026-08-10,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,flipkart,6646.5,7999,16.9,4.3,3467,21.51,101,41,272506.5
+2026-08-10,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,meesho,7184.95,7999,10.2,3.9,1500,33.05,258,23,165253.85
+2026-08-10,prod_apple_laptops,MacBook Air M2,laptops,Apple,amazon,74103.61,99999,25.9,4.1,10557,27.45,330,48,3556973.28
+2026-08-10,prod_apple_laptops,MacBook Air M2,laptops,Apple,flipkart,81521.82,99999,18.5,4.1,6665,3.24,72,50,4076091.0
+2026-08-10,prod_apple_laptops,MacBook Air M2,laptops,Apple,meesho,84585.01,99999,15.4,4.3,1292,34.11,120,28,2368380.28
+2026-08-10,prod_hp_laptops,HP Pavilion 15,laptops,HP,amazon,60682.02,67999,10.8,3.8,11075,33.91,119,36,2184552.72
+2026-08-10,prod_hp_laptops,HP Pavilion 15,laptops,HP,flipkart,50176.03,67999,26.2,4.2,4892,12.73,359,64,3211265.92
+2026-08-10,prod_hp_laptops,HP Pavilion 15,laptops,HP,meesho,58293.15,67999,14.3,4.7,12197,34.5,379,31,1807087.65
+2026-08-10,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,amazon,49438.24,62999,21.5,3.9,8395,25.41,91,54,2669664.96
+2026-08-10,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,flipkart,44851.79,62999,28.8,3.8,4347,21.85,155,59,2646255.61
+2026-08-10,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,meesho,58234.45,62999,7.6,4.3,7878,14.19,467,30,1747033.5
+2026-08-17,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,amazon,26998.87,34999,22.9,4.3,13854,24.92,367,64,1727927.68
+2026-08-17,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,flipkart,26187.38,34999,25.2,4.0,5507,13.08,489,61,1597430.18
+2026-08-17,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,meesho,26887.49,34999,23.2,4.4,14232,18.38,196,33,887287.17
+2026-08-17,prod_apple_smartphones,iPhone 15,smartphones,Apple,amazon,61310.35,79999,23.4,4.2,865,29.69,15,53,3249448.55
+2026-08-17,prod_apple_smartphones,iPhone 15,smartphones,Apple,flipkart,61901.81,79999,22.6,4.6,8423,33.91,35,56,3466501.36
+2026-08-17,prod_apple_smartphones,iPhone 15,smartphones,Apple,meesho,58746.46,79999,26.6,4.0,12100,20.24,204,32,1879886.72
+2026-08-17,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,amazon,23676.81,25999,8.9,4.1,4705,30.76,339,40,947072.4
+2026-08-17,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,flipkart,20637.52,25999,20.6,4.4,12576,31.9,15,54,1114426.08
+2026-08-17,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,meesho,21131.61,25999,18.7,4.1,4948,13.65,314,30,633948.3
+2026-08-17,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,amazon,22918.59,26999,15.1,3.9,11864,11.43,222,43,985499.37
+2026-08-17,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,flipkart,25267.11,26999,6.4,4.2,14194,23.18,339,33,833814.63
+2026-08-17,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,meesho,22825.4,26999,15.5,4.6,1969,11.17,145,23,524984.2
+2026-08-17,prod_apple_audio,AirPods Pro 2,audio,Apple,amazon,22628.07,24999,9.5,4.8,2142,15.32,371,45,1018263.15
+2026-08-17,prod_apple_audio,AirPods Pro 2,audio,Apple,flipkart,21583.36,24999,13.7,4.2,4332,8.78,246,35,755417.6
+2026-08-17,prod_apple_audio,AirPods Pro 2,audio,Apple,meesho,19644.49,24999,21.4,4.8,9252,4.54,47,56,1100091.44
+2026-08-17,prod_boat_audio,boAt Rockerz 550,audio,boAt,amazon,4633.99,4999,7.3,4.4,9542,23.4,141,30,139019.7
+2026-08-17,prod_boat_audio,boAt Rockerz 550,audio,boAt,flipkart,3865.94,4999,22.7,4.4,5037,10.95,302,43,166235.42
+2026-08-17,prod_boat_audio,boAt Rockerz 550,audio,boAt,meesho,3568.37,4999,28.6,4.5,13303,8.69,297,51,181986.87
+2026-08-17,prod_sony_audio,Sony WH-1000XM5,audio,Sony,amazon,29677.82,34999,15.2,3.8,8952,10.35,230,54,1602602.28
+2026-08-17,prod_sony_audio,Sony WH-1000XM5,audio,Sony,flipkart,25901.0,34999,26.0,4.0,10250,34.24,59,41,1061941.0
+2026-08-17,prod_sony_audio,Sony WH-1000XM5,audio,Sony,meesho,25246.98,34999,27.9,4.2,4251,16.34,364,45,1136114.1
+2026-08-17,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,amazon,26683.94,29999,11.1,4.5,1825,8.58,439,45,1200777.3
+2026-08-17,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,flipkart,26636.29,29999,11.2,4.0,4426,10.17,40,34,905633.86
+2026-08-17,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,meesho,23948.71,29999,20.2,4.5,1676,33.4,420,49,1173486.79
+2026-08-17,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,amazon,7198.54,7999,10.0,4.4,11271,26.35,265,26,187162.04
+2026-08-17,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,flipkart,5757.75,7999,28.0,4.4,8305,10.87,190,73,420315.75
+2026-08-17,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,meesho,6024.47,7999,24.7,4.3,9638,10.2,355,39,234954.33
+2026-08-17,prod_apple_laptops,MacBook Air M2,laptops,Apple,amazon,78766.15,99999,21.2,4.7,1428,29.22,153,56,4410904.4
+2026-08-17,prod_apple_laptops,MacBook Air M2,laptops,Apple,flipkart,87472.97,99999,12.5,4.3,1314,18.21,464,29,2536716.13
+2026-08-17,prod_apple_laptops,MacBook Air M2,laptops,Apple,meesho,84757.38,99999,15.2,4.5,4273,7.26,88,22,1864662.36
+2026-08-17,prod_hp_laptops,HP Pavilion 15,laptops,HP,amazon,53307.49,67999,21.6,4.7,12304,24.61,64,53,2825296.97
+2026-08-17,prod_hp_laptops,HP Pavilion 15,laptops,HP,flipkart,60349.84,67999,11.2,4.3,8265,13.78,183,51,3077841.84
+2026-08-17,prod_hp_laptops,HP Pavilion 15,laptops,HP,meesho,58573.91,67999,13.9,4.3,14146,30.92,60,28,1640069.48
+2026-08-17,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,amazon,51924.84,62999,17.6,4.0,12952,24.34,420,52,2700091.68
+2026-08-17,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,flipkart,52931.59,62999,16.0,4.4,2825,24.23,97,48,2540716.32
+2026-08-17,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,meesho,57997.65,62999,7.9,4.0,528,25.72,368,23,1333945.95
+2026-08-24,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,amazon,32517.97,34999,7.1,3.8,2903,31.4,128,27,877985.19
+2026-08-24,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,flipkart,31303.44,34999,10.6,4.3,9312,10.1,38,34,1064316.96
+2026-08-24,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,meesho,31328.01,34999,10.5,4.8,9436,20.38,213,29,908512.29
+2026-08-24,prod_apple_smartphones,iPhone 15,smartphones,Apple,amazon,62070.63,79999,22.4,4.5,2989,18.5,211,66,4096661.58
+2026-08-24,prod_apple_smartphones,iPhone 15,smartphones,Apple,flipkart,65349.1,79999,18.3,3.9,9281,5.87,175,34,2221869.4
+2026-08-24,prod_apple_smartphones,iPhone 15,smartphones,Apple,meesho,71874.06,79999,10.2,4.2,13487,8.74,258,25,1796851.5
+2026-08-24,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,amazon,19546.32,25999,24.8,3.9,7376,20.5,317,56,1094593.92
+2026-08-24,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,flipkart,24634.19,25999,5.2,4.5,8267,29.59,412,38,936099.22
+2026-08-24,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,meesho,22530.55,25999,13.3,4.6,7043,8.05,428,39,878691.45
+2026-08-24,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,amazon,25138.1,26999,6.9,4.2,12151,31.76,109,31,779281.1
+2026-08-24,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,flipkart,19114.85,26999,29.2,3.9,9900,4.45,193,64,1223350.4
+2026-08-24,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,meesho,18918.32,26999,29.9,4.4,5156,9.26,181,45,851324.4
+2026-08-24,prod_apple_audio,AirPods Pro 2,audio,Apple,amazon,21439.3,24999,14.2,4.3,10979,23.67,357,46,986207.8
+2026-08-24,prod_apple_audio,AirPods Pro 2,audio,Apple,flipkart,23715.84,24999,5.1,4.6,11705,20.1,42,37,877486.08
+2026-08-24,prod_apple_audio,AirPods Pro 2,audio,Apple,meesho,18862.0,24999,24.5,4.6,12143,19.09,78,47,886514.0
+2026-08-24,prod_boat_audio,boAt Rockerz 550,audio,boAt,amazon,3821.42,4999,23.6,4.0,3327,31.38,377,63,240749.46
+2026-08-24,prod_boat_audio,boAt Rockerz 550,audio,boAt,flipkart,4002.76,4999,19.9,4.5,13392,21.1,319,42,168115.92
+2026-08-24,prod_boat_audio,boAt Rockerz 550,audio,boAt,meesho,3853.73,4999,22.9,4.1,3432,12.36,128,31,119465.63
+2026-08-24,prod_sony_audio,Sony WH-1000XM5,audio,Sony,amazon,25305.69,34999,27.7,4.3,3224,4.54,351,59,1493035.71
+2026-08-24,prod_sony_audio,Sony WH-1000XM5,audio,Sony,flipkart,27478.5,34999,21.5,4.6,4443,24.85,139,69,1896016.5
+2026-08-24,prod_sony_audio,Sony WH-1000XM5,audio,Sony,meesho,30409.65,34999,13.1,4.1,3268,24.92,117,29,881879.85
+2026-08-24,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,amazon,23534.45,29999,21.5,4.6,11781,27.11,101,44,1035515.8
+2026-08-24,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,flipkart,25736.54,29999,14.2,4.2,951,10.57,26,48,1235353.92
+2026-08-24,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,meesho,24319.16,29999,18.9,3.8,10169,12.66,449,39,948447.24
+2026-08-24,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,amazon,5797.35,7999,27.5,4.8,12468,29.88,132,71,411611.85
+2026-08-24,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,flipkart,7409.24,7999,7.4,4.8,5236,26.69,405,31,229686.44
+2026-08-24,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,meesho,6776.77,7999,15.3,3.9,825,13.89,394,29,196526.33
+2026-08-24,prod_apple_laptops,MacBook Air M2,laptops,Apple,amazon,78640.66,99999,21.4,4.0,708,27.22,315,55,4325236.3
+2026-08-24,prod_apple_laptops,MacBook Air M2,laptops,Apple,flipkart,74071.27,99999,25.9,4.4,8669,22.61,433,60,4444276.2
+2026-08-24,prod_apple_laptops,MacBook Air M2,laptops,Apple,meesho,70232.32,99999,29.8,4.6,6913,25.34,200,44,3090222.08
+2026-08-24,prod_hp_laptops,HP Pavilion 15,laptops,HP,amazon,48820.19,67999,28.2,4.7,5457,19.41,113,73,3563873.87
+2026-08-24,prod_hp_laptops,HP Pavilion 15,laptops,HP,flipkart,52442.53,67999,22.9,4.4,1273,17.01,340,58,3041666.74
+2026-08-24,prod_hp_laptops,HP Pavilion 15,laptops,HP,meesho,48590.52,67999,28.5,4.0,7755,24.8,351,45,2186573.4
+2026-08-24,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,amazon,57388.84,62999,8.9,4.4,9189,7.92,355,36,2065998.24
+2026-08-24,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,flipkart,46660.73,62999,25.9,4.0,777,27.71,308,57,2659661.61
+2026-08-24,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,meesho,47204.98,62999,25.1,4.8,8271,18.12,206,38,1793789.24
+2026-08-31,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,amazon,30825.26,34999,11.9,4.7,8956,21.56,183,29,893932.54
+2026-08-31,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,flipkart,29544.97,34999,15.6,3.9,9299,31.07,442,41,1211343.77
+2026-08-31,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,meesho,25698.04,34999,26.6,4.7,3351,26.34,150,46,1182109.84
+2026-08-31,prod_apple_smartphones,iPhone 15,smartphones,Apple,amazon,74751.18,79999,6.6,4.1,1471,34.19,410,22,1644525.96
+2026-08-31,prod_apple_smartphones,iPhone 15,smartphones,Apple,flipkart,74578.37,79999,6.8,4.0,3825,17.48,141,21,1566145.77
+2026-08-31,prod_apple_smartphones,iPhone 15,smartphones,Apple,meesho,73053.58,79999,8.7,4.8,11509,33.94,225,24,1753285.92
+2026-08-31,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,amazon,22578.48,25999,13.2,4.1,3871,6.28,135,36,812825.28
+2026-08-31,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,flipkart,24292.39,25999,6.6,4.0,12230,6.85,177,36,874526.04
+2026-08-31,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,meesho,24161.28,25999,7.1,4.3,4885,20.59,403,17,410741.76
+2026-08-31,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,amazon,22236.99,26999,17.6,3.9,9547,11.03,249,32,711583.68
+2026-08-31,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,flipkart,23580.5,26999,12.7,4.6,1326,15.81,234,46,1084703.0
+2026-08-31,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,meesho,21145.53,26999,21.7,4.6,13001,12.36,273,49,1036130.97
+2026-08-31,prod_apple_audio,AirPods Pro 2,audio,Apple,amazon,22529.31,24999,9.9,4.3,11253,18.25,246,44,991289.64
+2026-08-31,prod_apple_audio,AirPods Pro 2,audio,Apple,flipkart,18375.55,24999,26.5,4.2,5259,16.98,383,46,845275.3
+2026-08-31,prod_apple_audio,AirPods Pro 2,audio,Apple,meesho,17802.76,24999,28.8,4.0,8732,21.12,249,45,801124.2
+2026-08-31,prod_boat_audio,boAt Rockerz 550,audio,boAt,amazon,4058.36,4999,18.8,4.2,10094,6.66,289,41,166392.76
+2026-08-31,prod_boat_audio,boAt Rockerz 550,audio,boAt,flipkart,4475.72,4999,10.5,4.0,12472,11.43,464,26,116368.72
+2026-08-31,prod_boat_audio,boAt Rockerz 550,audio,boAt,meesho,3752.08,4999,24.9,4.2,1761,20.37,424,46,172595.68
+2026-08-31,prod_sony_audio,Sony WH-1000XM5,audio,Sony,amazon,27362.53,34999,21.8,4.0,3664,30.84,132,44,1203951.32
+2026-08-31,prod_sony_audio,Sony WH-1000XM5,audio,Sony,flipkart,25630.91,34999,26.8,4.6,9596,26.76,84,61,1563485.51
+2026-08-31,prod_sony_audio,Sony WH-1000XM5,audio,Sony,meesho,32428.53,34999,7.3,4.3,13850,3.32,152,19,616142.07
+2026-08-31,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,amazon,21686.02,29999,27.7,4.3,7261,27.1,85,62,1344533.24
+2026-08-31,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,flipkart,24022.37,29999,19.9,4.8,11657,15.13,415,46,1105029.02
+2026-08-31,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,meesho,26965.74,29999,10.1,4.1,7903,22.3,456,25,674143.5
+2026-08-31,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,amazon,7498.58,7999,6.3,3.8,8491,16.46,421,23,172467.34
+2026-08-31,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,flipkart,6701.08,7999,16.2,4.0,1219,25.91,64,42,281445.36
+2026-08-31,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,meesho,7252.1,7999,9.3,4.2,12120,14.94,377,21,152294.1
+2026-08-31,prod_apple_laptops,MacBook Air M2,laptops,Apple,amazon,80854.65,99999,19.1,4.7,6116,4.18,19,62,5012988.3
+2026-08-31,prod_apple_laptops,MacBook Air M2,laptops,Apple,flipkart,75618.14,99999,24.4,4.0,5503,2.99,481,54,4083379.56
+2026-08-31,prod_apple_laptops,MacBook Air M2,laptops,Apple,meesho,88361.71,99999,11.6,4.4,10338,12.48,425,32,2827574.72
+2026-08-31,prod_hp_laptops,HP Pavilion 15,laptops,HP,amazon,59811.65,67999,12.0,4.8,649,25.63,356,40,2392466.0
+2026-08-31,prod_hp_laptops,HP Pavilion 15,laptops,HP,flipkart,63257.1,67999,7.0,4.2,4285,13.33,418,42,2656798.2
+2026-08-31,prod_hp_laptops,HP Pavilion 15,laptops,HP,meesho,58266.49,67999,14.3,4.7,1396,5.05,89,35,2039327.15
+2026-08-31,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,amazon,44602.09,62999,29.2,4.2,7772,10.14,240,67,2988340.03
+2026-08-31,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,flipkart,47975.82,62999,23.8,4.4,13613,28.97,380,39,1871056.98
+2026-08-31,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,meesho,56503.06,62999,10.3,4.5,6462,15.28,443,25,1412576.5
+2026-09-07,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,amazon,30872.33,34999,11.8,4.0,3177,13.29,220,43,1327510.19
+2026-09-07,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,flipkart,26818.63,34999,23.4,4.3,4675,18.26,156,55,1475024.65
+2026-09-07,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,meesho,31810.54,34999,9.1,3.9,8427,31.78,178,27,858884.58
+2026-09-07,prod_apple_smartphones,iPhone 15,smartphones,Apple,amazon,57368.18,79999,28.3,4.6,8715,23.68,450,65,3728931.7
+2026-09-07,prod_apple_smartphones,iPhone 15,smartphones,Apple,flipkart,75782.83,79999,5.3,4.6,12114,5.45,292,32,2425050.56
+2026-09-07,prod_apple_smartphones,iPhone 15,smartphones,Apple,meesho,56387.93,79999,29.5,4.0,1474,21.63,372,44,2481068.92
+2026-09-07,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,amazon,23577.69,25999,9.3,4.4,4797,32.96,411,34,801641.46
+2026-09-07,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,flipkart,24356.09,25999,6.3,4.5,7139,9.48,310,28,681970.52
+2026-09-07,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,meesho,22364.28,25999,14.0,4.6,12400,17.75,181,30,670928.4
+2026-09-07,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,amazon,23433.92,26999,13.2,4.0,1727,17.4,246,45,1054526.4
+2026-09-07,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,flipkart,23077.45,26999,14.5,4.6,12442,14.69,234,40,923098.0
+2026-09-07,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,meesho,24848.23,26999,8.0,4.7,10416,19.54,26,26,646053.98
+2026-09-07,prod_apple_audio,AirPods Pro 2,audio,Apple,amazon,22741.47,24999,9.0,4.5,14581,20.55,360,26,591278.22
+2026-09-07,prod_apple_audio,AirPods Pro 2,audio,Apple,flipkart,23021.84,24999,7.9,4.4,14107,23.84,47,31,713677.04
+2026-09-07,prod_apple_audio,AirPods Pro 2,audio,Apple,meesho,21229.1,24999,15.1,4.6,12312,22.19,192,29,615643.9
+2026-09-07,prod_boat_audio,boAt Rockerz 550,audio,boAt,amazon,4305.52,4999,13.9,4.2,10299,23.72,44,39,167915.28
+2026-09-07,prod_boat_audio,boAt Rockerz 550,audio,boAt,flipkart,4553.07,4999,8.9,4.6,1107,15.83,92,45,204888.15
+2026-09-07,prod_boat_audio,boAt Rockerz 550,audio,boAt,meesho,4459.88,4999,10.8,4.3,11106,33.62,118,36,160555.68
+2026-09-07,prod_sony_audio,Sony WH-1000XM5,audio,Sony,amazon,27738.28,34999,20.7,4.2,11409,19.53,341,49,1359175.72
+2026-09-07,prod_sony_audio,Sony WH-1000XM5,audio,Sony,flipkart,26035.13,34999,25.6,3.9,12577,19.83,423,50,1301756.5
+2026-09-07,prod_sony_audio,Sony WH-1000XM5,audio,Sony,meesho,25242.5,34999,27.9,4.1,12741,17.97,261,38,959215.0
+2026-09-07,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,amazon,26060.05,29999,13.1,3.8,4443,2.21,489,53,1381182.65
+2026-09-07,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,flipkart,23036.45,29999,23.2,4.1,10230,28.58,473,48,1105749.6
+2026-09-07,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,meesho,26504.65,29999,11.6,4.8,873,21.92,333,34,901158.1
+2026-09-07,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,amazon,5722.23,7999,28.5,4.0,9529,9.35,160,60,343333.8
+2026-09-07,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,flipkart,7278.64,7999,9.0,4.0,6563,26.99,450,22,160130.08
+2026-09-07,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,meesho,7398.58,7999,7.5,3.8,10094,21.88,89,17,125775.86
+2026-09-07,prod_apple_laptops,MacBook Air M2,laptops,Apple,amazon,74125.58,99999,25.9,4.8,2464,9.64,435,81,6004171.98
+2026-09-07,prod_apple_laptops,MacBook Air M2,laptops,Apple,flipkart,93733.5,99999,6.3,3.8,8822,14.97,24,29,2718271.5
+2026-09-07,prod_apple_laptops,MacBook Air M2,laptops,Apple,meesho,75314.95,99999,24.7,4.1,1083,21.42,204,34,2560708.3
+2026-09-07,prod_hp_laptops,HP Pavilion 15,laptops,HP,amazon,59983.75,67999,11.8,4.7,5933,20.15,34,42,2519317.5
+2026-09-07,prod_hp_laptops,HP Pavilion 15,laptops,HP,flipkart,50903.22,67999,25.1,4.0,3778,28.97,465,41,2087032.02
+2026-09-07,prod_hp_laptops,HP Pavilion 15,laptops,HP,meesho,58862.41,67999,13.4,4.7,1711,8.97,378,20,1177248.2
+2026-09-07,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,amazon,52885.97,62999,16.1,4.1,6221,19.49,89,44,2326982.68
+2026-09-07,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,flipkart,47876.71,62999,24.0,4.0,2664,10.85,186,48,2298082.08
+2026-09-07,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,meesho,58956.35,62999,6.4,3.8,6182,25.01,104,22,1297039.7
+2026-09-14,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,amazon,25496.02,34999,27.2,4.7,4810,9.59,211,60,1529761.2
+2026-09-14,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,flipkart,26021.19,34999,25.7,4.5,12453,15.1,86,65,1691377.35
+2026-09-14,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,meesho,27375.6,34999,21.8,4.1,1677,34.76,86,42,1149775.2
+2026-09-14,prod_apple_smartphones,iPhone 15,smartphones,Apple,amazon,64443.05,79999,19.4,4.7,4696,17.43,313,52,3351038.6
+2026-09-14,prod_apple_smartphones,iPhone 15,smartphones,Apple,flipkart,69393.44,79999,13.3,4.4,12833,8.65,467,44,3053311.36
+2026-09-14,prod_apple_smartphones,iPhone 15,smartphones,Apple,meesho,64875.38,79999,18.9,4.6,734,29.01,29,33,2140887.54
+2026-09-14,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,amazon,19724.38,25999,24.1,4.1,13050,5.39,71,63,1242635.94
+2026-09-14,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,flipkart,20302.07,25999,21.9,4.4,9245,24.52,291,51,1035405.57
+2026-09-14,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,meesho,19703.46,25999,24.2,4.0,10539,9.7,316,42,827545.32
+2026-09-14,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,amazon,25244.45,26999,6.5,3.9,9286,30.03,32,34,858311.3
+2026-09-14,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,flipkart,22419.1,26999,17.0,4.7,5313,17.36,16,37,829506.7
+2026-09-14,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,meesho,25461.05,26999,5.7,4.4,6682,20.09,95,20,509221.0
+2026-09-14,prod_apple_audio,AirPods Pro 2,audio,Apple,amazon,17716.15,24999,29.1,3.9,13410,21.04,286,59,1045252.85
+2026-09-14,prod_apple_audio,AirPods Pro 2,audio,Apple,flipkart,23187.34,24999,7.2,4.4,5443,32.27,209,26,602870.84
+2026-09-14,prod_apple_audio,AirPods Pro 2,audio,Apple,meesho,21915.66,24999,12.3,4.3,10618,31.71,398,31,679385.46
+2026-09-14,prod_boat_audio,boAt Rockerz 550,audio,boAt,amazon,3566.88,4999,28.6,4.1,516,10.97,116,65,231847.2
+2026-09-14,prod_boat_audio,boAt Rockerz 550,audio,boAt,flipkart,4007.37,4999,19.8,3.8,11067,12.68,335,44,176324.28
+2026-09-14,prod_boat_audio,boAt Rockerz 550,audio,boAt,meesho,4580.86,4999,8.4,3.9,12557,32.31,328,15,68712.9
+2026-09-14,prod_sony_audio,Sony WH-1000XM5,audio,Sony,amazon,26871.01,34999,23.2,4.6,2214,2.0,358,56,1504776.56
+2026-09-14,prod_sony_audio,Sony WH-1000XM5,audio,Sony,flipkart,33136.2,34999,5.3,4.3,12841,33.6,287,30,994086.0
+2026-09-14,prod_sony_audio,Sony WH-1000XM5,audio,Sony,meesho,28446.55,34999,18.7,4.2,9303,14.83,127,25,711163.75
+2026-09-14,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,amazon,27774.24,29999,7.4,4.0,14816,16.66,270,33,916549.92
+2026-09-14,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,flipkart,26047.07,29999,13.2,4.1,6339,24.19,344,34,885600.38
+2026-09-14,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,meesho,23756.24,29999,20.8,3.9,8888,24.88,353,33,783955.92
+2026-09-14,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,amazon,6360.86,7999,20.5,4.0,872,11.39,227,50,318043.0
+2026-09-14,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,flipkart,7206.61,7999,9.9,3.9,14470,5.57,244,34,245024.74
+2026-09-14,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,meesho,7427.01,7999,7.2,3.9,2029,21.32,276,18,133686.18
+2026-09-14,prod_apple_laptops,MacBook Air M2,laptops,Apple,amazon,74497.57,99999,25.5,3.8,7722,24.75,133,48,3575883.36
+2026-09-14,prod_apple_laptops,MacBook Air M2,laptops,Apple,flipkart,72550.89,99999,27.4,4.6,8955,26.1,188,67,4860909.63
+2026-09-14,prod_apple_laptops,MacBook Air M2,laptops,Apple,meesho,90250.69,99999,9.7,4.5,8568,13.83,456,30,2707520.7
+2026-09-14,prod_hp_laptops,HP Pavilion 15,laptops,HP,amazon,53112.95,67999,21.9,4.2,11465,16.99,212,66,3505454.7
+2026-09-14,prod_hp_laptops,HP Pavilion 15,laptops,HP,flipkart,62551.48,67999,8.0,4.4,14555,14.47,40,31,1939095.88
+2026-09-14,prod_hp_laptops,HP Pavilion 15,laptops,HP,meesho,61846.4,67999,9.0,4.5,14967,16.91,183,25,1546160.0
+2026-09-14,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,amazon,45937.71,62999,27.1,4.2,6115,23.77,226,63,2894075.73
+2026-09-14,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,flipkart,47033.11,62999,25.3,4.7,9907,33.5,84,61,2869019.71
+2026-09-14,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,meesho,50686.84,62999,19.5,4.2,5402,6.19,201,28,1419231.52
+2026-09-21,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,amazon,31421.83,34999,10.2,3.9,8509,21.64,437,35,1099764.05
+2026-09-21,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,flipkart,26222.9,34999,25.1,4.3,1649,20.67,454,53,1389813.7
+2026-09-21,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,meesho,31993.73,34999,8.6,4.0,6775,21.66,49,33,1055793.09
+2026-09-21,prod_apple_smartphones,iPhone 15,smartphones,Apple,amazon,64266.72,79999,19.7,4.6,1662,17.74,318,44,2827735.68
+2026-09-21,prod_apple_smartphones,iPhone 15,smartphones,Apple,flipkart,56580.49,79999,29.3,4.0,10969,3.33,208,58,3281668.42
+2026-09-21,prod_apple_smartphones,iPhone 15,smartphones,Apple,meesho,57280.54,79999,28.4,4.5,7478,28.72,475,36,2062099.44
+2026-09-21,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,amazon,22876.94,25999,12.0,3.9,6877,23.25,196,23,526169.62
+2026-09-21,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,flipkart,18833.65,25999,27.6,4.2,3636,16.61,33,66,1243020.9
+2026-09-21,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,meesho,20877.19,25999,19.7,4.2,12096,20.3,414,37,772456.03
+2026-09-21,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,amazon,21608.9,26999,20.0,4.2,14390,19.86,306,43,929182.7
+2026-09-21,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,flipkart,21790.84,26999,19.3,4.0,1364,21.94,384,45,980587.8
+2026-09-21,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,meesho,21150.19,26999,21.7,3.9,6906,7.39,100,28,592205.32
+2026-09-21,prod_apple_audio,AirPods Pro 2,audio,Apple,amazon,23429.37,24999,6.3,4.2,7919,17.95,197,38,890316.06
+2026-09-21,prod_apple_audio,AirPods Pro 2,audio,Apple,flipkart,20588.57,24999,17.6,3.9,1531,20.94,287,50,1029428.5
+2026-09-21,prod_apple_audio,AirPods Pro 2,audio,Apple,meesho,17750.6,24999,29.0,3.8,1921,3.45,100,41,727774.6
+2026-09-21,prod_boat_audio,boAt Rockerz 550,audio,boAt,amazon,4692.08,4999,6.1,4.7,12711,11.79,47,29,136070.32
+2026-09-21,prod_boat_audio,boAt Rockerz 550,audio,boAt,flipkart,4594.98,4999,8.1,4.3,4064,13.82,494,26,119469.48
+2026-09-21,prod_boat_audio,boAt Rockerz 550,audio,boAt,meesho,4055.77,4999,18.9,3.9,560,24.12,324,30,121673.1
+2026-09-21,prod_sony_audio,Sony WH-1000XM5,audio,Sony,amazon,29614.03,34999,15.4,3.8,5362,7.84,58,54,1599157.62
+2026-09-21,prod_sony_audio,Sony WH-1000XM5,audio,Sony,flipkart,26873.49,34999,23.2,4.1,6200,9.82,57,43,1155560.07
+2026-09-21,prod_sony_audio,Sony WH-1000XM5,audio,Sony,meesho,27320.69,34999,21.9,4.3,7388,32.44,45,34,928903.46
+2026-09-21,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,amazon,22631.05,29999,24.6,4.8,3989,30.85,417,57,1289969.85
+2026-09-21,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,flipkart,25426.61,29999,15.2,4.8,3122,28.37,173,52,1322183.72
+2026-09-21,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,meesho,24161.5,29999,19.5,4.6,12160,30.59,39,41,990621.5
+2026-09-21,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,amazon,6767.52,7999,15.4,4.3,6339,19.15,498,36,243630.72
+2026-09-21,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,flipkart,6807.15,7999,14.9,3.9,2801,33.33,441,32,217828.8
+2026-09-21,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,meesho,6260.78,7999,21.7,4.3,6566,13.81,300,39,244170.42
+2026-09-21,prod_apple_laptops,MacBook Air M2,laptops,Apple,amazon,83205.67,99999,16.8,4.4,8769,8.93,373,53,4409900.51
+2026-09-21,prod_apple_laptops,MacBook Air M2,laptops,Apple,flipkart,88470.05,99999,11.5,4.5,8727,28.28,370,41,3627272.05
+2026-09-21,prod_apple_laptops,MacBook Air M2,laptops,Apple,meesho,91669.53,99999,8.3,4.1,6576,21.78,261,20,1833390.6
+2026-09-21,prod_hp_laptops,HP Pavilion 15,laptops,HP,amazon,56163.11,67999,17.4,4.1,11151,2.79,296,58,3257460.38
+2026-09-21,prod_hp_laptops,HP Pavilion 15,laptops,HP,flipkart,56581.13,67999,16.8,3.9,9572,20.17,209,40,2263245.2
+2026-09-21,prod_hp_laptops,HP Pavilion 15,laptops,HP,meesho,61262.1,67999,9.9,3.8,12994,21.04,446,25,1531552.5
+2026-09-21,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,amazon,53081.8,62999,15.7,4.5,13739,20.88,98,42,2229435.6
+2026-09-21,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,flipkart,55961.11,62999,11.2,4.1,8549,21.4,218,37,2070561.07
+2026-09-21,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,meesho,58466.41,62999,7.2,4.0,8012,9.06,148,21,1227794.61
+2026-09-28,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,amazon,33127.76,34999,5.3,4.4,10198,28.36,467,40,1325110.4
+2026-09-28,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,flipkart,28309.02,34999,19.1,4.5,10346,32.75,498,54,1528687.08
+2026-09-28,prod_samsung_smartphones,Galaxy A56 5G,smartphones,Samsung,meesho,25551.44,34999,27.0,3.8,3850,31.61,135,33,843197.52
+2026-09-28,prod_apple_smartphones,iPhone 15,smartphones,Apple,amazon,58817.03,79999,26.5,4.3,10285,9.89,381,67,3940741.01
+2026-09-28,prod_apple_smartphones,iPhone 15,smartphones,Apple,flipkart,67785.5,79999,15.3,4.0,14660,23.3,467,35,2372492.5
+2026-09-28,prod_apple_smartphones,iPhone 15,smartphones,Apple,meesho,60682.07,79999,24.1,4.5,14501,14.99,74,45,2730693.15
+2026-09-28,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,amazon,20961.3,25999,19.4,4.0,7814,12.3,219,49,1027103.7
+2026-09-28,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,flipkart,23189.65,25999,10.8,4.2,4402,8.55,393,45,1043534.25
+2026-09-28,prod_xiaomi_smartphones,Redmi Note 13 Pro,smartphones,Xiaomi,meesho,19815.92,25999,23.8,4.7,12768,8.03,478,41,812452.72
+2026-09-28,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,amazon,25227.65,26999,6.6,4.3,2080,10.2,165,29,731601.85
+2026-09-28,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,flipkart,19862.96,26999,26.4,4.6,2627,24.78,473,66,1310955.36
+2026-09-28,prod_oneplus_smartphones,OnePlus Nord CE 4,smartphones,OnePlus,meesho,22270.26,26999,17.5,4.4,7903,5.96,162,31,690378.06
+2026-09-28,prod_apple_audio,AirPods Pro 2,audio,Apple,amazon,19050.33,24999,23.8,4.6,14213,12.33,430,50,952516.5
+2026-09-28,prod_apple_audio,AirPods Pro 2,audio,Apple,flipkart,19111.87,24999,23.5,4.5,4158,30.81,92,55,1051152.85
+2026-09-28,prod_apple_audio,AirPods Pro 2,audio,Apple,meesho,21352.91,24999,14.6,4.0,12628,20.11,102,32,683293.12
+2026-09-28,prod_boat_audio,boAt Rockerz 550,audio,boAt,amazon,3993.81,4999,20.1,4.3,12516,29.38,357,40,159752.4
+2026-09-28,prod_boat_audio,boAt Rockerz 550,audio,boAt,flipkart,3910.45,4999,21.8,4.5,5763,31.02,365,43,168149.35
+2026-09-28,prod_boat_audio,boAt Rockerz 550,audio,boAt,meesho,3641.3,4999,27.2,3.8,14440,24.41,319,34,123804.2
+2026-09-28,prod_sony_audio,Sony WH-1000XM5,audio,Sony,amazon,25006.28,34999,28.6,4.1,11744,14.97,78,57,1425357.96
+2026-09-28,prod_sony_audio,Sony WH-1000XM5,audio,Sony,flipkart,28694.42,34999,18.0,4.2,13258,18.68,258,39,1119082.38
+2026-09-28,prod_sony_audio,Sony WH-1000XM5,audio,Sony,meesho,27446.69,34999,21.6,4.4,6519,15.93,394,32,878294.08
+2026-09-28,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,amazon,23633.61,29999,21.2,4.2,7141,10.47,378,51,1205314.11
+2026-09-28,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,flipkart,24028.82,29999,19.9,4.8,6811,32.38,179,38,913095.16
+2026-09-28,prod_samsung_smartwatches,Galaxy Watch 6,smartwatches,Samsung,meesho,25358.94,29999,15.5,4.0,503,32.2,423,33,836845.02
+2026-09-28,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,amazon,7358.35,7999,8.0,3.9,10998,32.65,220,24,176600.4
+2026-09-28,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,flipkart,6901.47,7999,13.7,4.2,9509,25.72,64,34,234649.98
+2026-09-28,prod_noise_smartwatches,Noise ColorFit Pro 5,smartwatches,Noise,meesho,7219.35,7999,9.7,3.8,6181,28.48,177,22,158825.7
+2026-09-28,prod_apple_laptops,MacBook Air M2,laptops,Apple,amazon,82276.83,99999,17.7,4.7,13057,2.33,391,57,4689779.31
+2026-09-28,prod_apple_laptops,MacBook Air M2,laptops,Apple,flipkart,81539.31,99999,18.5,4.8,12934,5.21,356,48,3913886.88
+2026-09-28,prod_apple_laptops,MacBook Air M2,laptops,Apple,meesho,84912.13,99999,15.1,4.0,12373,13.13,415,24,2037891.12
+2026-09-28,prod_hp_laptops,HP Pavilion 15,laptops,HP,amazon,63439.89,67999,6.7,4.0,8555,11.61,214,29,1839756.81
+2026-09-28,prod_hp_laptops,HP Pavilion 15,laptops,HP,flipkart,49209.19,67999,27.6,4.3,5287,5.52,477,44,2165204.36
+2026-09-28,prod_hp_laptops,HP Pavilion 15,laptops,HP,meesho,59532.0,67999,12.5,4.1,2882,27.84,70,29,1726428.0
+2026-09-28,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,amazon,58738.13,62999,6.8,4.7,3256,29.1,276,30,1762143.9
+2026-09-28,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,flipkart,59640.7,62999,5.3,4.3,11656,32.85,455,25,1491017.5
+2026-09-28,prod_dell_laptops,Dell Inspiron 15,laptops,Dell,meesho,55297.87,62999,12.2,4.2,6203,19.97,88,31,1714233.97

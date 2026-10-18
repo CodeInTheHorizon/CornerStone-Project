@@ -30,6 +30,10 @@ class SourceType(str, Enum):
     #: Supplied by the operator as a CSV/JSON upload. Real data, but this
     #: system did not observe it and cannot vouch for when or how it was taken.
     IMPORTED = "imported"
+    #: Open public benchmark or research dataset (e.g., Kaggle, UCI) with real sales labels.
+    PUBLIC_DATASET = "public_dataset"
+    #: Seller-uploaded historical sales records (X -> actual units sold).
+    SELLER_DATA = "seller_data"
     #: Synthetic fixture bundled for development and testing. Not real market
     #: data, and must never be presented as such.
     DEMO = "demo"

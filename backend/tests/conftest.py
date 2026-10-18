@@ -9,7 +9,7 @@ import tempfile
 from pathlib import Path
 
 # Must be set before app.config is imported anywhere.
-_test_storage = tempfile.TemporaryDirectory(prefix="marketpulse_tests_")
+_test_storage = tempfile.TemporaryDirectory(prefix="marketpulse_tests_", ignore_cleanup_errors=True)
 _tmp_db = Path(_test_storage.name) / "test.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_tmp_db.as_posix()}"
 os.environ["JWT_SECRET_KEY"] = "test-only-secret-not-used-anywhere-real"
@@ -17,6 +17,7 @@ os.environ["DEBUG"] = "false"
 os.environ["ENVIRONMENT"] = "development"
 os.environ["STORAGE_BACKEND"] = "local"
 os.environ["MODEL_ARTIFACT_DIR"] = str(Path(_test_storage.name) / "artifacts")
+os.environ["FLIPKART_WEB_ENABLED"] = "false"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

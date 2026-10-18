@@ -1,0 +1,55 @@
+<!doctype html>
+<!-- SYNTHETIC FIXTURE: mirrors amazon.in search-results markup as observed 2026-09-30. Values are invented. -->
+<html><head><meta charset="utf-8"><title>Amazon.in : wireless earbuds</title></head>
+<body>
+<div class="s-main-slot">
+
+  <!-- Sponsored card with price, struck MRP and exact count in aria-label -->
+  <div data-asin="B0SPONS001" data-index="4" data-component-type="s-search-result">
+    <div data-cy="title-recipe">
+      <span class="puis-sponsored-label-text">Sponsored</span>
+      <a href="/sspa/click?x"><h2 aria-label="Sponsored Ad - Sonix Buds 5 Wireless Earbuds"><span>Sonix Buds 5 Wireless Earbuds</span></h2></a>
+    </div>
+    <a aria-label="4.0 out of 5 stars, rating details"><i class="a-icon a-icon-star-small"><span class="a-icon-alt">4.0 out of 5 stars</span></i></a>
+    <a aria-label="5,175 ratings" href="#"><span class="a-size-base s-underline-text">(5.1K)</span></a>
+    <a class="a-link-normal" href="/dp/B0SPONS001">
+      <span class="a-price" data-a-color="base"><span class="a-offscreen">₹4,990</span><span aria-hidden="true"><span class="a-price-whole">4,990</span></span></span>
+    </a>
+    <div>M.R.P: <span class="a-price a-text-price" data-a-strike="true" data-a-color="secondary"><span class="a-offscreen">₹8,990</span></span> <span>(44% off)</span></div>
+    <button name="submit.addToCart">Add to cart</button>
+    <span>colours available</span>
+  </div>
+
+  <!-- Organic card with a per-unit price that must be ignored -->
+  <div data-asin="B0ORGANIC1" data-index="5" data-component-type="s-search-result">
+    <div data-cy="title-recipe"><a href="/dp/B0ORGANIC1"><h2 aria-label="Linz TWS Earbuds"><span>Linz TWS Earbuds with 48dB ANC</span></h2></a></div>
+    <span class="a-icon-alt">3.6 out of 5 stars</span>
+    <a aria-label="8 ratings" href="#"><span>(8)</span></a>
+    <span class="a-price"><span class="a-offscreen">₹299</span></span>
+    <span>(<span class="a-price a-text-price"><span class="a-offscreen">₹299</span></span>/count)</span>
+    <div>M.R.P: <span class="a-price a-text-price" data-a-strike="true"><span class="a-offscreen">₹999</span></span> (70% off)</div>
+    <span>Only 3 left in stock - order soon.</span>
+  </div>
+
+  <!-- No buy box: the third-party offer price is not the product price -->
+  <div data-asin="B0NOBUYBOX" data-index="6" data-component-type="s-search-result">
+    <div data-cy="title-recipe"><h2><span>OnePix Nord Buds 3r TWS Earbuds</span></h2></div>
+    <span class="a-icon-alt">4.3 out of 5 stars</span>
+    <a aria-label="50,596 ratings" href="#"><span>(50.5K)</span></a>
+    <a href="/dp/B0NOBUYBOX">See options</a>
+    <div data-cy="secondary-offer-recipe"><span>No featured offers available</span><span>₹1,999</span><span>(1 new offer)</span></div>
+  </div>
+
+  <!-- Same product again as an organic result: stored once -->
+  <div data-asin="B0SPONS001" data-index="7" data-component-type="s-search-result">
+    <div data-cy="title-recipe"><h2><span>Sonix Buds 5 Wireless Earbuds</span></h2></div>
+    <span class="a-price"><span class="a-offscreen">₹4,990</span></span>
+  </div>
+
+  <!-- Card without an ASIN (a widget) is skipped -->
+  <div data-asin="" data-index="8" data-component-type="s-search-result"><h2><span>Related searches</span></h2></div>
+</div>
+<span class="s-pagination-strip"><a class="s-pagination-item s-pagination-next" href="/s?k=wireless+earbuds&amp;page=2&amp;qid=1">Next</a></span>
+<!-- A recommendation carousel outside the result cards -->
+<div class="a-carousel"><div data-asin="B0CAROUSE1"><span class="a-price"><span class="a-offscreen">₹10</span></span></div></div>
+</body></html>

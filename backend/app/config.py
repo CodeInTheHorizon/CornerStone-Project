@@ -103,6 +103,22 @@ class Settings(BaseSettings):
     AMAZON_WEB_LOCALE: str = "en-IN"
     AMAZON_WEB_TIMEOUT_SECONDS: float = Field(default=15.0, ge=1.0, le=60.0)
 
+    # Flipkart public search-page collector.
+    FLIPKART_WEB_ENABLED: bool = False
+    FLIPKART_WEB_DOMAIN: str = "www.flipkart.com"
+    FLIPKART_WEB_CURRENCY: str = "INR"
+    FLIPKART_WEB_TIMEOUT_SECONDS: float = Field(default=15.0, ge=1.0, le=60.0)
+
+    # Meesho public search-page & provider collector.
+    MEESHO_WEB_ENABLED: bool = True
+    MEESHO_WEB_DOMAIN: str = "www.meesho.com"
+    MEESHO_WEB_CURRENCY: str = "INR"
+    MEESHO_WEB_TIMEOUT_SECONDS: float = Field(default=15.0, ge=1.0, le=60.0)
+    MEESHO_PROXY_URL: str = ""
+    MEESHO_PROVIDER_ENABLED: bool = False
+    MEESHO_PROVIDER_BASE_URL: str = ""
+    MEESHO_PROVIDER_API_KEY: SecretStr = SecretStr("")
+
     # Reserved approved-provider adapter slots.  No scraper is used for these
     # marketplaces; an operator must explicitly enable a lawful provider.
     CROMA_PROVIDER_ENABLED: bool = False
@@ -136,6 +152,40 @@ class Settings(BaseSettings):
     # records that Flipkart has confirmed this application's use in writing.
     FLIPKART_DATA_USE_APPROVED: bool = False
     FLIPKART_TIMEOUT_SECONDS: float = Field(default=15.0, ge=1.0, le=60.0)
+
+    # --- Live product-page scraping (app/live_scraping) ---
+    # Each marketplace is off until the operator turns it on. A marketplace
+    # that blocks ordinary requests is recorded as unavailable, never bypassed.
+    SCRAPER_AMAZON_ENABLED: bool = False
+    SCRAPER_FLIPKART_ENABLED: bool = False
+    SCRAPER_MEESHO_ENABLED: bool = False
+    SCRAPER_AMAZON_DOMAIN: str = "www.amazon.in"
+    SCRAPER_USER_AGENT: str = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+    )
+    SCRAPER_ACCEPT_LANGUAGE: str = "en-IN,en;q=0.9"
+    # Product token used to select this client's robots.txt group.
+    SCRAPER_ROBOTS_AGENT: str = "MarketPulseBot"
+    # One fixed egress proxy, e.g. http://user:pass@proxy.internal:3128.
+    SCRAPER_HTTP_PROXY: SecretStr = SecretStr("")
+    SCRAPER_HTTPS_PROXY: SecretStr = SecretStr("")
+    SCRAPER_CONNECT_TIMEOUT_SECONDS: float = Field(default=5.0, ge=1.0, le=30.0)
+    SCRAPER_READ_TIMEOUT_SECONDS: float = Field(default=20.0, ge=1.0, le=120.0)
+    SCRAPER_MAX_ATTEMPTS: int = Field(default=3, ge=1, le=6)
+    SCRAPER_BACKOFF_BASE_SECONDS: float = Field(default=2.0, ge=0.1, le=60.0)
+    SCRAPER_BACKOFF_MAX_SECONDS: float = Field(default=60.0, ge=1.0, le=600.0)
+    # Minimum spacing between requests to one host. The floor is deliberate.
+    SCRAPER_MIN_INTERVAL_SECONDS: float = Field(default=5.0, ge=1.0, le=600.0)
+    # How long a blocked / throttled marketplace is left alone.
+    SCRAPER_BLOCK_COOLDOWN_MINUTES: int = Field(default=360, ge=5, le=7 * 24 * 60)
+    SCRAPER_DEFAULT_REFRESH_MINUTES: int = Field(default=1440, ge=15, le=30 * 24 * 60)
+    # Search / best-seller pages: 20-30 products per request, so they carry
+    # the frequent price/rating refresh...
+    SCRAPER_LISTING_REFRESH_MINUTES: int = Field(default=1440, ge=15, le=30 * 24 * 60)
+    # ...while products discovered on them get a product-page visit (seller,
+    # model, availability) this often, spread across the interval.
+    SCRAPER_DETAIL_REFRESH_MINUTES: int = Field(default=7 * 24 * 60, ge=60, le=90 * 24 * 60)
 
     # --- CORS ---
     # Comma-separated list of allowed frontend origins.

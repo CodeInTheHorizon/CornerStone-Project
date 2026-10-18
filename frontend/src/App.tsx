@@ -20,6 +20,7 @@ import { ThemeProvider } from '@/theme/ThemeProvider'
 import { SearchPage } from '@/pages/SearchPage'
 import { ProductCatalogPage } from '@/pages/ProductCatalogPage'
 import { ProductDetailPage } from '@/pages/ProductDetailPage'
+import { ProfitabilityPage } from '@/pages/ProfitabilityPage'
 
 const pageVariants = {
   initial: { opacity: 0, y: 6 },
@@ -74,6 +75,7 @@ function AnimatedRoutes() {
         <Route path="/dashboard/predictor" element={<ProtectedRoute><PageShell><PredictorPage /></PageShell></ProtectedRoute>} />
         <Route path="/dashboard/compare" element={<ProtectedRoute><PageShell><ComparePage /></PageShell></ProtectedRoute>} />
         <Route path="/dashboard/alerts" element={<ProtectedRoute><PageShell><AlertsPage /></PageShell></ProtectedRoute>} />
+        <Route path="/dashboard/profitability" element={<ProtectedRoute><PageShell><ProfitabilityPage /></PageShell></ProtectedRoute>} />
         <Route path="/dashboard/trends" element={<ProtectedRoute><PageShell><AnalyticsPage key="trends" mode="trends" /></PageShell></ProtectedRoute>} />
         <Route path="/dashboard/analytics" element={<ProtectedRoute><PageShell><AnalyticsPage key="comparison" mode="comparison" /></PageShell></ProtectedRoute>} />
         <Route path="/dashboard/search" element={<ProtectedRoute><PageShell><SearchPage /></PageShell></ProtectedRoute>} />

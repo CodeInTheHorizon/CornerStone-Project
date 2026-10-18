@@ -16,6 +16,8 @@ from app.scrapers.dataforseo_amazon import DataForSEOAmazonCollector
 from app.scrapers.base import CollectorStatus, MarketplaceCollector
 from app.scrapers.croma import CromaCollector
 from app.scrapers.flipkart import FlipkartCollector
+from app.scrapers.flipkart_web import FlipkartWebCollector
+from app.scrapers.meesho_web import MeeshoWebCollector
 
 
 def _amazon_collector() -> MarketplaceCollector:
@@ -30,11 +32,22 @@ def _amazon_collector() -> MarketplaceCollector:
     return DataForSEOAmazonCollector()
 
 
+def _flipkart_collector() -> MarketplaceCollector:
+    """Pick the Flipkart route: public search collector by default, or official API."""
+    if settings.FLIPKART_WEB_ENABLED:
+        return FlipkartWebCollector()
+    return FlipkartCollector()
+
+
 _BUILDERS = {
     Platform.AMAZON: _amazon_collector,
-    Platform.FLIPKART: FlipkartCollector,
+    Platform.FLIPKART: _flipkart_collector,
     Platform.CROMA: CromaCollector,
     Platform.ALIBABA: AlibabaCollector,
+}
+
+_EXTENDED_BUILDERS = {
+    "meesho": MeeshoWebCollector,
 }
 
 
@@ -48,11 +61,15 @@ def supported_platforms() -> list[str]:
 
 def get_collector(platform: str | Platform) -> MarketplaceCollector:
     """Return the collector for a platform name (case-insensitive)."""
+    norm = str(platform.value if isinstance(platform, Platform) else platform).strip().lower()
+    if norm in _EXTENDED_BUILDERS:
+        return _EXTENDED_BUILDERS[norm]()
+
     if isinstance(platform, Platform):
         resolved = platform
     else:
         try:
-            resolved = Platform(str(platform).strip().lower())
+            resolved = Platform(norm)
         except ValueError:
             raise UnknownPlatformError(
                 f"Unknown platform '{platform}'. "

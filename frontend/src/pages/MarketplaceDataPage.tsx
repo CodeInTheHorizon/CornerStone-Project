@@ -69,7 +69,7 @@ export function MarketplaceDataPage() {
   const [platform, setPlatform] = useState('flipkart')
   const [keyword, setKeyword] = useState('')
   const [category, setCategory] = useState('')
-  const [maxItems, setMaxItems] = useState('10')
+  const [maxItems, setMaxItems] = useState('25')
   const [collecting, setCollecting] = useState(false)
   const [result, setResult] = useState<CollectResponse | null>(null)
   const [collectError, setCollectError] = useState<string | null>(null)
@@ -141,7 +141,7 @@ export function MarketplaceDataPage() {
           platform,
           keyword: trimmed,
           category: category.trim() || undefined,
-          max_items: Number(maxItems) || 10,
+          max_items: Number(maxItems) || 25,
         }),
       )
       await load()

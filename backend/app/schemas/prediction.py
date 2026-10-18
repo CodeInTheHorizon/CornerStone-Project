@@ -12,7 +12,7 @@ class PredictRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     product_key: str = Field(min_length=1, max_length=900)
     dataset_id: str | None = Field(default=None, min_length=1, max_length=64)
-    platforms: list[Platform] = Field(default_factory=lambda: list(Platform), min_length=1, max_length=4)
+    platforms: list[Platform] = Field(default_factory=lambda: list(Platform), min_length=1, max_length=10)
 
 
 class ModelQuality(BaseModel):
@@ -49,6 +49,8 @@ class PlatformPrediction(BaseModel):
     coverage_weight: int = 0
     missing_components: list[str] = Field(default_factory=list)
     key_factors: list[str] = Field(default_factory=list)
+    reasons: list[str] = Field(default_factory=list)
+    risks: list[str] = Field(default_factory=list)
     model_version: str
     source_type: str | None = None
     data_freshness: datetime | None = None
@@ -64,6 +66,8 @@ class PredictionResponse(BaseModel):
     created_at: datetime
     recommended_platform: str
     recommendation_label: str = "Highest observed opportunity score"
+    recommendation_reasons: list[str] = Field(default_factory=list)
+    recommendation_risks: list[str] = Field(default_factory=list)
     ranking: list[PlatformPrediction]
     platform_results: list[PlatformPrediction]
     score_difference: float | None

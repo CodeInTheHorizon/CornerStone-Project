@@ -22,6 +22,11 @@ psycopg[binary]==3.3.5
 # Marketplace collection (Phase 4)
 # httpx is a runtime dependency from here on: the Amazon collector uses it.
 httpx==0.28.1
+# Live product-page scraping (app/live_scraping)
+requests==2.34.2
+beautifulsoup4==4.15.0
+lxml==6.1.3
+
 # Multipart parsing for the CSV/JSON dataset upload endpoint.
 python-multipart==0.0.32
 
@@ -43,5 +48,5 @@ xgboost==3.4.1
 # Testing
 pytest==9.1.1
 
-# Dependencies for later phases (scraping, ML) are intentionally NOT listed
-# yet. They are added in the phase that introduces them.
+# Fuzzy product matching & tokenization
+rapidfuzz==3.14.6

@@ -99,10 +99,10 @@ export function Sidebar({ onNavigate }: SidebarProps) {
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium">
-              {user?.full_name ?? 'Signed in'}
+              {user?.full_name ?? user?.email ?? 'Signed in'}
             </span>
             <span className="block truncate text-[11px] text-subtle">
-              {roleLabel(user?.role)}
+              {user?.email ? `${user.email} · ` : ''}{roleLabel(user?.role)}
             </span>
           </span>
         </div>
