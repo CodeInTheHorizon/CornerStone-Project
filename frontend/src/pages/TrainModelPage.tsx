@@ -23,6 +23,7 @@ import { ApiRequestError } from '@/services/apiClient'
 import { TrainingResults } from '@/components/dashboard/TrainingResults'
 import * as datasetService from '@/services/datasetService'
 import * as trainingService from '@/services/trainingService'
+import * as demandService from '@/services/demandService'
 import type {
   DatasetBuildResponse,
   DatasetPreview,
@@ -89,6 +90,12 @@ export function TrainModelPage() {
   const [training, setTraining] = useState(false)
   const [trainError, setTrainError] = useState<string | null>(null)
 
+  // Demand Forecasting state
+  const [demandBenchmark, setDemandBenchmark] = useState<demandService.DemandBenchmarkSummary | null>(null)
+  const [demandOutcome, setDemandOutcome] = useState<demandService.DemandTrainResponse | null>(null)
+  const [trainingDemand, setTrainingDemand] = useState(false)
+  const [demandTrainError, setDemandTrainError] = useState<string | null>(null)
+
   const load = useCallback(async () => {
     if (!token) return
     setLoadingStatus(true)
@@ -103,6 +110,12 @@ export function TrainModelPage() {
         const nextModel = await trainingService.fetchModelStatus(token)
         setModelStatus(nextModel)
         setMetrics(nextModel.trained ? await trainingService.fetchModelMetrics(token) : null)
+      })(),
+      (async () => {
+        try {
+          const bm = await demandService.fetchDemandBenchmark(token)
+          setDemandBenchmark(bm)
+        } catch { /* optional */ }
       })(),
     ])
     setLoadingStatus(false)
@@ -178,6 +191,20 @@ export function TrainModelPage() {
       )
     } finally {
       setTraining(false)
+    }
+  }
+
+  const handleTrainDemand = async () => {
+    if (!token) return
+    setTrainingDemand(true)
+    setDemandTrainError(null)
+    try {
+      const outcome = await demandService.trainDemandModels(token, 0.2)
+      setDemandOutcome(outcome)
+    } catch (err: unknown) {
+      setDemandTrainError(err instanceof Error ? err.message : 'Demand training failed.')
+    } finally {
+      setTrainingDemand(false)
     }
   }
 
@@ -643,6 +670,118 @@ export function TrainModelPage() {
           </div>
         </section>
       )}
+
+      {/* Demand Forecasting Engine Section */}
+      <section aria-label="Demand Forecasting Engine" className="mt-8">
+        <div className="surface-card p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="text-base font-semibold">Sales Demand Forecasting Engine (Supervised Regression)</h2>
+              <p className="mt-1 text-xs text-muted">
+                Benchmark, train, and evaluate regression models on chronological holdout data to forecast true units sold without temporal leakage.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => void handleTrainDemand()}
+              disabled={trainingDemand}
+            >
+              <Icon name="target" className="size-4" />
+              {trainingDemand ? 'Fitting Regression Models…' : 'Train & Benchmark Demand Models'}
+            </Button>
+          </div>
+
+          {demandTrainError && (
+            <div className="mt-4">
+              <FormAlert>{demandTrainError}</FormAlert>
+            </div>
+          )}
+
+          {/* Benchmark dataset summary */}
+          {demandBenchmark && (
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-card border border-border-hair bg-background-alt/50 p-3 text-xs">
+                <span className="text-subtle">Historical Sales Dataset</span>
+                <p className="mt-1 font-semibold text-foreground">{demandBenchmark.total_records.toLocaleString()} records</p>
+                <p className="text-[11px] text-muted">Multi-platform benchmark</p>
+              </div>
+              <div className="rounded-card border border-border-hair bg-background-alt/50 p-3 text-xs">
+                <span className="text-subtle">Total Units Sold</span>
+                <p className="mt-1 font-semibold text-foreground">{demandBenchmark.total_units_sold.toLocaleString()} units</p>
+                <p className="text-[11px] text-muted">Target: units_sold</p>
+              </div>
+              <div className="rounded-card border border-border-hair bg-background-alt/50 p-3 text-xs">
+                <span className="text-subtle">Average Market Price</span>
+                <p className="mt-1 font-semibold text-foreground">₹{demandBenchmark.average_price.toLocaleString()}</p>
+                <p className="text-[11px] text-muted">Median: {demandBenchmark.median_units_sold} units/day</p>
+              </div>
+              <div className="rounded-card border border-border-hair bg-background-alt/50 p-3 text-xs">
+                <span className="text-subtle">Platforms Evaluated</span>
+                <p className="mt-1 font-semibold capitalize text-foreground">{demandBenchmark.platforms.join(', ')}</p>
+                <p className="text-[11px] text-muted">Verified sales history</p>
+              </div>
+            </div>
+          )}
+
+          {/* Results Comparison Table */}
+          {demandOutcome && (
+            <div className="mt-6 space-y-4 border-t border-border-hair/60 pt-6">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-subtle uppercase tracking-wider">
+                  Winning Model: <span className="text-accent-text">{demandOutcome.selected_model}</span>
+                </span>
+                <span className="text-xs text-muted">
+                  {demandOutcome.temporal_split}
+                </span>
+              </div>
+
+              <div className="overflow-x-auto rounded-card border border-border-hair">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-border-hair bg-background-alt text-subtle">
+                      <th className="px-4 py-3 font-medium">Candidate Algorithm</th>
+                      <th className="px-4 py-3 text-right font-medium">MAE (Units)</th>
+                      <th className="px-4 py-3 text-right font-medium">RMSE</th>
+                      <th className="px-4 py-3 text-right font-medium">WAPE (%)</th>
+                      <th className="px-4 py-3 text-right font-medium">R²</th>
+                      <th className="px-4 py-3 text-center font-medium">Selection</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {demandOutcome.candidates.map((cand) => {
+                      const isSelected = cand.algorithm === demandOutcome.selected_model
+                      return (
+                        <tr key={cand.name} className="border-b border-border-hair/50 last:border-0">
+                          <td className="px-4 py-3 font-medium text-foreground">{cand.algorithm}</td>
+                          <td className="px-4 py-3 text-right text-muted">{cand.metrics.mae.toFixed(2)}</td>
+                          <td className="px-4 py-3 text-right text-muted">{cand.metrics.rmse.toFixed(2)}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-foreground">
+                            {(cand.metrics.wape * 100).toFixed(1)}%
+                          </td>
+                          <td className="px-4 py-3 text-right text-muted">{cand.metrics.r2.toFixed(3)}</td>
+                          <td className="px-4 py-3 text-center">
+                            {isSelected ? (
+                              <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-[11px] font-bold text-green-600 dark:text-green-400">
+                                Winner
+                              </span>
+                            ) : (
+                              <span className="text-subtle">Evaluated</span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-[11px] text-subtle">
+                Trained on {demandOutcome.training_rows} records and validated on {demandOutcome.validation_rows} future periods. Selection rule: Lowest WAPE, breaking ties with MAE.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
     </DashboardLayout>
   )
 }

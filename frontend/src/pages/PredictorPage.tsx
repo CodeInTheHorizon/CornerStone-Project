@@ -19,6 +19,7 @@ import { percent, timestamp, title } from '@/lib/predictionFormat'
 import { useAuth } from '@/hooks/useAuth'
 import { ApiRequestError } from '@/services/apiClient'
 import * as service from '@/services/predictionService'
+import * as demandService from '@/services/demandService'
 import type { QualityStatus } from '@/types/data'
 import type { PlatformPrediction, PredictionHistory, PredictionOptions, PredictionResult } from '@/types/prediction'
 
@@ -48,6 +49,7 @@ export function PredictorPage() {
   const [historyError, setHistoryError] = useState('')
   const [error, setError] = useState('')
   const [failedPlatforms, setFailedPlatforms] = useState<PlatformPrediction[]>([])
+  const [demandForecasts, setDemandForecasts] = useState<demandService.ChannelDemandForecast[]>([])
   const [busy, setBusy] = useState(false)
   const resultRef = useRef<HTMLDivElement>(null)
   const product = options?.products.find((item) => item.product_key === selected)
@@ -96,13 +98,40 @@ export function PredictorPage() {
 
   async function predict() {
     if (!can(user, "prediction:run") || !token || !options || !selected || busy) return
-    setBusy(true); setError(''); setFailedPlatforms([]); setResult(null)
+    setBusy(true); setError(''); setFailedPlatforms([]); setResult(null); setDemandForecasts([])
     try {
       const prediction = await service.makePrediction(token, selected, options.dataset_id)
       setResult(prediction)
       setHistoryError('')
       try { setHistory(await service.fetchPredictionHistory(token)) }
       catch (err) { setHistoryError(errorMessage(err)) }
+
+      // Generate Sales Demand Forecasts across platforms for this product
+      if (product && product.platforms.length > 0) {
+        try {
+          const forecasts = await Promise.all(
+            product.platforms.map(async (p) => {
+              try {
+                const res = await demandService.forecastDemand(token, {
+                  features: {
+                    platform: p.platform,
+                    category: product.category,
+                    price: p.effective_price ?? 1000,
+                    rating: p.rating ?? 4.0,
+                    review_count: p.review_count ?? 50,
+                    discount_percentage: 15,
+                    inventory: 100,
+                  },
+                })
+                return res.forecasts[0]
+              } catch {
+                return null
+              }
+            })
+          )
+          setDemandForecasts(forecasts.filter((f): f is demandService.ChannelDemandForecast => f !== null))
+        } catch { /* optional */ }
+      }
     } catch (err) {
       setError(errorMessage(err))
       if (err instanceof ApiRequestError && err.detail && typeof err.detail === 'object') {
@@ -193,6 +222,44 @@ export function PredictorPage() {
           {error && <FormAlert>{error}</FormAlert>}
           {failedPlatforms.map((platform) => <Panel key={platform.platform}><p className="text-sm">{title(platform.platform)}: {platform.reason}</p><p className="mt-2 text-xs text-signal-warn">{platform.warning}</p></Panel>)}
           {result && <PredictionResults result={result} />}
+
+          {demandForecasts.length > 0 && (
+            <div className="surface-card p-6">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border-hair pb-4">
+                <div>
+                  <h3 className="text-base font-semibold">Forecasted Sales Demand (Supervised ML Regression)</h3>
+                  <p className="mt-1 text-xs text-muted">Estimated units ordered and monthly gross revenue projections per marketplace channel.</p>
+                </div>
+                <span className="rounded-full bg-accent-soft px-3 py-1 text-xs font-semibold text-accent-text">
+                  Regression Model Active
+                </span>
+              </div>
+              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {demandForecasts.map((df) => (
+                  <div key={df.platform} className="rounded-card border border-border-hair bg-background-alt/50 p-4">
+                    <div className="flex items-center justify-between">
+                      <PlatformBadge platform={df.platform} />
+                      <span className="text-xs font-medium text-subtle">{df.demand_grade}</span>
+                    </div>
+                    <div className="mt-3">
+                      <p className="text-xs text-muted">Forecasted Sales</p>
+                      <p className="text-2xl font-bold text-foreground">{df.predicted_units_sold} <span className="text-xs font-normal text-muted">units</span></p>
+                    </div>
+                    <div className="mt-2 space-y-1 text-xs text-muted">
+                      <div className="flex justify-between">
+                        <span>Expected Range:</span>
+                        <span className="font-medium text-foreground">{df.forecast_lower_bound} – {df.forecast_upper_bound}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Projected Rev.:</span>
+                        <span className="font-semibold text-green-600 dark:text-green-400">₹{df.projected_revenue.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="surface-card min-w-0 break-words">
