@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { ChevronRight, Search } from 'lucide-react'
 
-import { can } from '@/auth/permissions'
 import { Icon } from '@/components/Icon'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { AccountMenu } from '@/components/dashboard/AccountMenu'
@@ -10,7 +9,6 @@ import { GlobalSearch } from '@/components/dashboard/GlobalSearch'
 import { NotificationBell } from '@/components/dashboard/NotificationBell'
 import { Sidebar } from '@/components/dashboard/Sidebar'
 import { dashboardNav } from '@/config/dashboard'
-import { useAuth } from '@/hooks/useAuth'
 
 interface DashboardLayoutProps {
   title: string
@@ -35,7 +33,7 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
 
 export function DashboardLayout({ title, subtitle, children }: DashboardLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const { user } = useAuth()
+  // const { user } = useAuth()
   const { pathname } = useLocation()
   const context = subtitle ?? dashboardNav.find((item) => item.to === pathname)?.description
 
@@ -117,15 +115,7 @@ export function DashboardLayout({ title, subtitle, children }: DashboardLayoutPr
               </kbd>
             </div>
 
-            {can(user, 'prediction:run') && pathname !== '/dashboard/predictor' && pathname !== '/dashboard' && (
-              <Link
-                to="/dashboard/predictor"
-                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-accent px-2.5 py-2 text-sm font-medium text-accent-ink shadow-accent transition-colors duration-200 ease-standard hover:bg-accent-hover sm:px-3.5"
-              >
-                <Icon name="compass" className="size-4" />
-                <span className="sr-only sm:not-sr-only">Run prediction</span>
-              </Link>
-            )}
+
 
             <NotificationBell />
 

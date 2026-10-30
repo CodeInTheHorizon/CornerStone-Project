@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Database, Layers, Brain, Compass, X, ChevronRight } from 'lucide-react'
+import { Database, Layers, Brain, Target, X, ChevronRight } from 'lucide-react'
 
 const steps = [
   { icon: Database, label: 'Load demo data', description: 'Import sample marketplace observations to explore the platform.', to: '/dashboard/marketplace-data', cta: 'Go to Marketplace Data' },
   { icon: Layers, label: 'Build dataset', description: 'Transform raw observations into ML-ready features for training.', to: '/dashboard/train', cta: 'Open Training' },
   { icon: Brain, label: 'Train model', description: 'Train RandomForest + XGBoost models and inspect quality metrics.', to: '/dashboard/train', cta: 'Train Model' },
-  { icon: Compass, label: 'Run prediction', description: 'Pick a product and get opportunity scores across marketplaces.', to: '/dashboard/predictor', cta: 'Make Prediction' },
+  { icon: Target, label: 'Profit & Allocation', description: 'Analyze channel fee deductions, margins and optimize inventory allocation.', to: '/dashboard/profitability', cta: 'View Profitability' },
 ] as const
 
 const DISMISSED_KEY = 'marketpulse-onboarding-dismissed'

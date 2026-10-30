@@ -14,14 +14,8 @@ import { dashboardNav } from '@/config/dashboard'
 const explanations: Record<string, string> = {
   '/dashboard/marketplace-data':
     'Collecting marketplace listings, normalising them into snapshots and storing them. Until a collector runs, there is nothing to show.',
-  '/dashboard/predictor':
-    'Choosing an electronics product and getting a ranked marketplace recommendation with a 0-100 opportunity score per platform.',
   '/dashboard/train':
     'Training a model on the collected dataset and recording its measured accuracy, dataset size and feature names.',
-  '/dashboard/trends':
-    'Price, discount and review-momentum trends built from repeated marketplace snapshots over time.',
-  '/dashboard/analytics':
-    'Cross-platform comparison and opportunity-score breakdowns drawn from stored snapshots.',
 }
 
 export function DashboardSectionPage() {

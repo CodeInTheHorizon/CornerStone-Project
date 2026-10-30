@@ -46,14 +46,6 @@ export const dashboardNav: DashboardNavItem[] = [
     description: 'Browse and compare products discovered across all platforms.',
   },
   {
-    label: 'ML Predictor',
-    to: '/dashboard/predictor',
-    icon: 'compass',
-    available: true,
-    group: 'insights',
-    description: 'Compare heuristic opportunity scores for one stored product.',
-  },
-  {
     label: 'Profit & Allocation',
     to: '/dashboard/profitability',
     icon: 'target',
@@ -68,22 +60,6 @@ export const dashboardNav: DashboardNavItem[] = [
     available: true,
     group: 'insights',
     description: 'Side-by-side comparison of 2-4 products across marketplaces.',
-  },
-  {
-    label: 'Trend Analysis',
-    to: '/dashboard/trends',
-    icon: 'trend',
-    available: true,
-    group: 'insights',
-    description: 'Price, discount, rating and review histories per listing.',
-  },
-  {
-    label: 'Analytics',
-    to: '/dashboard/analytics',
-    icon: 'chart',
-    available: true,
-    group: 'insights',
-    description: 'Cross-platform comparison of stored observations.',
   },
   {
     label: 'Marketplace Data',

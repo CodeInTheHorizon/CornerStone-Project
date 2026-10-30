@@ -11,8 +11,6 @@ import { LoginPage } from '@/pages/LoginPage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { StatusPage } from '@/pages/StatusPage'
 import { TrainModelPage } from '@/pages/TrainModelPage'
-import { PredictorPage } from '@/pages/PredictorPage'
-import { AnalyticsPage } from '@/pages/AnalyticsPage'
 import { AlertsPage } from '@/pages/AlertsPage'
 import { ComparePage } from '@/pages/ComparePage'
 import { dashboardNav } from '@/config/dashboard'
@@ -72,12 +70,12 @@ function AnimatedRoutes() {
           }
         />
 
-        <Route path="/dashboard/predictor" element={<ProtectedRoute><PageShell><PredictorPage /></PageShell></ProtectedRoute>} />
+        <Route path="/dashboard/predictor" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard/compare" element={<ProtectedRoute><PageShell><ComparePage /></PageShell></ProtectedRoute>} />
         <Route path="/dashboard/alerts" element={<ProtectedRoute><PageShell><AlertsPage /></PageShell></ProtectedRoute>} />
         <Route path="/dashboard/profitability" element={<ProtectedRoute><PageShell><ProfitabilityPage /></PageShell></ProtectedRoute>} />
-        <Route path="/dashboard/trends" element={<ProtectedRoute><PageShell><AnalyticsPage key="trends" mode="trends" /></PageShell></ProtectedRoute>} />
-        <Route path="/dashboard/analytics" element={<ProtectedRoute><PageShell><AnalyticsPage key="comparison" mode="comparison" /></PageShell></ProtectedRoute>} />
+        <Route path="/dashboard/trends" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard/analytics" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard/search" element={<ProtectedRoute><PageShell><SearchPage /></PageShell></ProtectedRoute>} />
         <Route path="/dashboard/products" element={<ProtectedRoute><PageShell><ProductCatalogPage /></PageShell></ProtectedRoute>} />
         <Route path="/dashboard/product/:productId" element={<ProtectedRoute><PageShell><ProductDetailPage /></PageShell></ProtectedRoute>} />

@@ -1,6 +1,5 @@
 /** Saved predictions as a compact table; scrolls inside its own region on narrow screens. */
 
-import { Link } from 'react-router-dom'
 
 import { SourceBadge } from '@/components/SourceBadge'
 import { StatusPill } from '@/components/StatusPill'
@@ -20,7 +19,7 @@ export function RecentPredictionsTable({ history, error, onRetry }: { history: P
     <SectionCard
       title="Recent predictions"
       description={history && history.total > 0 ? `Latest ${history.items.length} of ${history.total}. Each keeps the model quality measured when it was made.` : 'Your saved experimental predictions.'}
-      actions={<Link to="/dashboard/predictor" className="text-sm font-medium text-accent-text hover:underline">Open ML Predictor</Link>}
+      
       bodyClassName="px-0 sm:px-0"
       className="h-full"
     >
@@ -58,9 +57,9 @@ export function RecentPredictionsTable({ history, error, onRetry }: { history: P
                     <td className={cell}>{status ? <StatusPill tone={status.tone}>{status.label}</StatusPill> : <span className="text-xs text-subtle">Not recorded</span>}</td>
                     <td className={`${cell} text-xs whitespace-nowrap text-muted`}>{timestamp(item.created_at)}</td>
                     <td className={`${cell} pr-5 text-right sm:pr-6`}>
-                      <Link to={`/dashboard/predictor?prediction=${item.id}`} aria-label={`View saved result #${item.id} for ${item.product}`} className="text-sm font-medium whitespace-nowrap text-accent-text hover:underline">
-                        View #{item.id}
-                      </Link>
+                      <span className="text-sm font-medium whitespace-nowrap text-muted">
+                        #{item.id}
+                      </span>
                     </td>
                   </tr>
                 )

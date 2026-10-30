@@ -186,7 +186,7 @@ export function DashboardPage() {
                 Marketplace Intelligence Dashboard
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-muted">
-                Compare marketplace signals, track price trends, and get ML-powered opportunity scores across platforms.
+                Compare marketplace signals, track competitor pricing, and optimize cross-channel profitability.
               </p>
             </div>
           </div>
@@ -202,13 +202,11 @@ export function DashboardPage() {
               <Link to="/dashboard/marketplace-data" className="inline-flex items-center gap-2 rounded-full border border-border-hair bg-surface px-3.5 py-2 text-xs font-medium transition-colors hover:border-accent hover:text-accent-text">
                 <Icon name="database" className="size-3.5" />Collect Data
               </Link>
-              {can(user, 'prediction:run') && (
-                <Link to="/dashboard/predictor" className="inline-flex items-center gap-2 rounded-full bg-accent px-3.5 py-2 text-xs font-medium text-accent-ink shadow-accent transition-colors hover:bg-accent-hover">
-                  <Icon name="compass" className="size-3.5" />Predict
-                </Link>
-              )}
-              <Link to="/dashboard/trends" className="inline-flex items-center gap-2 rounded-full border border-border-hair bg-surface px-3.5 py-2 text-xs font-medium transition-colors hover:border-accent hover:text-accent-text">
-                <Icon name="trend" className="size-3.5" />View Trends
+              <Link to="/dashboard/profitability" className="inline-flex items-center gap-2 rounded-full bg-accent px-3.5 py-2 text-xs font-medium text-accent-ink shadow-accent transition-colors hover:bg-accent-hover">
+                <Icon name="target" className="size-3.5" />Profit & Allocation
+              </Link>
+              <Link to="/dashboard/compare" className="inline-flex items-center gap-2 rounded-full border border-border-hair bg-surface px-3.5 py-2 text-xs font-medium transition-colors hover:border-accent hover:text-accent-text">
+                <Icon name="chart" className="size-3.5" />Compare
               </Link>
               <Link to="/dashboard/alerts" className="inline-flex items-center gap-2 rounded-full border border-border-hair bg-surface px-3.5 py-2 text-xs font-medium transition-colors hover:border-accent hover:text-accent-text">
                 <Icon name="pulse" className="size-3.5" />Alerts
@@ -374,14 +372,13 @@ export function DashboardPage() {
               }
               onAction={() => navigate('/dashboard/train')}
             /></PermissionGate>
-            <PermissionGate permission="prediction:run"><ActionCard
-              icon="compass"
-              title="Make Prediction"
-              description="Choose an electronics product, compare marketplaces, and get a 0-100 opportunity score for each with the factors behind it."
-              actionLabel="New Prediction"
-              blockedReason={trained ? undefined : 'Needs an active trained model. Open Train Model first.'}
-              onAction={() => navigate('/dashboard/predictor')}
-            /></PermissionGate>
+            <ActionCard
+              icon="target"
+              title="Profitability & Allocation"
+              description="Calculate unit economics, platform fee deductions, seller margins, and optimize multi-channel stock allocation."
+              actionLabel="Calculate Profitability"
+              onAction={() => navigate('/dashboard/profitability')}
+            />
           </div>
         </section>
 

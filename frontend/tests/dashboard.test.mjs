@@ -94,14 +94,10 @@ test('sidebar groups every route and keeps the role-aware Train Model label', ()
   assert.match(render(React.createElement(Sidebar), { user: account('operator') }), />Train Model</)
 })
 
-test('top bar shows the Run prediction action only to roles that can run predictions', () => {
-  const page = (user, path) => render(React.createElement(DashboardLayout, { title: 'Analytics' }, 'content'), { user, path })
-  assert.match(page(account('analyst'), '/dashboard/analytics'), /Run prediction/)
-  assert.doesNotMatch(page(account('viewer'), '/dashboard/analytics'), /Run prediction/)
-  assert.doesNotMatch(page(account('analyst'), '/dashboard/predictor'), /Run prediction/)
-  const html = page(account('viewer'), '/dashboard/analytics')
-  assert.match(html, /<h1[^>]*>Analytics<\/h1>/)
-  assert.match(html, /Cross-platform comparison of stored observations/)
+test('top bar renders cleanly with accessible navigation and account controls', () => {
+  const page = (user, path) => render(React.createElement(DashboardLayout, { title: 'Products' }, 'content'), { user, path })
+  const html = page(account('viewer'), '/dashboard/products')
+  assert.match(html, /<h1[^>]*>Products<\/h1>/)
   assert.match(html, /aria-label="Account menu"/)
   assert.match(html, /aria-label="Open navigation"/)
   assert.match(html, /<main/)
@@ -133,7 +129,7 @@ test('recent predictions: empty state, then rows linking to the saved result', (
   const history = { total: 1, items: [{ id: 7, product: 'Nova Buds Air', recommended_platform: 'amazon', top_score: 55.1, model_version: 'v5', source_types: ['demo'], created_at: '2026-09-01T00:00:00Z', model: { quality_status: 'below_baseline' }, warning: 'w' }] }
   const html = render(React.createElement(RecentPredictionsTable, { history, error: '', onRetry() {} }))
   assert.match(html, /<table/)
-  assert.match(html, /href="\/dashboard\/predictor\?prediction=7"/)
+  assert.match(html, /#7/)
   assert.match(html, /Below baseline/)
   assert.match(html, />DEMO</)
   assert.match(render(React.createElement(RecentPredictionsTable, { history: null, error: 'Could not reach the API', onRetry() {} })), /Could not reach the API/)
@@ -152,7 +148,7 @@ test('latest recommendation keeps warnings visible and uses score terminology', 
   assert.match(html, /DEMO-derived result/)
   assert.match(html, /not a demand, revenue or success probability/)
   assert.match(html, /20.0 \/ 25 pts/)
-  assert.match(html, /prediction=9/)
+  assert.match(html, /Prediction #9/)
 })
 
 test('chart exposes a text alternative and legend without interpolating gaps', () => {

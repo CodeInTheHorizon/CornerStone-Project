@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, BarChart3, Compass, Database, Layers, TrendingUp, Bell, ArrowRight } from 'lucide-react'
+import { Search, BarChart3, Database, Layers, Bell, ArrowRight } from 'lucide-react'
 
 import { dashboardNav } from '@/config/dashboard'
 
@@ -15,10 +15,10 @@ const navResults = dashboardNav.map((item) => ({
 
 const iconMap: Record<string, React.ElementType> = {
   '/dashboard': BarChart3,
-  '/dashboard/predictor': Compass,
+  '/dashboard/search': Search,
+  '/dashboard/products': Database,
+  '/dashboard/profitability': ArrowRight,
   '/dashboard/compare': BarChart3,
-  '/dashboard/trends': TrendingUp,
-  '/dashboard/analytics': BarChart3,
   '/dashboard/marketplace-data': Database,
   '/dashboard/train': Layers,
   '/dashboard/alerts': Bell,

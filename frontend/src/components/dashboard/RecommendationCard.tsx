@@ -5,7 +5,6 @@
  */
 
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 
 import { Icon } from '@/components/Icon'
@@ -87,8 +86,7 @@ export function RecommendationCard({ result, loading, error, onRetry, empty }: R
     >
       {error ? <ErrorState message={error} onRetry={onRetry} /> : loading ? <SkeletonBlock label="Loading latest prediction" lines={5} /> : empty || !result ? (
         <EmptyState icon="compass" title="No saved predictions yet">
-          Run a prediction for a stored product to compare marketplaces.{' '}
-          <Link to="/dashboard/predictor" className="font-medium text-accent-text hover:underline">Open ML Predictor</Link>
+          Saved prediction history and platform opportunity scores will appear here.
         </EmptyState>
       ) : (
         <div className="flex h-full flex-col">
@@ -140,13 +138,9 @@ export function RecommendationCard({ result, loading, error, onRetry, empty }: R
             <p className="text-xs leading-relaxed text-signal-warn">{result.warning}</p>
           </div>
 
-          <Link
-            to={`/dashboard/predictor?prediction=${result.id}`}
-            className="mt-4 inline-flex items-center gap-1.5 self-start text-sm font-medium text-accent-text hover:underline"
-          >
-            View saved result #{result.id}
-            <Icon name="arrow-right" className="size-4" />
-          </Link>
+          <span className="mt-4 inline-flex items-center gap-1.5 self-start text-xs font-medium text-muted">
+            Prediction #{result.id}
+          </span>
         </div>
       )}
     </SectionCard>

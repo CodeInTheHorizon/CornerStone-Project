@@ -1,6 +1,4 @@
 import { FormAlert } from '@/components/FormAlert'
-import { Link } from 'react-router-dom'
-import { Icon } from '@/components/Icon'
 import { Panel } from '@/components/Panel'
 import { SourceBadge } from '@/components/SourceBadge'
 import { StatusPill } from '@/components/StatusPill'
@@ -66,9 +64,6 @@ export function PredictionResults({ result }: { result: PredictionResult }) {
             <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted">
               Input dataset: {result.data_provenance.source_types.map((source) => <SourceBadge key={source} kind={source} />)}
             </div>
-            <Link to={`/dashboard/trends?product_key=${encodeURIComponent(result.product_key)}`} className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-accent-text hover:underline">
-              View this product’s stored trend history <Icon name="arrow-right" className="size-4" />
-            </Link>
             <p className="mt-1 text-xs text-subtle">Trend history uses current stored snapshots; it does not change this saved prediction.</p>
           </div>
           <div className="border-t border-border-hair bg-background-alt/60 p-5 sm:p-7 lg:border-t-0 lg:border-l">

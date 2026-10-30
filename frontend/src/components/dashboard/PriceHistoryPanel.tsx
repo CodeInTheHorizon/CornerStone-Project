@@ -5,7 +5,6 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 
 import { SourceBadge } from '@/components/SourceBadge'
 import { MultiSeriesChart } from '@/components/dashboard/MultiSeriesChart'
@@ -101,7 +100,7 @@ export function PriceHistoryPanel({ preferredProductKey }: { preferredProductKey
     <SectionCard
       title="Stored observation history"
       description={productKey ? <>Listing histories for <strong className="font-medium text-foreground">{productName}</strong>. Each line is one stored listing; sources and currencies stay separate.</> : 'Listing histories from stored snapshots.'}
-      actions={productKey ? <Link to={`/dashboard/trends?product_key=${encodeURIComponent(productKey)}`} className="text-sm font-medium text-accent-text hover:underline">Full trend analysis</Link> : undefined}
+      
       className="h-full"
     >
       {optionsError ? <ErrorState message={optionsError} onRetry={() => setRevision((value) => value + 1)} /> : !options ? (
