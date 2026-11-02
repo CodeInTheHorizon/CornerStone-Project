@@ -111,6 +111,44 @@ def observations(db: Session, filters: AnalyticsFilters) -> tuple[list[dict], in
         if identity not in unique or unique[identity]["snapshot_id"] < row.id:
             unique[identity] = item
     rows = sorted(unique.values(), key=lambda row: (row["timestamp"], row["snapshot_id"]))
+    if not rows and (filters.product_key or filters.product):
+        try:
+            from app.models.product import Product
+            from app.models.platform_listing import PlatformListing
+            needle = (filters.product_key or filters.product or "").strip().lower()
+            prods = db.scalars(select(Product)).all()
+            for prod in prods:
+                if prod.canonical_title.lower() == needle or needle in prod.canonical_title.lower() or prod.canonical_title.lower() in needle:
+                    listings = db.scalars(select(PlatformListing).where(PlatformListing.product_id == prod.id)).all()
+                    for listing in listings:
+                        p = valid(listing.price_current)
+                        d = valid(listing.discount_pct, upper=100)
+                        orig = valid(listing.price_original)
+                        derived = False
+                        if d is None and p is not None and orig and p <= orig:
+                            d = (orig - p) / orig * 100
+                            derived = True
+                        ts = utc(listing.scraped_at or datetime.now(timezone.utc))
+                        item = {
+                            "snapshot_id": listing.id,
+                            "product_key": filters.product_key or prod.canonical_title,
+                            "product_name": prod.canonical_title,
+                            "category": prod.category or "electronics",
+                            "platform": listing.platform.lower(),
+                            "source_type": "live",
+                            "currency": listing.currency or "INR",
+                            "listing_key": listing.platform_product_id or listing.product_url or f"{prod.canonical_title}|{listing.platform}",
+                            "timestamp": ts,
+                            "price": p,
+                            "discount": d,
+                            "discount_derived": derived,
+                            "rating": valid(listing.rating, upper=5),
+                            "reviews": valid(listing.review_count),
+                            "availability": "in_stock" if listing.in_stock is not False else "out_of_stock",
+                        }
+                        rows.append(item)
+        except Exception:
+            pass
     return rows, matched - len(rows)
 
 
@@ -214,6 +252,17 @@ def options(db: Session, filters: AnalyticsFilters, query: str = "", limit: int 
             continue
         key = row["product_key"]
         products[key] = {"product_key": key, "product_name": row["product_name"], "category": row["category"]}
+    try:
+        from app.models.product import Product
+        p_stmt = select(Product)
+        if query.strip():
+            p_stmt = p_stmt.where(func.lower(Product.canonical_title).like(f"%{query.strip().lower()}%"))
+        for p in db.scalars(p_stmt.limit(100)).all():
+            k = p.canonical_title
+            if k not in products:
+                products[k] = {"product_key": k, "product_name": p.canonical_title, "category": p.category or "electronics"}
+    except Exception:
+        pass
     keys = sorted(products)
     return {
         "products": [products[key] for key in keys[offset:offset + limit]], "total": len(keys),
