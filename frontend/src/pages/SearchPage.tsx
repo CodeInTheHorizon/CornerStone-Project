@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 
 import { useAuth } from '@/hooks/useAuth'
+import { env } from '@/config/env'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import {
   searchProducts,
@@ -38,10 +39,9 @@ function currencySymbol(currency: string) {
 }
 
 function ProductCard({ listing }: { listing: SearchListing }) {
-  const hasImage = !!listing.image_url
-  const imgSrc = hasImage
-    ? `/images/proxy?url=${encodeURIComponent(listing.image_url!)}`
-    : undefined
+  const imgSrc = listing.image_url
+    ? `${env.apiBaseUrl}/images/proxy?url=${encodeURIComponent(listing.image_url)}`
+    : `${env.apiBaseUrl}/images/placeholder`
 
   return (
     <motion.div
@@ -50,18 +50,15 @@ function ProductCard({ listing }: { listing: SearchListing }) {
       transition={{ duration: 0.25 }}
       className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
     >
-      {hasImage ? (
-        <img
-          src={imgSrc}
-          alt={listing.product_name}
-          className="h-44 w-full object-contain bg-gray-50 dark:bg-gray-900 p-2"
-          loading="lazy"
-        />
-      ) : (
-        <div className="flex h-44 items-center justify-center bg-gray-100 dark:bg-gray-900">
-          <ImageOff className="size-10 text-gray-400" />
-        </div>
-      )}
+      <img
+        src={imgSrc}
+        alt={listing.product_name}
+        className="h-44 w-full object-contain bg-gray-50 dark:bg-gray-900 p-2"
+        loading="lazy"
+        onError={(e) => {
+          (e.currentTarget as HTMLImageElement).src = `${env.apiBaseUrl}/images/placeholder`
+        }}
+      />
 
       <div className="flex flex-1 flex-col gap-1.5 p-3">
         <h4 className="line-clamp-2 text-sm font-medium leading-snug text-gray-900 dark:text-gray-100">

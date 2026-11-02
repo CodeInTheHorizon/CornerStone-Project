@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { Package, Search, Filter, Star, ArrowUpRight, ImageOff, Trophy } from 'lucide-react'
 
 import { useAuth } from '@/hooks/useAuth'
+import { env } from '@/config/env'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { listProducts, type ProductSummary } from '@/services/productService'
 
@@ -154,14 +155,20 @@ export function ProductCatalogPage() {
                 {/* Image */}
                 {product.primary_image_url ? (
                   <img
-                    src={`/images/proxy?url=${encodeURIComponent(product.primary_image_url)}`}
+                    src={`${env.apiBaseUrl}/images/proxy?url=${encodeURIComponent(product.primary_image_url)}`}
                     alt={product.canonical_title}
-                    className="aspect-[4/3] w-full rounded-t-xl object-contain bg-background-alt"
+                    className="aspect-[4/3] w-full rounded-t-xl object-contain bg-background-alt p-2 transition-transform duration-300 group-hover:scale-105"
+                    loading="lazy"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = `${env.apiBaseUrl}/images/placeholder`
+                    }}
                   />
                 ) : (
-                  <div className="flex aspect-[4/3] items-center justify-center rounded-t-xl bg-background-alt">
-                    <ImageOff className="size-10 text-subtle" />
-                  </div>
+                  <img
+                    src={`${env.apiBaseUrl}/images/placeholder`}
+                    alt={product.canonical_title}
+                    className="aspect-[4/3] w-full rounded-t-xl object-contain bg-background-alt p-2"
+                  />
                 )}
 
                 <div className="p-4">

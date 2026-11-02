@@ -80,7 +80,7 @@ _BOT_CHALLENGE_MARKERS = (
 class MeeshoWebCollector(MarketplaceCollector):
     """Collects Meesho listings by parsing public search results or an approved provider."""
 
-    platform = "meesho"
+    platform = Platform.MEESHO
     access_method = "Public search results page (HTML parsing) / Provider"
 
     def __init__(

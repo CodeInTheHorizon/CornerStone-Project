@@ -127,8 +127,117 @@ def _set_cache(query: str, platform: str, listings: list[SearchListing]) -> None
             _cache.pop(k, None)
 
 
+
+def _fallback_from_db(
+    db: Session, platform_name: str, query: str, max_items: int
+) -> list[SearchListing]:
+    try:
+        from app.models.marketplace_snapshot import MarketplaceSnapshot
+        from sqlalchemy import or_, select
+
+        tokens = [t.strip() for t in query.split() if len(t.strip()) >= 2]
+        conditions = [MarketplaceSnapshot.product_name.ilike(f"%{query}%")]
+        for tok in tokens:
+            conditions.append(MarketplaceSnapshot.product_name.ilike(f"%{tok}%"))
+            conditions.append(MarketplaceSnapshot.category.ilike(f"%{tok}%"))
+
+        stmt = (
+            select(MarketplaceSnapshot)
+            .where(
+                MarketplaceSnapshot.platform == platform_name,
+                or_(*conditions),
+            )
+            .order_by(MarketplaceSnapshot.collection_timestamp.desc())
+            .limit(max_items * 3)
+        )
+        rows = db.execute(stmt).scalars().all()
+
+        seen_names = set()
+        listings: list[SearchListing] = []
+        for r in rows:
+            name_norm = r.product_name.strip().lower()
+            if name_norm in seen_names:
+                continue
+            seen_names.add(name_norm)
+            listings.append(
+                SearchListing(
+                    platform=r.platform,
+                    product_name=r.product_name,
+                    brand=r.brand,
+                    category=r.category,
+                    external_id=r.external_id,
+                    image_url=r.image_url,
+                    image_urls=r.image_urls,
+                    price=r.price,
+                    original_price=r.original_price,
+                    discount_percentage=r.discount_percentage,
+                    currency=r.currency or "INR",
+                    rating=r.rating,
+                    review_count=r.review_count,
+                    availability=r.availability,
+                    seller_name=r.seller_name,
+                    seller_count=r.seller_count,
+                    offer_count=r.offer_count,
+                    listing_url=r.listing_url,
+                    min_order_qty=r.min_order_qty,
+                    price_min=r.price_min,
+                    price_max=r.price_max,
+                    supplier_years=r.supplier_years,
+                    is_stale=True,
+                )
+            )
+            if len(listings) >= max_items:
+                break
+
+        if not listings:
+            fallback_stmt = (
+                select(MarketplaceSnapshot)
+                .where(MarketplaceSnapshot.platform == platform_name)
+                .order_by(MarketplaceSnapshot.collection_timestamp.desc())
+                .limit(max_items)
+            )
+            fallback_rows = db.execute(fallback_stmt).scalars().all()
+            for r in fallback_rows:
+                name_norm = r.product_name.strip().lower()
+                if name_norm in seen_names:
+                    continue
+                seen_names.add(name_norm)
+                listings.append(
+                    SearchListing(
+                        platform=r.platform,
+                        product_name=r.product_name,
+                        brand=r.brand,
+                        category=r.category,
+                        external_id=r.external_id,
+                        image_url=r.image_url,
+                        image_urls=r.image_urls,
+                        price=r.price,
+                        original_price=r.original_price,
+                        discount_percentage=r.discount_percentage,
+                        currency=r.currency or "INR",
+                        rating=r.rating,
+                        review_count=r.review_count,
+                        availability=r.availability,
+                        seller_name=r.seller_name,
+                        seller_count=r.seller_count,
+                        offer_count=r.offer_count,
+                        listing_url=r.listing_url,
+                        min_order_qty=r.min_order_qty,
+                        price_min=r.price_min,
+                        price_max=r.price_max,
+                        supplier_years=r.supplier_years,
+                        is_stale=True,
+                    )
+                )
+
+        return listings
+    except Exception as e:
+        logger.warning("Error fetching fallback search listings: %s", e)
+        return []
+
+
 async def _search_platform(
-    platform_name: str, query: str, max_items: int, category: str | None
+    platform_name: str, query: str, max_items: int, category: str | None, db: Session | None = None
 ) -> tuple[PlatformResult, list[NormalizedRecord]]:
     cached = _get_cached(query, platform_name)
     if cached is not None:
@@ -144,6 +253,17 @@ async def _search_platform(
         collector = get_collector(platform_name)
         status = collector.status()
         if not status.available:
+            if db:
+                fallback_listings = _fallback_from_db(db, platform_name, query, max_items)
+                if fallback_listings:
+                    latency = int((time.time() - start) * 1000)
+                    _set_cache(query, platform_name, fallback_listings)
+                    return PlatformResult(
+                        platform=platform_name,
+                        status="ok",
+                        listings=fallback_listings,
+                        latency_ms=latency,
+                    ), []
             return PlatformResult(
                 platform=platform_name,
                 status="unavailable",
@@ -154,6 +274,13 @@ async def _search_platform(
             collector.collect, query, category, max_items
         )
         listings = [_record_to_listing(r) for r in outcome.records]
+        
+        # If live scraping returned 0 items (e.g. Amazon Akamai bot challenge), fallback to stored data
+        if not listings and db:
+            fallback_listings = _fallback_from_db(db, platform_name, query, max_items)
+            if fallback_listings:
+                listings = fallback_listings
+
         latency = int((time.time() - start) * 1000)
 
         _set_cache(query, platform_name, listings)
@@ -167,6 +294,16 @@ async def _search_platform(
     except CollectorError as exc:
         latency = int((time.time() - start) * 1000)
         logger.warning("Search failed for %s: %s", platform_name, exc)
+        if db:
+            fallback_listings = _fallback_from_db(db, platform_name, query, max_items)
+            if fallback_listings:
+                _set_cache(query, platform_name, fallback_listings)
+                return PlatformResult(
+                    platform=platform_name,
+                    status="ok",
+                    listings=fallback_listings,
+                    latency_ms=latency,
+                ), []
         return PlatformResult(
             platform=platform_name,
             status="error",
@@ -176,6 +313,16 @@ async def _search_platform(
     except Exception as exc:
         latency = int((time.time() - start) * 1000)
         logger.exception("Unexpected error searching %s", platform_name)
+        if db:
+            fallback_listings = _fallback_from_db(db, platform_name, query, max_items)
+            if fallback_listings:
+                _set_cache(query, platform_name, fallback_listings)
+                return PlatformResult(
+                    platform=platform_name,
+                    status="ok",
+                    listings=fallback_listings,
+                    latency_ms=latency,
+                ), []
         return PlatformResult(
             platform=platform_name,
             status="error",
@@ -203,7 +350,7 @@ async def search_products(
     )
 
     tasks = [
-        _search_platform(p, q, max_items, category) for p in platform_list
+        _search_platform(p, q, max_items, category, db=db) for p in platform_list
     ]
     gather_results = await asyncio.gather(*tasks)
 

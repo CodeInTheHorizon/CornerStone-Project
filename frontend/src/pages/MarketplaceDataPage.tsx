@@ -85,7 +85,10 @@ export function MarketplaceDataPage() {
 
   const load = useCallback(
     async (filter: SourceType | '' = sourceFilter) => {
-      if (!token) return
+      if (!token) {
+        setLoading(false)
+        return
+      }
       const sequence = ++loadSequence.current
       setLoading(true)
       setSnapshots([])
@@ -98,27 +101,29 @@ export function MarketplaceDataPage() {
             sourceType: filter || undefined,
           }),
         ])
-        if (sequence !== loadSequence.current) return
-        setStatus(nextStatus)
-        setSnapshots(latest.items)
+        if (sequence === loadSequence.current) {
+          setStatus(nextStatus)
+          setSnapshots(latest.items)
+        }
       } catch (error) {
-        if (sequence !== loadSequence.current) return
-        setLoadError(
-          error instanceof ApiRequestError
-            ? error.message
-            : 'Could not load marketplace data.',
-        )
-      } finally { if (sequence === loadSequence.current) setLoading(false) }
+        if (sequence === loadSequence.current) {
+          setLoadError(
+            error instanceof ApiRequestError
+              ? error.message
+              : 'Could not load marketplace data.',
+          )
+        }
+      } finally {
+        if (sequence === loadSequence.current) {
+          setLoading(false)
+        }
+      }
     },
     [token, sourceFilter],
   )
 
   useEffect(() => {
-    // load only sets state after awaiting the request, so nothing is set
-    // synchronously here; the rule cannot see across the async boundary.
-    // oxlint-disable-next-line react/set-state-in-effect
     void load()
-    return () => { loadSequence.current += 1 }
   }, [load])
 
   const handleCollect = async (event: React.FormEvent) => {

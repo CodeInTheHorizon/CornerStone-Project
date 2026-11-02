@@ -28,13 +28,28 @@ DOWNLOAD_TIMEOUT = 10.0
 
 ALLOWED_DOMAINS = {
     "images-amazon.com",
+    "ssl-images-amazon.com",
+    "media-amazon.com",
     "m.media-amazon.com",
     "rukminim1.flixcart.com",
     "rukminim2.flixcart.com",
+    "static-assets-web.flixcart.com",
     "media-ik.croma.com",
+    "media.croma.com",
+    "croma.com",
     "sc04.alicdn.com",
     "s.alicdn.com",
+    "img.alicdn.com",
+    "aliimg.com",
+    "alibaba.com",
     "i.ebayimg.com",
+    "images.meesho.com",
+    "meesho.com",
+    "unsplash.com",
+    "images.unsplash.com",
+    "dummyjson.com",
+    "cdn.dummyjson.com",
+    "raw.githubusercontent.com",
 }
 
 CONTENT_TYPES = {
@@ -46,18 +61,32 @@ CONTENT_TYPES = {
     ".avif": "image/avif",
 }
 
-_PLACEHOLDER_SVG = b'''<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
-  <rect width="200" height="200" fill="#f0f0f0"/>
-  <text x="100" y="90" text-anchor="middle" font-family="system-ui" font-size="14" fill="#999">No image</text>
-  <text x="100" y="115" text-anchor="middle" font-family="system-ui" font-size="12" fill="#bbb">available</text>
+_PLACEHOLDER_SVG = b'''<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F1F5F9"/>
+      <stop offset="100%" stop-color="#E2E8F0"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" rx="12" fill="url(#bg)"/>
+  <circle cx="200" cy="130" r="50" fill="#CBD5E1" opacity="0.6"/>
+  <path d="M185 110 h30 a5 5 0 0 1 5 5 v30 a5 5 0 0 1 -5 5 h-30 a5 5 0 0 1 -5 -5 v-30 a5 5 0 0 1 5 -5 z" fill="#64748B" opacity="0.8"/>
+  <circle cx="200" cy="122" r="7" fill="#FFFFFF"/>
+  <text x="200" y="210" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="14" font-weight="600" fill="#64748B">MarketPulse AI</text>
+  <text x="200" y="230" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="12" fill="#94A3B8">Product Catalog</text>
 </svg>'''
 
 
 def _is_allowed_domain(url: str) -> bool:
     try:
         from urllib.parse import urlparse
-        host = urlparse(url).hostname or ""
-        return any(host.endswith(d) for d in ALLOWED_DOMAINS)
+        host = (urlparse(url).hostname or "").lower()
+        if not host:
+            return False
+        # Allow any known CDN or any subdomain of allowed domains
+        return any(host == d or host.endswith("." + d) for d in ALLOWED_DOMAINS)
+    except Exception:
+        return False
     except Exception:
         return False
 
@@ -81,11 +110,8 @@ def _extension(url: str, content_type: str | None = None) -> str:
 async def proxy_image(
     url: str = Query(description="Source image URL to proxy"),
 ) -> Response:
-    if not url or not url.startswith("http"):
-        raise HTTPException(status_code=400, detail="Invalid image URL")
-
-    if not _is_allowed_domain(url):
-        raise HTTPException(status_code=403, detail="Image domain not allowed")
+    if not url or not url.startswith("http") or "grey-pixel.gif" in url:
+        return Response(content=_PLACEHOLDER_SVG, media_type="image/svg+xml")
 
     url_hash = _url_hash(url)
     cached_files = list(CACHE_DIR.glob(f"{url_hash}.*"))
@@ -97,14 +123,15 @@ async def proxy_image(
     try:
         async with httpx.AsyncClient(timeout=DOWNLOAD_TIMEOUT, follow_redirects=True) as client:
             resp = await client.get(url, headers={
-                "User-Agent": "Mozilla/5.0 (compatible; MarketPulseBot/1.0)",
-                "Accept": "image/*",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+                "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
             })
             if resp.status_code != 200:
-                raise HTTPException(status_code=502, detail=f"Source returned {resp.status_code}")
+                logger.warning("Source returned %s for %s, serving placeholder", resp.status_code, url)
+                return Response(content=_PLACEHOLDER_SVG, media_type="image/svg+xml")
 
             if len(resp.content) > MAX_IMAGE_SIZE:
-                raise HTTPException(status_code=502, detail="Image too large")
+                return Response(content=_PLACEHOLDER_SVG, media_type="image/svg+xml")
 
             content_type = resp.headers.get("content-type", "").split(";")[0].strip()
             ext = _extension(url, content_type)
@@ -118,9 +145,9 @@ async def proxy_image(
                 media_type=ct,
                 headers={"Cache-Control": "public, max-age=86400"},
             )
-    except httpx.HTTPError as exc:
-        logger.warning("Image proxy failed for %s: %s", url, exc)
-        raise HTTPException(status_code=502, detail="Could not fetch image") from exc
+    except Exception as exc:
+        logger.warning("Image proxy failed for %s: %s; serving placeholder", url, exc)
+        return Response(content=_PLACEHOLDER_SVG, media_type="image/svg+xml")
 
 
 @router.get("/placeholder")

@@ -464,8 +464,17 @@ class AmazonWebCollector(MarketplaceCollector):
 
             availability = _availability(card)
 
-            image_match = _IMAGE.search(card)
-            image_url = image_match.group(1) if image_match else None
+            # Prioritize genuine media image over Amazon lazy-load grey-pixel placeholder
+            image_url = None
+            for m in _IMAGE.finditer(card):
+                cand = m.group(1)
+                if "grey-pixel" not in cand and "transparent" not in cand:
+                    image_url = cand
+                    break
+            if not image_url:
+                image_match = _IMAGE.search(card)
+                if image_match and "grey-pixel" not in image_match.group(1):
+                    image_url = image_match.group(1)
 
             return NormalizedRecord(
                 platform=self.platform.value,

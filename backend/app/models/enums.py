@@ -14,6 +14,7 @@ class Platform(str, Enum):
     FLIPKART = "flipkart"
     CROMA = "croma"
     ALIBABA = "alibaba"
+    MEESHO = "meesho"
 
 
 class SourceType(str, Enum):

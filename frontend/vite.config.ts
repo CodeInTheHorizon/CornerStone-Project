@@ -29,6 +29,12 @@ export default defineConfig(({ command, mode }) => {
     server: {
       port: 5173,
       strictPort: true,
+      proxy: {
+        '/images': {
+          target: 'http://127.0.0.1:8000',
+          changeOrigin: true,
+        },
+      },
     },
   }
 })

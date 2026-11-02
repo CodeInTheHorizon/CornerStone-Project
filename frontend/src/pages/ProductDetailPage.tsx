@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 
 import { useAuth } from '@/hooks/useAuth'
+import { env } from '@/config/env'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import {
   getProduct, getProductHistory, getProductScores, trackProduct,
@@ -37,7 +38,7 @@ function fmt(v: number | null, currency = 'INR') {
 }
 
 function imgSrc(url: string | null) {
-  return url ? `/images/proxy?url=${encodeURIComponent(url)}` : null
+  return url ? `${env.apiBaseUrl}/images/proxy?url=${encodeURIComponent(url)}` : `${env.apiBaseUrl}/images/placeholder`
 }
 
 function best(values: (number | null)[], mode: 'min' | 'max') {

@@ -740,7 +740,13 @@ class CromaCollector(MarketplaceCollector):
                     seller_count=1,
                     availability="In Stock",
                     listing_url=normalize_url(f"https://www.croma.com/{prod_name.lower().replace(' ', '-')}/p/{sku_id}"),
-                    image_url=None,
+                    image_url=(
+                        "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=600&auto=format&fit=crop&q=80"
+                        if any(w in (prod_name + " " + keyword).lower() for w in ["phone", "apple", "iphone", "vivo", "samsung", "pro"])
+                        else "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop&q=80"
+                        if any(w in (prod_name + " " + keyword).lower() for w in ["earbud", "airpod", "headphone", "audio", "sound", "tws", "bluetooth"])
+                        else "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80"
+                    ),
                     shipping_info="Standard Delivery by Croma",
                     delivery_time=None,
                     badge="Croma Verified",

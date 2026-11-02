@@ -60,3 +60,7 @@ backend/.pytest-phase14*
 backend/.pytest_temp/
 *.log
 graphify-out/
+
+# Image cache
+backend/image_cache/
+image_cache/

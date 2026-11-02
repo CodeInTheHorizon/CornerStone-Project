@@ -44,6 +44,7 @@ _BUILDERS = {
     Platform.FLIPKART: _flipkart_collector,
     Platform.CROMA: CromaCollector,
     Platform.ALIBABA: AlibabaCollector,
+    Platform.MEESHO: MeeshoWebCollector,
 }
 
 _EXTENDED_BUILDERS = {
