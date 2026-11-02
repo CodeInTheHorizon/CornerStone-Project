@@ -69,7 +69,8 @@ async def unexpected_failure(request: Request, exc: Exception):
     # Exception text and full paths may contain user data; log only the failure class.
     logger.error("Unhandled API failure: %s %s", request.method, type(exc).__name__)
     origin = request.headers.get("origin")
-    headers = {"Access-Control-Allow-Origin": origin, "Access-Control-Allow-Credentials": "true", "Vary": "Origin"} if origin in settings.CORS_ORIGINS else {}
+    allowed = origin in settings.CORS_ORIGINS or (bool(origin) and origin.startswith("https://") and origin.endswith(".vercel.app"))
+    headers = {"Access-Control-Allow-Origin": origin, "Access-Control-Allow-Credentials": "true", "Vary": "Origin"} if allowed else {}
     return JSONResponse(status_code=500, headers=headers, content={"detail": "The request could not be completed. Please retry; if it persists, contact the operator."})
 
 
@@ -81,6 +82,7 @@ app.add_middleware(RequestLimitsMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
