@@ -11,7 +11,7 @@ from app.config import settings
 def main() -> None:
     uvicorn.run(
         "app.main:app",
-        host=settings.HOST,
+        host="0.0.0.0",
         port=settings.PORT,
         workers=1,
         proxy_headers=False,  # Never accept spoofed X-Forwarded-For for rate limits.

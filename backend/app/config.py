@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     API_PREFIX: str = ""
 
     # --- Server ---
-    HOST: str = "127.0.0.1"
+    HOST: str = "0.0.0.0"
     PORT: int = Field(default=8000, ge=1, le=65535)
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     ACCESS_LOG: bool = False
