@@ -53,7 +53,7 @@ def upgrade() -> None:
         sa.Column("price_max", sa.Float, nullable=True),
         sa.Column("match_confidence", sa.Float, nullable=True),
         sa.Column("scraped_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column("is_stale", sa.Boolean, nullable=False, server_default=sa.text("0")),
+        sa.Column("is_stale", sa.Boolean, nullable=False, server_default=sa.false()),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=False),
         sa.UniqueConstraint("product_id", "platform", name="uq_listing_product_platform"),

@@ -23,7 +23,7 @@ def upgrade() -> None:
         sa.Column("condition", sa.String(24), nullable=False),
         sa.Column("threshold", sa.Float, nullable=False),
         sa.Column("currency", sa.String(8), nullable=False, server_default="INR"),
-        sa.Column("active", sa.Boolean, nullable=False, server_default=sa.text("1")),
+        sa.Column("active", sa.Boolean, nullable=False, server_default=sa.true()),
         sa.Column("triggered_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("triggered_value", sa.Float, nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
