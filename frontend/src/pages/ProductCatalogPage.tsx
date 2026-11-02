@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Package, Search, Filter, Star, ArrowUpRight, ImageOff, Trophy } from 'lucide-react'
+import { Package, Search, Filter, Star, ArrowUpRight, Trophy } from 'lucide-react'
 
 import { useAuth } from '@/hooks/useAuth'
 import { env } from '@/config/env'

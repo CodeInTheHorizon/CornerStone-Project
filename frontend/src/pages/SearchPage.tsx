@@ -6,7 +6,6 @@ import {
   ShoppingBag,
   Star,
   ExternalLink,
-  ImageOff,
   Tag,
   AlertCircle,
 } from 'lucide-react'
