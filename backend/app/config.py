@@ -232,8 +232,31 @@ class Settings(BaseSettings):
     def _split_cors_origins(cls, value: object) -> object:
         """Allow CORS_ORIGINS to be given as a comma-separated string."""
         if isinstance(value, str):
-            return json.loads(value) if value.strip().startswith("[") else [origin.strip() for origin in value.split(",") if origin.strip()]
-        return value
+            value = value.strip()
+            if value.startswith("["):
+                try:
+                    loaded = json.loads(value)
+                    raw = loaded if isinstance(loaded, list) else [value]
+                except Exception:
+                    raw = [value]
+            else:
+                raw = [origin.strip() for origin in value.split(",") if origin.strip()]
+        elif isinstance(value, list):
+            raw = value
+        else:
+            return value
+
+        cleaned: list[str] = []
+        for item in raw:
+            if not isinstance(item, str):
+                continue
+            item = item.strip().rstrip("/")
+            if item.startswith(("http://", "https://")):
+                parsed = urlsplit(item)
+                if parsed.netloc:
+                    item = f"{parsed.scheme}://{parsed.netloc}"
+            cleaned.append(item)
+        return cleaned
 
     @field_validator("DEBUG", mode="before")
     @classmethod
@@ -251,15 +274,22 @@ class Settings(BaseSettings):
     @field_validator("CORS_ORIGINS")
     @classmethod
     def _exact_origins(cls, values: list[str]) -> list[str]:
+        cleaned: list[str] = []
         for origin in values:
+            origin = origin.strip().rstrip("/")
+            if origin.startswith(("http://", "https://")):
+                parsed = urlsplit(origin)
+                if parsed.netloc:
+                    origin = f"{parsed.scheme}://{parsed.netloc}"
             parsed = urlsplit(origin)
-            if parsed.scheme not in {"http", "https"} or not parsed.hostname or "*" in origin or parsed.path or parsed.query or parsed.fragment or parsed.username or parsed.password:
+            if parsed.scheme not in {"http", "https"} or not parsed.hostname or "*" in origin or parsed.username or parsed.password:
                 raise ValueError("CORS origins must be exact HTTP(S) origins without paths or credentials.")
             try:
                 parsed.port
             except ValueError:
                 raise ValueError("CORS origin contains an invalid port.") from None
-        return list(dict.fromkeys(values))
+            cleaned.append(origin)
+        return list(dict.fromkeys(cleaned))
 
     @model_validator(mode="after")
     def _safe_runtime(self):
