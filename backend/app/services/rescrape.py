@@ -75,6 +75,8 @@ def _rescrape_listing(db: Session, listing: PlatformListing) -> bool:
         listing.seller_count = best.seller_count
         listing.offer_count = best.offer_count
         listing.image_url = best.image_url or listing.image_url
+        if best.image_url and not listing.product.primary_image_url:
+            listing.product.primary_image_url = best.image_url
         listing.scraped_at = now
         listing.is_stale = False
 

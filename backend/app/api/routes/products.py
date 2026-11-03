@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import datetime
 from typing import Any
 
@@ -111,6 +112,19 @@ class TrackedOut(BaseModel):
 # --------------------------------------------------------------------------
 
 
+def _display_image(product: Product, listings: Sequence[PlatformListing]) -> str | None:
+    """Return the product's image, falling back to the first usable listing image.
+
+    Products created by a scrape that found no image keep a null
+    primary_image_url even after their listings gain one.
+    """
+    candidates = [product.primary_image_url]
+    for listing in listings:
+        candidates.append(listing.image_url)
+        candidates.extend(listing.image_urls or [])
+    return next((c for c in candidates if c and "grey-pixel" not in c), None)
+
+
 @router.get("", response_model=list[ProductSummary])
 def list_products(
     category: str | None = None,
@@ -142,7 +156,7 @@ def list_products(
             canonical_title=p.canonical_title,
             brand=p.brand,
             category=p.category,
-            primary_image_url=p.primary_image_url,
+            primary_image_url=_display_image(p, listings),
             platform_count=len(listings),
             min_price=min(prices) if prices else None,
             max_price=max(prices) if prices else None,
